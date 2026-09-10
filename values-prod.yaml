@@ -2,8 +2,23 @@ clusterGroup:
   name: prod
   namespaces:
     minilab:
+    vault:
+    external-secrets:
+    
   subscriptions: {}
-  applications: {}
+  applications:
+    vault:
+      name: vault
+      namespace: vault
+      project: default
+      chart: hashicorp-vault
+      chartVersion: 0.1.*
+    secrets-operator:
+      name: openshift-external-secrets
+      namespace: external-secrets
+      project: external-secrets
+      chart: openshift-external-secrets
+      chartVersion: 0.0.*
   projects: 
   - default
   sharedValueFiles:[]
