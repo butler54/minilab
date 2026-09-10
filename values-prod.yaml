@@ -1,0 +1,10 @@
+clusterGroup:
+  name: prod
+  namespaces:
+    minilab:
+  subscriptions: {}
+  applications: {}
+  projects: 
+  - default
+  sharedValueFiles:[]
+  # imperative:
