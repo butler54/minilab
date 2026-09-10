@@ -1,0 +1,11 @@
+global:
+  pattern: minilab
+  singleArgoCD: true
+  secretsStore
+    backend: vault
+
+main:
+  clusterGroupName: prod
+  multiSourceConfig:
+    enabled: true
+    clusterGroupChartVersion: 0.9.*
