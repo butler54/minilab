@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: lvms-config-readiness
+  namespace: openshift-storage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: lvms-config-readiness
+  namespace: openshift-storage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+rules:
+- apiGroups: [operators.coreos.com]
+  resources: [clusterserviceversions]
+  verbs: [get, list, watch]
+- apiGroups: [lvm.topolvm.io]
+  resources: [lvmclusters]
+  verbs: [get, list, watch]
+- apiGroups: [apps]
+  resources: [deployments, daemonsets]
+  verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: lvms-config-readiness
+  namespace: openshift-storage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+subjects:
+- kind: ServiceAccount
+  name: lvms-config-readiness
+  namespace: openshift-storage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: lvms-config-readiness
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: minilab-lvms-config-readiness
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+rules:
+- apiGroups: [apiextensions.k8s.io]
+  resources: [customresourcedefinitions]
+  verbs: [get]
+- apiGroups: [storage.k8s.io]
+  resources: [storageclasses]
+  verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: minilab-lvms-config-readiness
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+subjects:
+- kind: ServiceAccount
+  name: lvms-config-readiness
+  namespace: openshift-storage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: minilab-lvms-config-readiness

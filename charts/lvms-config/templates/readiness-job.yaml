@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: lvms-config-readiness
+  namespace: openshift-storage
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded,BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  backoffLimit: 6
+  activeDeadlineSeconds: 900
+  template:
+    spec:
+      serviceAccountName: lvms-config-readiness
+      restartPolicy: OnFailure
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: wait-for-storage-class
+        image: {{ required "global.lvmsCompatibility.cliImage is required" .Values.global.lvmsCompatibility.cliImage | quote }}
+        command: [bash, -ceu]
+        args:
+        - |
+          oc -n openshift-storage wait --for=jsonpath='{.status.phase}'=Succeeded csv/{{ required "global.lvmsCompatibility.startingCSV is required" .Values.global.lvmsCompatibility.startingCSV }} --timeout=10m
+          oc -n openshift-storage rollout status deployment/{{ required "global.lvmsCompatibility.deployment is required" .Values.global.lvmsCompatibility.deployment }} --timeout=10m
+          oc get crd/{{ required "global.lvmsCompatibility.lvmClusterCRD is required" .Values.global.lvmsCompatibility.lvmClusterCRD }}
+          oc -n openshift-storage wait --for=jsonpath='{.status.state}'=Ready lvmcluster/{{ .Values.lvmCluster.name }} --timeout=10m
+          oc get storageclass/{{ .Values.global.localStorage.storageClassName }} -o jsonpath='{.volumeBindingMode}' | grep -qx WaitForFirstConsumer
+          oc get storageclass/{{ .Values.global.localStorage.storageClassName }} -o jsonpath='{.reclaimPolicy}' | grep -qx Retain
+          oc -n openshift-storage rollout status deployment/topolvm-controller --timeout=10m
+          oc -n openshift-storage rollout status daemonset/topolvm-node --timeout=10m
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: [ALL]
+          readOnlyRootFilesystem: true
