@@ -1,7 +1,25 @@
 global:
   pattern: minilab
   singleArgoCD: true
-  secretsStore
+  storageProvider: lvm
+  localStorage:
+    capacityGiB: 100
+    backingFilePath: /var/lib/minilab/lvms-loopback.img
+    loopDevice: /dev/loop10
+    storageClassName: lvms-loopback
+    backingEfficiency: 85
+    backingRoundingGiB: 4
+    hostReserveGiB: 20
+  # Keep all OCP/LVMS release-coupled values together so subscriptions and
+  # readiness checks cannot silently target different releases.
+  lvmsCompatibility:
+    ocpRelease: "4.22"
+    channel: stable-4.22
+    startingCSV: lvms-operator.v4.22.0
+    cliImage: registry.redhat.io/openshift4/ose-cli:v4.22
+    deployment: lvms-operator
+    lvmClusterCRD: lvmclusters.lvm.topolvm.io
+  secretsStore:
     backend: vault
 
 main:

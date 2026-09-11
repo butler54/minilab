@@ -2,4 +2,12 @@
 # This Makefile includes the common pattern targets from Makefile-common
 # You can add custom targets above or below the include line
 
+.PHONY: bootstrap-storage
+bootstrap-storage: ## Creates and verifies the persistent LVMS loop device
+	@./scripts/bootstrap-local-storage.sh
+
+# Defining prerequisites before including the common target keeps this ordering
+# even when make is invoked with -j.
+pattern-install: bootstrap-storage
+
 include Makefile-common

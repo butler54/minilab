@@ -1,0 +1,19 @@
+global:
+  localStorage:
+    capacityGiB: 100
+    loopDevice: /dev/loop10
+    storageClassName: lvms-loopback
+  lvmsCompatibility:
+    cliImage: ""
+    startingCSV: ""
+    deployment: ""
+    lvmClusterCRD: ""
+lvmCluster:
+  name: minilab-lvmcluster
+  thinPoolSizePercent: 85
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: ""
+  tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: lvms-config
+description: Configures the Minilab persistent loopback LVMS device class
+type: application
+version: 0.1.0

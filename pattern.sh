@@ -116,6 +116,7 @@ podman run -it --rm --pull=newer \
     -e K8S_AUTH_USERNAME \
     -e K8S_AUTH_VERIFY_SSL \
     -e KUBECONFIG \
+    -e LOCAL_STORAGE_CAPACITY_GIB \
     -e PATTERN_DIR \
     -e PATTERN_DISCONNECTED_HOME \
     -e PATTERN_INSTALL_CHART \
@@ -129,7 +130,7 @@ podman run -it --rm --pull=newer \
     -e UUID_FILE \
     -e VALUES_SECRET \
     -e 'VP_*' \
-    "${PKI_HOST_MOUNT_ARGS[@]}" \
+    "${PKI_HOST_MOUNT_ARGS[@]:-}" \
     -v "$(pwd -P)":"$(pwd -P)" \
     -v "${HOME}":"${HOME}" \
     -v "${HOME}":/pattern-home \

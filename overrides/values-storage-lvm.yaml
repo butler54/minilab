@@ -1,0 +1,4 @@
+vault:
+  server:
+    dataStorage:
+      storageClass: lvms-loopback
