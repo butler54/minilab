@@ -28,5 +28,8 @@ for dashboard in openshift-system-overview application-overview; do
     | grep -qx 'openshift-cluster-observability-operator' \
     || { echo "platform dashboard $dashboard is not in the COO project"; exit 1; }
 done
+application_variable=$(echo "$rendered" | yq e 'select(.kind == "PersesDashboard" and .metadata.name == "application-overview") | .spec.config.variables[0].spec.plugin.spec' -)
+echo "$application_variable" | yq e 'has("metricName")' - | grep -qx 'false' \
+  || { echo "application namespace variable uses unsupported metricName"; exit 1; }
 
 printf 'observability dashboards validation passed\n'

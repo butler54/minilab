@@ -149,7 +149,6 @@ spec:
           kind: PrometheusLabelValuesVariable
           spec:
             labelName: namespace
-            metricName: container_cpu_usage_seconds_total
             matchers: []
         defaultValue: ""
     - kind: ListVariable
