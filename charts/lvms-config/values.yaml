@@ -4,8 +4,7 @@ global:
     loopDevice: /dev/loop10
     storageClassName: lvms-loopback
     defaultStorageClass:
-      enabled: true
-      schedule: "*/10 * * * *"
+      lvmClusterDefaultDeviceClass: true
   lvmsCompatibility:
     cliImage: ""
     startingCSV: ""
@@ -14,6 +13,7 @@ global:
 lvmCluster:
   name: minilab-lvmcluster
   thinPoolSizePercent: 85
+  defaultDeviceClass: true
   nodeSelector:
     node-role.kubernetes.io/control-plane: ""
   tolerations:

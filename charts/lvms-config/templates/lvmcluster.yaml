@@ -12,6 +12,11 @@ spec:
   storage:
     deviceClasses:
     - name: loopback
+      {{- $dcDefault := .Values.lvmCluster.defaultDeviceClass }}
+      {{- if and $storage.defaultStorageClass (hasKey $storage.defaultStorageClass "lvmClusterDefaultDeviceClass") }}
+      {{- $dcDefault = $storage.defaultStorageClass.lvmClusterDefaultDeviceClass }}
+      {{- end }}
+      default: {{ $dcDefault | default false }}
       deviceSelector:
         paths:
         - {{ $storage.loopDevice }}
