@@ -1,6 +1,6 @@
 {{- if .Values.global.observability.enabled }}
 {{- $obs := .Values.global.observability }}
-apiVersion: monitoring.rhobs/v1alpha2
+apiVersion: observability.openshift.io/v1alpha1
 kind: UIPlugin
 metadata:
   name: {{ .Values.uiPlugin.name }}

@@ -21,7 +21,7 @@ Perses provides:
 **Rationale**: The COO installs the Perses Operator and its CRDs automatically with the subscription. The `UIPlugin` custom resource with `spec.type: monitoring` and `spec.monitoring.perses.enabled: true` is what installs the Perses UI plugin and creates the Perses server instance, adding the `Observe > Dashboards (Perses)` menu to the console. Without the plugin, the CRDs exist but no Perses server is deployed.
 
 ```yaml
-apiVersion: monitoring.rhobs/v1alpha2
+apiVersion: observability.openshift.io/v1alpha1
 kind: UIPlugin
 metadata:
   name: monitoring
@@ -90,7 +90,7 @@ Alert-state recording: Alertmanager retains the firing/resolved state and the Pe
 ## Implementation Verification Required
 
 - Confirm the exact COO catalog channel and CSV available for OpenShift 4.22 on the target `redhat-operators` catalog (research used `stable`; assert against the target).
-- Confirm the exact `UIPlugin`, `MonitoringStack`, and Perses CRD API versions accepted by the target COO release (research used `monitoring.rhobs/v1alpha2`, `monitoring.rhobs/v1alpha1`, `perses.dev/v1alpha2`).
+- Confirm the exact `UIPlugin`, `MonitoringStack`, and Perses CRD API versions accepted by the target COO release. **Verified on target (2026-09-21)**: `UIPlugin` is `observability.openshift.io/v1alpha1`, `MonitoringStack` is `monitoring.rhobs/v1alpha1`, and `Perses*` are `perses.dev/v1alpha2`.
 - Confirm the `ScrapeConfig` CRD version and that the COO stack's `resourceSelector` selects it for external static targets.
 - Confirm the generated names for COO stack Prometheus/Alertmanager services and the in-cluster Thanos Querier endpoint for datasource URLs.
 - Confirm the generated name of the COO Alertmanager (so the `alertmanager-<stack>` config Secret name matches) and that the stack's Prometheus is wired to it.
