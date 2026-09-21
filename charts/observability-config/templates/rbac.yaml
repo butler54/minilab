@@ -1,0 +1,89 @@
+{{- if .Values.global.observability.enabled }}
+{{- $obs := .Values.global.observability }}
+{{- $rbac := $obs.rbac }}
+{{- if $rbac.viewerGroup }}
+# Viewer access to dashboards and datasources within the stack project.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: perses-dashboard-viewer
+  namespace: {{ $obs.stackNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+subjects:
+- kind: Group
+  name: {{ $rbac.viewerGroup }}
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: persesdashboard-viewer-role
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: perses-datasource-viewer
+  namespace: {{ $obs.stackNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+subjects:
+- kind: Group
+  name: {{ $rbac.viewerGroup }}
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: persesdatasource-viewer-role
+{{- end }}
+{{- if $rbac.editorGroup }}
+---
+# Editor access to dashboards and datasources within the stack project.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: perses-dashboard-editor
+  namespace: {{ $obs.stackNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+subjects:
+- kind: Group
+  name: {{ $rbac.editorGroup }}
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: persesdashboard-editor-role
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: perses-datasource-editor
+  namespace: {{ $obs.stackNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+subjects:
+- kind: Group
+  name: {{ $rbac.editorGroup }}
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: persesdatasource-editor-role
+---
+# Cluster-scoped global datasource management for editors.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: perses-global-datasource-editor
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+subjects:
+- kind: Group
+  name: {{ $rbac.editorGroup }}
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: persesglobaldatasource-editor-role
+{{- end }}
+{{- end }}

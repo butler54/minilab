@@ -1,0 +1,119 @@
+{{- if .Values.global.observability.enabled }}
+{{- $obs := .Values.global.observability }}
+{{- $stack := .Values.monitoringStack }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: minilab-system-alerts
+  namespace: {{ $obs.stackNamespace }}
+  labels:
+    app.kubernetes.io/part-of: {{ $stack.selectorLabel }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  groups:
+  - name: minilab-system
+    rules:
+    - alert: NodeNotReady
+      expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        domain: openshift-system
+      annotations:
+        summary: "Node {{ `{{ $labels.node }}` }} is not ready"
+    - alert: ClusterCPUHigh
+      expr: (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100 > 85
+      for: 10m
+      labels:
+        severity: warning
+        domain: openshift-system
+      annotations:
+        summary: "Cluster CPU utilization is above 85%"
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: minilab-application-alerts
+  namespace: {{ $obs.stackNamespace }}
+  labels:
+    app.kubernetes.io/part-of: {{ $stack.selectorLabel }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  groups:
+  - name: minilab-application
+    rules:
+    - alert: HighCrashLoopBackOff
+      expr: increase(kube_pod_container_status_restarts_total[10m]) > 5
+      for: 5m
+      labels:
+        severity: warning
+        domain: application
+      annotations:
+        summary: "Pod {{ `{{ $labels.pod }}` }} in namespace {{ `{{ $labels.namespace }}` }} is restarting frequently"
+    - alert: ApplicationCPUHigh
+      expr: sum(rate(container_cpu_usage_seconds_total{namespace!~"openshift.*"}[5m])) by (namespace) > 0.8
+      for: 10m
+      labels:
+        severity: warning
+        domain: application
+      annotations:
+        summary: "High CPU usage in namespace {{ `{{ $labels.namespace }}` }}"
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: minilab-external-alerts
+  namespace: {{ $obs.stackNamespace }}
+  labels:
+    app.kubernetes.io/part-of: {{ $stack.selectorLabel }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  groups:
+  - name: minilab-external
+    rules:
+    - alert: ExternalTargetDown
+      expr: up == 0
+      for: 5m
+      labels:
+        severity: critical
+        domain: external
+      annotations:
+        summary: "External target {{ `{{ $labels.instance }}` }} (job {{ `{{ $labels.job }}` }}) is down"
+    - alert: ExternalTargetUnavailable
+      expr: (1 - avg_over_time(up[24h])) > 0.05
+      for: 1h
+      labels:
+        severity: warning
+        domain: external
+      annotations:
+        summary: "External target {{ `{{ $labels.instance }}` }} unavailable more than 5% over 24h"
+{{- range $rule := $obs.alertRules }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ $rule.name }}
+  namespace: {{ $obs.stackNamespace }}
+  labels:
+    app.kubernetes.io/part-of: {{ $stack.selectorLabel }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  groups:
+  - name: {{ $rule.group | default $rule.name }}
+    rules:
+{{- range $alert := $rule.rules }}
+    - alert: {{ $alert.name }}
+      expr: {{ $alert.expr | quote }}
+      for: {{ $alert.for | default "5m" }}
+      labels:
+        severity: {{ $alert.severity | default "warning" }}
+        domain: {{ $alert.domain | default "custom" }}
+      annotations:
+        summary: {{ $alert.summary | default $alert.name | quote }}
+{{- end }}
+{{- end }}
+{{- end }}

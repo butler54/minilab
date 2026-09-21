@@ -1,0 +1,572 @@
+---
+# Source: observability-config/templates/external-secret.yaml
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: alertmanager-minilab
+  namespace: minilab-observability
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  refreshInterval: 2m0s
+  secretStoreRef:
+    name: vault-backend
+    kind: ClusterSecretStore
+  target:
+    name: alertmanager-minilab
+    template:
+      type: Opaque
+      data:
+        alertmanager.yaml: |
+          global:
+            resolve_timeout: 5m
+          route:
+            receiver: pagerduty
+            group_by: ['alertname', 'namespace']
+            group_wait: 30s
+            group_interval: 5m
+            repeat_interval: 12h
+          receivers:
+          - name: pagerduty
+            pagerduty_configs:
+            - routing_key: {{ .routing_key }}
+              send_resolved: true
+          inhibit_rules:
+          - source_matchers: ['severity = "critical"']
+            target_matchers: ['severity =~ "warning|info"']
+            equal: ['alertname', 'namespace']
+          - source_matchers: ['severity = "warning"']
+            target_matchers: ['severity = "info"']
+            equal: ['alertname', 'namespace']
+  data:
+    - secretKey: routing_key
+      remoteRef:
+        key: secret/data/global/pagerduty-routing-key
+        property: key
+---
+# Source: observability-config/templates/monitoring-stack.yaml
+apiVersion: monitoring.rhobs/v1alpha1
+kind: MonitoringStack
+metadata:
+  name: minilab
+  namespace: minilab-observability
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  logLevel: info
+  retention: "30d"
+  alertmanagerConfig:
+    disabled: false
+  prometheusConfig:
+    replicas: 1
+    persistentVolumeClaim:
+      storageClassName: lvms-loopback
+      resources:
+        requests:
+          storage: 10Gi
+  resourceSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: minilab-observability
+  namespaceSelector:
+    matchLabels:
+      monitoring.rhobs/stack: minilab
+---
+# Source: observability-config/templates/perses-dashboards.yaml
+apiVersion: perses.dev/v1alpha2
+kind: PersesDashboard
+metadata:
+  name: openshift-system-overview
+  namespace: minilab-observability
+  annotations:
+    perses.dev/tags: "openshift,system"
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  config:
+    display:
+      name: "OpenShift System Overview"
+      description: "Health and capacity of OpenShift system workloads"
+    variables:
+    - kind: ListVariable
+      spec:
+        name: interval
+        allowAllValue: false
+        allowMultiple: false
+        defaultValue: 5m
+        plugin:
+          kind: StaticListVariable
+          spec:
+            values:
+            - label: 1m
+              value: 1m
+            - label: 5m
+              value: 5m
+            - label: 15m
+              value: 15m
+    panels:
+      clusterCpu:
+        kind: Panel
+        spec:
+          display:
+            name: "Cluster CPU Utilization"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[$interval])) * 100)
+      clusterMemory:
+        kind: Panel
+        spec:
+          display:
+            name: "Cluster Memory Utilization"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: (1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))) * 100
+      clusterNetwork:
+        kind: Panel
+        spec:
+          display:
+            name: "Cluster Network I/O"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: sum(rate(node_network_receive_bytes_total[$interval])) by (instance)
+      readyNodes:
+        kind: Panel
+        spec:
+          display:
+            name: "Ready Nodes"
+          plugin:
+            kind: StatChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: count(kube_node_status_condition{condition="Ready",status="true"})
+    layouts:
+    - kind: Grid
+      spec:
+        display:
+          title: "System Workloads"
+          collapse:
+            open: true
+        items:
+        - x: 0
+          y: 0
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/clusterCpu"
+        - x: 12
+          y: 0
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/clusterMemory"
+        - x: 0
+          y: 6
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/clusterNetwork"
+        - x: 12
+          y: 6
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/readyNodes"
+    duration: 1h
+---
+# Source: observability-config/templates/perses-dashboards.yaml
+apiVersion: perses.dev/v1alpha2
+kind: PersesDashboard
+metadata:
+  name: application-overview
+  namespace: minilab-observability
+  annotations:
+    perses.dev/tags: "application,workloads"
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  config:
+    display:
+      name: "Application Overview"
+      description: "Health of application workloads deployed on the cluster"
+    variables:
+    - kind: ListVariable
+      spec:
+        name: namespace
+        allowAllValue: true
+        allowMultiple: false
+        plugin:
+          kind: PrometheusLabelValuesVariable
+          spec:
+            labelName: namespace
+            metricName: container_cpu_usage_seconds_total
+            matchers: []
+        defaultValue: ""
+    - kind: ListVariable
+      spec:
+        name: interval
+        allowAllValue: false
+        allowMultiple: false
+        defaultValue: 5m
+        plugin:
+          kind: StaticListVariable
+          spec:
+            values:
+            - label: 1m
+              value: 1m
+            - label: 5m
+              value: 5m
+            - label: 15m
+              value: 15m
+    panels:
+      appCpu:
+        kind: Panel
+        spec:
+          display:
+            name: "CPU Usage by Namespace"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: sum(rate(container_cpu_usage_seconds_total{namespace=~"$namespace"}[$interval])) by (namespace)
+      appMemory:
+        kind: Panel
+        spec:
+          display:
+            name: "Memory Usage by Namespace"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: sum(container_memory_working_set_bytes{namespace=~"$namespace"}) by (namespace)
+      appRestarts:
+        kind: Panel
+        spec:
+          display:
+            name: "Container Restarts"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: sum(increase(kube_pod_container_status_restarts_total{namespace=~"$namespace"}[$interval])) by (namespace)
+    layouts:
+    - kind: Grid
+      spec:
+        display:
+          title: "Application Workloads"
+          collapse:
+            open: true
+        items:
+        - x: 0
+          y: 0
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/appCpu"
+        - x: 12
+          y: 0
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/appMemory"
+        - x: 0
+          y: 6
+          width: 24
+          height: 6
+          content:
+            $ref: "#/spec/panels/appRestarts"
+    duration: 1h
+---
+# Source: observability-config/templates/perses-dashboards.yaml
+apiVersion: perses.dev/v1alpha2
+kind: PersesDashboard
+metadata:
+  name: external-components
+  namespace: minilab-observability
+  annotations:
+    perses.dev/tags: "external,components"
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  config:
+    display:
+      name: "External Components"
+      description: "Health of configured external components exposing metrics"
+    variables:
+    - kind: ListVariable
+      spec:
+        name: interval
+        allowAllValue: false
+        allowMultiple: false
+        defaultValue: 5m
+        plugin:
+          kind: StaticListVariable
+          spec:
+            values:
+            - label: 1m
+              value: 1m
+            - label: 5m
+              value: 5m
+            - label: 15m
+              value: 15m
+    panels:
+      externalUp:
+        kind: Panel
+        spec:
+          display:
+            name: "External Targets Up"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: "minilab-stack"
+                  query: up
+      externalAvailability:
+        kind: Panel
+        spec:
+          display:
+            name: "30-Day Availability"
+          plugin:
+            kind: StatChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: "minilab-stack"
+                  query: (1 - avg_over_time(up[30d])) * 100
+      externalLatency:
+        kind: Panel
+        spec:
+          display:
+            name: "Scrape Duration"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: "minilab-stack"
+                  query: sum(rate(scrape_duration_seconds[$interval])) by (job)
+    layouts:
+    - kind: Grid
+      spec:
+        display:
+          title: "External Components"
+          collapse:
+            open: true
+        items:
+        - x: 0
+          y: 0
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/externalUp"
+        - x: 12
+          y: 0
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/externalAvailability"
+        - x: 0
+          y: 6
+          width: 24
+          height: 6
+          content:
+            $ref: "#/spec/panels/externalLatency"
+    duration: 1h
+---
+# Source: observability-config/templates/perses-datasources.yaml
+apiVersion: perses.dev/v1alpha2
+kind: PersesDatasource
+metadata:
+  name: minilab-stack
+  namespace: minilab-observability
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  config:
+    display:
+      name: "Minilab Stack Prometheus"
+    default: false
+    plugin:
+      kind: PrometheusDatasource
+      spec:
+        proxy:
+          kind: HTTPProxy
+          spec:
+            url: "http://minilab-prometheus.minilab-observability.svc.cluster.local:9090"
+---
+# Source: observability-config/templates/perses-datasources.yaml
+apiVersion: perses.dev/v1alpha2
+kind: PersesGlobalDatasource
+metadata:
+  name: thanos-querier
+  namespace: minilab-observability
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  config:
+    display:
+      name: "Platform Thanos Querier"
+    default: true
+    plugin:
+      kind: PrometheusDatasource
+      spec:
+        proxy:
+          kind: HTTPProxy
+          spec:
+            url: "https://thanos-querier.openshift-monitoring.svc.cluster.local:9091"
+---
+# Source: observability-config/templates/prometheus-rules.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: minilab-system-alerts
+  namespace: minilab-observability
+  labels:
+    app.kubernetes.io/part-of: minilab-observability
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  groups:
+  - name: minilab-system
+    rules:
+    - alert: NodeNotReady
+      expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        domain: openshift-system
+      annotations:
+        summary: "Node {{ $labels.node }} is not ready"
+    - alert: ClusterCPUHigh
+      expr: (1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100 > 85
+      for: 10m
+      labels:
+        severity: warning
+        domain: openshift-system
+      annotations:
+        summary: "Cluster CPU utilization is above 85%"
+---
+# Source: observability-config/templates/prometheus-rules.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: minilab-application-alerts
+  namespace: minilab-observability
+  labels:
+    app.kubernetes.io/part-of: minilab-observability
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  groups:
+  - name: minilab-application
+    rules:
+    - alert: HighCrashLoopBackOff
+      expr: increase(kube_pod_container_status_restarts_total[10m]) > 5
+      for: 5m
+      labels:
+        severity: warning
+        domain: application
+      annotations:
+        summary: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently"
+    - alert: ApplicationCPUHigh
+      expr: sum(rate(container_cpu_usage_seconds_total{namespace!~"openshift.*"}[5m])) by (namespace) > 0.8
+      for: 10m
+      labels:
+        severity: warning
+        domain: application
+      annotations:
+        summary: "High CPU usage in namespace {{ $labels.namespace }}"
+---
+# Source: observability-config/templates/prometheus-rules.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: minilab-external-alerts
+  namespace: minilab-observability
+  labels:
+    app.kubernetes.io/part-of: minilab-observability
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  groups:
+  - name: minilab-external
+    rules:
+    - alert: ExternalTargetDown
+      expr: up == 0
+      for: 5m
+      labels:
+        severity: critical
+        domain: external
+      annotations:
+        summary: "External target {{ $labels.instance }} (job {{ $labels.job }}) is down"
+    - alert: ExternalTargetUnavailable
+      expr: (1 - avg_over_time(up[24h])) > 0.05
+      for: 1h
+      labels:
+        severity: warning
+        domain: external
+      annotations:
+        summary: "External target {{ $labels.instance }} unavailable more than 5% over 24h"
+---
+# Source: observability-config/templates/uiplugin.yaml
+apiVersion: monitoring.rhobs/v1alpha2
+kind: UIPlugin
+metadata:
+  name: monitoring
+  namespace: openshift-cluster-observability-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  type: monitoring
+  monitoring:
+    perses:
+      enabled: true

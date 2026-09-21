@@ -1,0 +1,13 @@
+global:
+  observability:
+    enabled: true
+    cooNamespace: openshift-cluster-observability-operator
+    stackNamespace: minilab-observability
+    retention: 30d
+    storageClass: lvms-loopback
+    externalTargets: []
+    dashboards: []
+    alertRules: []
+    rbac:
+      viewerGroup: ""
+      editorGroup: ""

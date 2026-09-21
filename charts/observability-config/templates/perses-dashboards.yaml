@@ -1,0 +1,422 @@
+{{- if .Values.global.observability.enabled }}
+{{- $obs := .Values.global.observability }}
+{{- $ds := .Values.datasources }}
+apiVersion: perses.dev/v1alpha2
+kind: PersesDashboard
+metadata:
+  name: openshift-system-overview
+  namespace: {{ $obs.stackNamespace }}
+  annotations:
+    perses.dev/tags: "openshift,system"
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  config:
+    display:
+      name: "OpenShift System Overview"
+      description: "Health and capacity of OpenShift system workloads"
+    variables:
+    - kind: ListVariable
+      spec:
+        name: interval
+        allowAllValue: false
+        allowMultiple: false
+        defaultValue: 5m
+        plugin:
+          kind: StaticListVariable
+          spec:
+            values:
+            - label: 1m
+              value: 1m
+            - label: 5m
+              value: 5m
+            - label: 15m
+              value: 15m
+    panels:
+      clusterCpu:
+        kind: Panel
+        spec:
+          display:
+            name: "Cluster CPU Utilization"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[$interval])) * 100)
+      clusterMemory:
+        kind: Panel
+        spec:
+          display:
+            name: "Cluster Memory Utilization"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: (1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))) * 100
+      clusterNetwork:
+        kind: Panel
+        spec:
+          display:
+            name: "Cluster Network I/O"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: sum(rate(node_network_receive_bytes_total[$interval])) by (instance)
+      readyNodes:
+        kind: Panel
+        spec:
+          display:
+            name: "Ready Nodes"
+          plugin:
+            kind: StatChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: count(kube_node_status_condition{condition="Ready",status="true"})
+    layouts:
+    - kind: Grid
+      spec:
+        display:
+          title: "System Workloads"
+          collapse:
+            open: true
+        items:
+        - x: 0
+          y: 0
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/clusterCpu"
+        - x: 12
+          y: 0
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/clusterMemory"
+        - x: 0
+          y: 6
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/clusterNetwork"
+        - x: 12
+          y: 6
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/readyNodes"
+    duration: 1h
+---
+apiVersion: perses.dev/v1alpha2
+kind: PersesDashboard
+metadata:
+  name: application-overview
+  namespace: {{ $obs.stackNamespace }}
+  annotations:
+    perses.dev/tags: "application,workloads"
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  config:
+    display:
+      name: "Application Overview"
+      description: "Health of application workloads deployed on the cluster"
+    variables:
+    - kind: ListVariable
+      spec:
+        name: namespace
+        allowAllValue: true
+        allowMultiple: false
+        plugin:
+          kind: PrometheusLabelValuesVariable
+          spec:
+            labelName: namespace
+            metricName: container_cpu_usage_seconds_total
+            matchers: []
+        defaultValue: ""
+    - kind: ListVariable
+      spec:
+        name: interval
+        allowAllValue: false
+        allowMultiple: false
+        defaultValue: 5m
+        plugin:
+          kind: StaticListVariable
+          spec:
+            values:
+            - label: 1m
+              value: 1m
+            - label: 5m
+              value: 5m
+            - label: 15m
+              value: 15m
+    panels:
+      appCpu:
+        kind: Panel
+        spec:
+          display:
+            name: "CPU Usage by Namespace"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: sum(rate(container_cpu_usage_seconds_total{namespace=~"$namespace"}[$interval])) by (namespace)
+      appMemory:
+        kind: Panel
+        spec:
+          display:
+            name: "Memory Usage by Namespace"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: sum(container_memory_working_set_bytes{namespace=~"$namespace"}) by (namespace)
+      appRestarts:
+        kind: Panel
+        spec:
+          display:
+            name: "Container Restarts"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: sum(increase(kube_pod_container_status_restarts_total{namespace=~"$namespace"}[$interval])) by (namespace)
+    layouts:
+    - kind: Grid
+      spec:
+        display:
+          title: "Application Workloads"
+          collapse:
+            open: true
+        items:
+        - x: 0
+          y: 0
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/appCpu"
+        - x: 12
+          y: 0
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/appMemory"
+        - x: 0
+          y: 6
+          width: 24
+          height: 6
+          content:
+            $ref: "#/spec/panels/appRestarts"
+    duration: 1h
+---
+apiVersion: perses.dev/v1alpha2
+kind: PersesDashboard
+metadata:
+  name: external-components
+  namespace: {{ $obs.stackNamespace }}
+  annotations:
+    perses.dev/tags: "external,components"
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  config:
+    display:
+      name: "External Components"
+      description: "Health of configured external components exposing metrics"
+    variables:
+    - kind: ListVariable
+      spec:
+        name: interval
+        allowAllValue: false
+        allowMultiple: false
+        defaultValue: 5m
+        plugin:
+          kind: StaticListVariable
+          spec:
+            values:
+            - label: 1m
+              value: 1m
+            - label: 5m
+              value: 5m
+            - label: 15m
+              value: 15m
+    panels:
+      externalUp:
+        kind: Panel
+        spec:
+          display:
+            name: "External Targets Up"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: {{ $ds.external.name | quote }}
+                  query: up
+      externalAvailability:
+        kind: Panel
+        spec:
+          display:
+            name: "30-Day Availability"
+          plugin:
+            kind: StatChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: {{ $ds.external.name | quote }}
+                  query: (1 - avg_over_time(up[30d])) * 100
+      externalLatency:
+        kind: Panel
+        spec:
+          display:
+            name: "Scrape Duration"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: {{ $ds.external.name | quote }}
+                  query: sum(rate(scrape_duration_seconds[$interval])) by (job)
+    layouts:
+    - kind: Grid
+      spec:
+        display:
+          title: "External Components"
+          collapse:
+            open: true
+        items:
+        - x: 0
+          y: 0
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/externalUp"
+        - x: 12
+          y: 0
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/externalAvailability"
+        - x: 0
+          y: 6
+          width: 24
+          height: 6
+          content:
+            $ref: "#/spec/panels/externalLatency"
+    duration: 1h
+{{- range $dashboard := $obs.dashboards }}
+---
+apiVersion: perses.dev/v1alpha2
+kind: PersesDashboard
+metadata:
+  name: {{ $dashboard.name }}
+  namespace: {{ $obs.stackNamespace }}
+  annotations:
+    perses.dev/tags: {{ $dashboard.tags | default "custom" | quote }}
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  config:
+    display:
+      name: {{ $dashboard.title | quote }}
+      description: {{ $dashboard.description | default "" | quote }}
+    variables:
+    - kind: ListVariable
+      spec:
+        name: interval
+        allowAllValue: false
+        allowMultiple: false
+        defaultValue: 5m
+        plugin:
+          kind: StaticListVariable
+          spec:
+            values:
+            - label: 1m
+              value: 1m
+            - label: 5m
+              value: 5m
+            - label: 15m
+              value: 15m
+    panels:
+{{- range $panel := $dashboard.panels }}
+      {{ $panel.name }}:
+        kind: Panel
+        spec:
+          display:
+            name: {{ $panel.title | quote }}
+          plugin:
+            kind: {{ $panel.plugin | default "TimeSeriesChart" | quote }}
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+{{- if $panel.datasource }}
+                  datasource: {{ $panel.datasource | quote }}
+{{- end }}
+                  query: {{ $panel.query | quote }}
+{{- end }}
+    layouts:
+    - kind: Grid
+      spec:
+        display:
+          title: {{ $dashboard.title | quote }}
+          collapse:
+            open: true
+        items:
+{{- range $index, $panel := $dashboard.panels }}
+        - x: 0
+          y: {{ mul $index 6 }}
+          width: 24
+          height: 6
+          content:
+            $ref: "#/spec/panels/{{ $panel.name }}"
+{{- end }}
+    duration: 1h
+{{- end }}
+{{- end }}

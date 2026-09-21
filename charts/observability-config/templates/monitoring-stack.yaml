@@ -1,0 +1,29 @@
+{{- if .Values.global.observability.enabled }}
+{{- $obs := .Values.global.observability }}
+{{- $stack := .Values.monitoringStack }}
+apiVersion: monitoring.rhobs/v1alpha1
+kind: MonitoringStack
+metadata:
+  name: {{ $stack.name }}
+  namespace: {{ $obs.stackNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  logLevel: info
+  retention: {{ $obs.retention | quote }}
+  alertmanagerConfig:
+    disabled: false
+  prometheusConfig:
+    replicas: {{ $stack.prometheusReplicas }}
+    persistentVolumeClaim:
+      storageClassName: {{ $obs.storageClass }}
+      resources:
+        requests:
+          storage: {{ $stack.prometheusStorageSizeGiB }}Gi
+  resourceSelector:
+    matchLabels:
+      app.kubernetes.io/part-of: {{ $stack.selectorLabel }}
+  namespaceSelector:
+    matchLabels:
+      monitoring.rhobs/stack: {{ $stack.name }}
+{{- end }}

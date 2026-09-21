@@ -1,0 +1,44 @@
+{{- if .Values.global.observability.enabled }}
+{{- $obs := .Values.global.observability }}
+{{- $ds := .Values.datasources }}
+{{- $stack := .Values.monitoringStack }}
+apiVersion: perses.dev/v1alpha2
+kind: PersesGlobalDatasource
+metadata:
+  name: {{ $ds.platform.name }}
+  namespace: {{ $obs.stackNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  config:
+    display:
+      name: "Platform Thanos Querier"
+    default: true
+    plugin:
+      kind: PrometheusDatasource
+      spec:
+        proxy:
+          kind: HTTPProxy
+          spec:
+            url: {{ $ds.platform.url | quote }}
+---
+apiVersion: perses.dev/v1alpha2
+kind: PersesDatasource
+metadata:
+  name: {{ $ds.external.name }}
+  namespace: {{ $obs.stackNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  config:
+    display:
+      name: "Minilab Stack Prometheus"
+    default: false
+    plugin:
+      kind: PrometheusDatasource
+      spec:
+        proxy:
+          kind: HTTPProxy
+          spec:
+            url: "http://{{ $stack.name }}-prometheus.{{ $obs.stackNamespace }}.svc.cluster.local:9090"
+{{- end }}

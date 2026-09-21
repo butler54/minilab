@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "global": {
+      "type": "object",
+      "properties": {
+        "observability": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "cooNamespace": { "type": "string" },
+            "stackNamespace": { "type": "string" },
+            "retention": { "type": "string" },
+            "storageClass": { "type": "string" },
+            "externalTargets": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["url"],
+                "properties": {
+                  "url": { "type": "string" },
+                  "labels": { "type": "object" }
+                }
+              }
+            },
+            "dashboards": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name", "title", "panels"],
+                "properties": {
+                  "name": { "type": "string", "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$" },
+                  "title": { "type": "string" },
+                  "description": { "type": "string" },
+                  "tags": { "type": "string" },
+                  "panels": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "required": ["name", "title", "query"],
+                      "properties": {
+                        "name": { "type": "string", "pattern": "^[a-zA-Z0-9]+$" },
+                        "title": { "type": "string" },
+                        "plugin": { "type": "string" },
+                        "datasource": { "type": "string" },
+                        "query": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "alertRules": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name", "rules"],
+                "properties": {
+                  "name": { "type": "string", "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$" },
+                  "group": { "type": "string" },
+                  "rules": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "required": ["name", "expr"],
+                      "properties": {
+                        "name": { "type": "string" },
+                        "expr": { "type": "string" },
+                        "for": { "type": "string" },
+                        "severity": { "type": "string", "enum": ["critical", "warning", "info"] },
+                        "domain": { "type": "string" },
+                        "summary": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "rbac": {
+              "type": "object",
+              "properties": {
+                "viewerGroup": { "type": "string" },
+                "editorGroup": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

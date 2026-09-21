@@ -1,0 +1,15 @@
+{{- if .Values.global.observability.enabled }}
+{{- $obs := .Values.global.observability }}
+apiVersion: monitoring.rhobs/v1alpha2
+kind: UIPlugin
+metadata:
+  name: {{ .Values.uiPlugin.name }}
+  namespace: {{ $obs.cooNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  type: monitoring
+  monitoring:
+    perses:
+      enabled: true
+{{- end }}

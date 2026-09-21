@@ -1,0 +1,23 @@
+{{- if .Values.global.observability.enabled }}
+{{- $obs := .Values.global.observability }}
+{{- $stack := .Values.monitoringStack }}
+{{- range $i, $target := $obs.externalTargets }}
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: {{ printf "external-%d" $i }}
+  namespace: {{ $obs.stackNamespace }}
+  labels:
+    app.kubernetes.io/part-of: {{ $stack.selectorLabel }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  staticConfigs:
+  - targets:
+    - {{ $target.url | quote }}
+    {{- if $target.labels }}
+    labels:
+{{- toYaml $target.labels | nindent 6 }}
+    {{- end }}
+{{- end }}
+{{- end }}

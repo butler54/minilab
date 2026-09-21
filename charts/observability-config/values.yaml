@@ -1,0 +1,54 @@
+global:
+  observability:
+    enabled: true
+    cooNamespace: openshift-cluster-observability-operator
+    stackNamespace: minilab-observability
+    retention: 30d
+    storageClass: lvms-loopback
+    externalTargets: []
+    dashboards: []
+    alertRules: []
+    rbac:
+      viewerGroup: ""
+      editorGroup: ""
+
+clusterGroup:
+  name: prod
+
+secretStore:
+  name: vault-backend
+  kind: ClusterSecretStore
+
+pagerduty:
+  secretName: pagerduty-routing-key
+  remoteKey: secret/data/global/pagerduty-routing-key
+  refreshInterval: 2m0s
+
+alertmanager:
+  # COO generates an Alertmanager named after the stack; prometheus-operator
+  # reads its configuration from a Secret named alertmanager-<name> with an
+  # alertmanager.yaml key. COO's MonitoringStack does not expose an
+  # AlertmanagerConfig selector, so this native config Secret (rendered by the
+  # ExternalSecret with the routing key templated from Vault) is the supported
+  # delivery mechanism. Must equal alertmanager-<stackName>.
+  configSecretName: alertmanager-minilab
+
+monitoringStack:
+  name: minilab
+  selectorLabel: minilab-observability
+  prometheusReplicas: 1
+  prometheusStorageSizeGiB: 10
+
+uiPlugin:
+  name: monitoring
+
+datasources:
+  platform:
+    name: thanos-querier
+    url: https://thanos-querier.openshift-monitoring.svc.cluster.local:9091
+  external:
+    name: minilab-stack
+
+rbac:
+  viewerGroup: ""
+  editorGroup: ""
