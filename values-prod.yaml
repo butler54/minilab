@@ -8,6 +8,8 @@ clusterGroup:
       operatorGroup: true
       targetNamespaces: []
     openshift-storage:
+      labels:
+        openshift.io/cluster-monitoring: "true"
       operatorGroup: true
       targetNamespaces:
       - openshift-storage

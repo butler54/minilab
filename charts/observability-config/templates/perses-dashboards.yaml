@@ -348,6 +348,252 @@ spec:
           content:
             $ref: "#/spec/panels/externalLatency"
     duration: 1h
+---
+apiVersion: perses.dev/v1alpha2
+kind: PersesDashboard
+metadata:
+  name: single-node-cluster-summary
+  namespace: {{ $obs.stackNamespace }}
+  annotations:
+    perses.dev/tags: "openshift,single-node,lvms,summary"
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  config:
+    display:
+      name: "Single-Node OpenShift Cluster Summary"
+      description: "SNO health, capacity, and LVMS utilization for the Minilab cluster"
+    variables:
+    - kind: ListVariable
+      spec:
+        name: interval
+        allowAllValue: false
+        allowMultiple: false
+        defaultValue: 5m
+        plugin:
+          kind: StaticListVariable
+          spec:
+            values:
+            - label: 1m
+              value: 1m
+            - label: 5m
+              value: 5m
+            - label: 15m
+              value: 15m
+    panels:
+      singleNodeCount:
+        kind: Panel
+        spec:
+          display:
+            name: "Single-Node Cluster: Node Count"
+          plugin:
+            kind: StatChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: {{ $ds.platform.name | quote }}
+                  query: count(kube_node_info)
+      readyNodes:
+        kind: Panel
+        spec:
+          display:
+            name: "Ready Nodes"
+          plugin:
+            kind: StatChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: {{ $ds.platform.name | quote }}
+                  query: count(kube_node_status_condition{condition="Ready",status="true"})
+      degradedOperators:
+        kind: Panel
+        spec:
+          display:
+            name: "Degraded Cluster Operators"
+          plugin:
+            kind: StatChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: {{ $ds.platform.name | quote }}
+                  query: sum(cluster_operator_conditions{condition="Degraded",status="true"})
+      clusterCpu:
+        kind: Panel
+        spec:
+          display:
+            name: "Single Node CPU Utilization"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: {{ $ds.platform.name | quote }}
+                  query: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[$interval])) * 100)
+      clusterMemory:
+        kind: Panel
+        spec:
+          display:
+            name: "Single Node Memory Utilization"
+          plugin:
+            kind: TimeSeriesChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: {{ $ds.platform.name | quote }}
+                  query: (1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))) * 100
+      lvmsVolumeGroupUsed:
+        kind: Panel
+        spec:
+          display:
+            name: "LVMS Volume Group Utilization"
+          plugin:
+            kind: GaugeChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: {{ $ds.platform.name | quote }}
+                  query: (1 - (topolvm_volumegroup_available_bytes{device_class="loopback"} / topolvm_volumegroup_size_bytes{device_class="loopback"})) * 100
+      lvmsVolumeGroupAvailable:
+        kind: Panel
+        spec:
+          display:
+            name: "LVMS Volume Group Available GiB"
+          plugin:
+            kind: StatChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: {{ $ds.platform.name | quote }}
+                  query: topolvm_volumegroup_available_bytes{device_class="loopback"} / 1024 / 1024 / 1024
+      lvmsThinPoolData:
+        kind: Panel
+        spec:
+          display:
+            name: "LVMS Thin Pool Data Utilization"
+          plugin:
+            kind: GaugeChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: {{ $ds.platform.name | quote }}
+                  query: topolvm_thinpool_data_percent{device_class="loopback"}
+      lvmsThinPoolMetadata:
+        kind: Panel
+        spec:
+          display:
+            name: "LVMS Thin Pool Metadata Utilization"
+          plugin:
+            kind: GaugeChart
+            spec: {}
+          queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  datasource: {{ $ds.platform.name | quote }}
+                  query: topolvm_thinpool_metadata_percent{device_class="loopback"}
+    layouts:
+    - kind: Grid
+      spec:
+        display:
+          title: "Single-Node Cluster Health"
+          collapse:
+            open: true
+        items:
+        - x: 0
+          y: 0
+          width: 6
+          height: 5
+          content:
+            $ref: "#/spec/panels/singleNodeCount"
+        - x: 6
+          y: 0
+          width: 6
+          height: 5
+          content:
+            $ref: "#/spec/panels/readyNodes"
+        - x: 12
+          y: 0
+          width: 12
+          height: 5
+          content:
+            $ref: "#/spec/panels/degradedOperators"
+        - x: 0
+          y: 5
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/clusterCpu"
+        - x: 12
+          y: 5
+          width: 12
+          height: 6
+          content:
+            $ref: "#/spec/panels/clusterMemory"
+    - kind: Grid
+      spec:
+        display:
+          title: "LVMS Disk Utilization"
+          collapse:
+            open: true
+        items:
+        - x: 0
+          y: 0
+          width: 6
+          height: 6
+          content:
+            $ref: "#/spec/panels/lvmsVolumeGroupUsed"
+        - x: 6
+          y: 0
+          width: 6
+          height: 6
+          content:
+            $ref: "#/spec/panels/lvmsVolumeGroupAvailable"
+        - x: 12
+          y: 0
+          width: 6
+          height: 6
+          content:
+            $ref: "#/spec/panels/lvmsThinPoolData"
+        - x: 18
+          y: 0
+          width: 6
+          height: 6
+          content:
+            $ref: "#/spec/panels/lvmsThinPoolMetadata"
+    duration: 1h
 {{- range $dashboard := $obs.dashboards }}
 ---
 apiVersion: perses.dev/v1alpha2
