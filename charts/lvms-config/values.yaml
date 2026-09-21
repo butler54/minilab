@@ -3,6 +3,9 @@ global:
     capacityGiB: 100
     loopDevice: /dev/loop10
     storageClassName: lvms-loopback
+    defaultStorageClass:
+      enabled: true
+      schedule: "*/10 * * * *"
   lvmsCompatibility:
     cliImage: ""
     startingCSV: ""

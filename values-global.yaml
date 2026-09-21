@@ -10,6 +10,9 @@ global:
     backingEfficiency: 85
     backingRoundingGiB: 4
     hostReserveGiB: 20
+    defaultStorageClass:
+      enabled: true
+      schedule: "*/10 * * * *"
   # Keep all OCP/LVMS release-coupled values together so subscriptions and
   # readiness checks cannot silently target different releases.
   lvmsCompatibility:
