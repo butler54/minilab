@@ -46,6 +46,7 @@ clusterGroup:
       chartVersion: 0.0.*
   projects:
   - default
+  - external-secrets
   # Shared files are applied after chart defaults. A later extraValueFiles entry
   # explicitly selected by an operator takes precedence over this provider default.
   sharedValueFiles:
