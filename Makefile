@@ -13,5 +13,13 @@ check-bootstrap-storage: ## Verifies the storage prerequisite is satisfied (read
 # even when make is invoked with -j.
 pattern-install: check-bootstrap-storage
 
+.PHONY: validate-observability
+validate-observability: ## Renders and validates the observability configuration chart and its shell tests
+	@tests/validate-pattern-config.sh
+	@tests/test-observability-dashboards.sh
+	@tests/test-observability-alerts.sh
+	@tests/test-observability-configurability.sh
+	@tests/test-observability-rbac.sh
+
 
 include Makefile-common
