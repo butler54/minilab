@@ -9,6 +9,13 @@ clusterGroup:
       operatorGroup: true
       targetNamespaces:
       - openshift-storage
+    openshift-cluster-observability-operator:
+      operatorGroup: true
+      targetNamespaces:
+      - openshift-cluster-observability-operator
+    minilab-observability:
+      labels:
+        monitoring.rhobs/stack: minilab
   subscriptions:
     lvms-operator:
       name: lvms-operator
@@ -22,6 +29,11 @@ clusterGroup:
       name: openshift-external-secrets-operator
       namespace: external-secrets-operator
       channel: stable-v1
+    cluster-observability-operator:
+      name: cluster-observability-operator
+      namespace: openshift-cluster-observability-operator
+      channel: stable
+      installPlanApproval: Automatic
   applications:
     lvms-config:
       name: lvms-config
@@ -44,6 +56,13 @@ clusterGroup:
       project: external-secrets
       chart: openshift-external-secrets
       chartVersion: 0.0.*
+    observability-config:
+      name: observability-config
+      namespace: minilab-observability
+      project: default
+      path: charts/observability-config
+      annotations:
+        argocd.argoproj.io/sync-wave: "+20"
   projects:
   - default
   - external-secrets
@@ -51,3 +70,4 @@ clusterGroup:
   # explicitly selected by an operator takes precedence over this provider default.
   sharedValueFiles:
   - '/overrides/values-storage-{{ $.Values.global.storageProvider }}.yaml'
+  - '/overrides/values-observability.yaml'
