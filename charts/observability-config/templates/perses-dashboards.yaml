@@ -287,7 +287,9 @@ spec:
               plugin:
                 kind: PrometheusTimeSeriesQuery
                 spec:
-                  datasource: {{ $ds.external.name | quote }}
+                  datasource:
+                    kind: PrometheusDatasource
+                    name: {{ $ds.external.name | quote }}
                   query: up
       externalAvailability:
         kind: Panel
@@ -303,7 +305,9 @@ spec:
               plugin:
                 kind: PrometheusTimeSeriesQuery
                 spec:
-                  datasource: {{ $ds.external.name | quote }}
+                  datasource:
+                    kind: PrometheusDatasource
+                    name: {{ $ds.external.name | quote }}
                   query: (1 - avg_over_time(up[30d])) * 100
       externalLatency:
         kind: Panel
@@ -319,7 +323,9 @@ spec:
               plugin:
                 kind: PrometheusTimeSeriesQuery
                 spec:
-                  datasource: {{ $ds.external.name | quote }}
+                  datasource:
+                    kind: PrometheusDatasource
+                    name: {{ $ds.external.name | quote }}
                   query: sum(rate(scrape_duration_seconds[$interval])) by (job)
     layouts:
     - kind: Grid
@@ -394,7 +400,9 @@ spec:
               plugin:
                 kind: PrometheusTimeSeriesQuery
                 spec:
-                  datasource: {{ $ds.platform.name | quote }}
+                  datasource:
+                    kind: PrometheusDatasource
+                    name: {{ $ds.platform.name | quote }}
                   query: count(kube_node_info)
       readyNodes:
         kind: Panel
@@ -410,7 +418,9 @@ spec:
               plugin:
                 kind: PrometheusTimeSeriesQuery
                 spec:
-                  datasource: {{ $ds.platform.name | quote }}
+                  datasource:
+                    kind: PrometheusDatasource
+                    name: {{ $ds.platform.name | quote }}
                   query: count(kube_node_status_condition{condition="Ready",status="true"})
       degradedOperators:
         kind: Panel
@@ -426,7 +436,9 @@ spec:
               plugin:
                 kind: PrometheusTimeSeriesQuery
                 spec:
-                  datasource: {{ $ds.platform.name | quote }}
+                  datasource:
+                    kind: PrometheusDatasource
+                    name: {{ $ds.platform.name | quote }}
                   query: sum(cluster_operator_conditions{condition="Degraded",status="true"})
       clusterCpu:
         kind: Panel
@@ -442,7 +454,9 @@ spec:
               plugin:
                 kind: PrometheusTimeSeriesQuery
                 spec:
-                  datasource: {{ $ds.platform.name | quote }}
+                  datasource:
+                    kind: PrometheusDatasource
+                    name: {{ $ds.platform.name | quote }}
                   query: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[$interval])) * 100)
       clusterMemory:
         kind: Panel
@@ -458,7 +472,9 @@ spec:
               plugin:
                 kind: PrometheusTimeSeriesQuery
                 spec:
-                  datasource: {{ $ds.platform.name | quote }}
+                  datasource:
+                    kind: PrometheusDatasource
+                    name: {{ $ds.platform.name | quote }}
                   query: (1 - (sum(node_memory_MemAvailable_bytes) / sum(node_memory_MemTotal_bytes))) * 100
       lvmsVolumeGroupUsed:
         kind: Panel
@@ -474,7 +490,9 @@ spec:
               plugin:
                 kind: PrometheusTimeSeriesQuery
                 spec:
-                  datasource: {{ $ds.platform.name | quote }}
+                  datasource:
+                    kind: PrometheusDatasource
+                    name: {{ $ds.platform.name | quote }}
                   query: (1 - (topolvm_volumegroup_available_bytes{device_class="loopback"} / topolvm_volumegroup_size_bytes{device_class="loopback"})) * 100
       lvmsVolumeGroupAvailable:
         kind: Panel
@@ -490,7 +508,9 @@ spec:
               plugin:
                 kind: PrometheusTimeSeriesQuery
                 spec:
-                  datasource: {{ $ds.platform.name | quote }}
+                  datasource:
+                    kind: PrometheusDatasource
+                    name: {{ $ds.platform.name | quote }}
                   query: topolvm_volumegroup_available_bytes{device_class="loopback"} / 1024 / 1024 / 1024
       lvmsThinPoolData:
         kind: Panel
@@ -506,7 +526,9 @@ spec:
               plugin:
                 kind: PrometheusTimeSeriesQuery
                 spec:
-                  datasource: {{ $ds.platform.name | quote }}
+                  datasource:
+                    kind: PrometheusDatasource
+                    name: {{ $ds.platform.name | quote }}
                   query: topolvm_thinpool_data_percent{device_class="loopback"}
       lvmsThinPoolMetadata:
         kind: Panel
@@ -522,7 +544,9 @@ spec:
               plugin:
                 kind: PrometheusTimeSeriesQuery
                 spec:
-                  datasource: {{ $ds.platform.name | quote }}
+                  datasource:
+                    kind: PrometheusDatasource
+                    name: {{ $ds.platform.name | quote }}
                   query: topolvm_thinpool_metadata_percent{device_class="loopback"}
     layouts:
     - kind: Grid
@@ -643,7 +667,9 @@ spec:
                 kind: PrometheusTimeSeriesQuery
                 spec:
 {{- if $panel.datasource }}
-                  datasource: {{ $panel.datasource | quote }}
+                  datasource:
+                    kind: PrometheusDatasource
+                    name: {{ $panel.datasource | quote }}
 {{- end }}
                   query: {{ $panel.query | quote }}
 {{- end }}

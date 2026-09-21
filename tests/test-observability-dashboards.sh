@@ -24,5 +24,9 @@ echo "$rendered" | yq e 'select(.kind == "UIPlugin") | .spec.monitoring.perses.e
 # Global datasource for platform metrics must render.
 echo "$rendered" | yq e 'select(.kind == "PersesGlobalDatasource" and .metadata.name == "thanos-querier")' - >/dev/null \
   || { echo "missing platform global datasource"; exit 1; }
+echo "$rendered" | yq e 'select(.kind == "PersesGlobalDatasource" and .metadata.name == "thanos-querier") | .spec.client.tls.caCert.certPath' - | grep -qx '/ca/service-ca.crt' \
+  || { echo "platform datasource does not trust the OpenShift service CA"; exit 1; }
+echo "$rendered" | yq e 'select(.kind == "PersesGlobalDatasource" and .metadata.name == "thanos-querier") | .spec.config.plugin.spec.proxy.spec.secret' - | grep -qx 'thanos-querier-datasource-secret' \
+  || { echo "platform datasource is missing its TLS proxy secret"; exit 1; }
 
 printf 'observability dashboards validation passed\n'

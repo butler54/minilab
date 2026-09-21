@@ -10,6 +10,12 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
+  client:
+    tls:
+      enable: true
+      caCert:
+        type: file
+        certPath: /ca/service-ca.crt
   config:
     display:
       name: "Platform Thanos Querier"
@@ -21,6 +27,7 @@ spec:
           kind: HTTPProxy
           spec:
             url: {{ $ds.platform.url | quote }}
+            secret: {{ $ds.platform.proxySecret | quote }}
 ---
 apiVersion: perses.dev/v1alpha2
 kind: PersesDatasource
