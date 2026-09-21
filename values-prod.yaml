@@ -4,6 +4,7 @@ clusterGroup:
     minilab:
     vault:
     external-secrets:
+    external-secrets-operator:
     openshift-storage:
       operatorGroup: true
       targetNamespaces:
@@ -17,6 +18,10 @@ clusterGroup:
       channel: stable-4.22
       csv: lvms-operator.v4.22.0
       installPlanApproval: Automatic
+    eso:
+      name: openshift-external-secrets-operator
+      namespace: external-secrets-operator
+      channel: stable-v1
   applications:
     lvms-config:
       name: lvms-config
