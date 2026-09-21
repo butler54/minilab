@@ -8,7 +8,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 spec:
-  type: monitoring
+  type: Monitoring
   monitoring:
     perses:
       enabled: true

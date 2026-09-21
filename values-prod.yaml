@@ -5,14 +5,15 @@ clusterGroup:
     vault:
     external-secrets:
     external-secrets-operator:
+      operatorGroup: true
+      targetNamespaces: []
     openshift-storage:
       operatorGroup: true
       targetNamespaces:
       - openshift-storage
     openshift-cluster-observability-operator:
       operatorGroup: true
-      targetNamespaces:
-      - openshift-cluster-observability-operator
+      targetNamespaces: []
     minilab-observability:
       labels:
         monitoring.rhobs/stack: minilab

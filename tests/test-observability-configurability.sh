@@ -15,9 +15,11 @@ rendered=$(helm template observability-config "$chart" -f "$values" \
   --set 'global.observability.alertRules[0].rules[0].name=HighErrors' \
   --set 'global.observability.alertRules[0].rules[0].expr=rate(errors_total[5m]) > 10')
 
-# Values-added external target produces a ScrapeConfig without chart edits.
-echo "$rendered" | yq e 'select(.kind == "ScrapeConfig") | .spec.staticConfigs[0].targets[0]' - | grep -q '192.168.1.50:9100' \
+# Values-added external target produces a ServiceMonitor + Endpoints without chart edits.
+echo "$rendered" | yq e 'select(.kind == "Endpoints" and .metadata.name == "external-0") | .subsets[0].addresses[0].ip' - | grep -q '192.168.1.50' \
   || { echo "external target not rendered"; exit 1; }
+echo "$rendered" | yq e 'select(.kind == "ServiceMonitor" and .metadata.name == "external-0") | .spec.selector.matchLabels["external-target"]' - | grep -q '0' \
+  || { echo "external ServiceMonitor not rendered"; exit 1; }
 
 # Values-added dashboard appears in the rendered set.
 echo "$rendered" | yq e 'select(.kind == "PersesDashboard" and .metadata.name == "my-app")' - >/dev/null \

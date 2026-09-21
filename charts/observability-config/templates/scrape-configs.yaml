@@ -2,8 +2,44 @@
 {{- $obs := .Values.global.observability }}
 {{- $stack := .Values.monitoringStack }}
 {{- range $i, $target := $obs.externalTargets }}
-apiVersion: monitoring.coreos.com/v1alpha1
-kind: ScrapeConfig
+{{- $parsed := urlParse $target.url }}
+{{- $hostPort := $parsed.host }}
+{{- $host := regexReplaceAll ":.*$" $hostPort "" }}
+{{- $port := regexReplaceAll "^[^:]*:?" $hostPort "" }}
+{{- $scheme := $parsed.scheme | default "http" }}
+{{- $path := $parsed.path | default "/metrics" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ printf "external-%d" $i }}
+  namespace: {{ $obs.stackNamespace }}
+  labels:
+    app.kubernetes.io/part-of: {{ $stack.selectorLabel }}
+    external-target: {{ printf "%d" $i | quote }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  clusterIP: None
+  ports:
+  - name: metrics
+    port: {{ $port | int }}
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: {{ printf "external-%d" $i }}
+  namespace: {{ $obs.stackNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+subsets:
+- addresses:
+  - ip: {{ $host | quote }}
+  ports:
+  - name: metrics
+    port: {{ $port | int }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
 metadata:
   name: {{ printf "external-%d" $i }}
   namespace: {{ $obs.stackNamespace }}
@@ -12,12 +48,19 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
-  staticConfigs:
-  - targets:
-    - {{ $target.url | quote }}
+  selector:
+    matchLabels:
+      external-target: {{ printf "%d" $i | quote }}
+  endpoints:
+  - port: metrics
+    scheme: {{ $scheme }}
+    path: {{ $path }}
     {{- if $target.labels }}
-    labels:
-{{- toYaml $target.labels | nindent 6 }}
+    relabelings:
+    {{- range $k, $v := $target.labels }}
+    - targetLabel: {{ $k }}
+      replacement: {{ $v | quote }}
+    {{- end }}
     {{- end }}
 {{- end }}
 {{- end }}
