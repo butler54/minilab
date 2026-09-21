@@ -1,0 +1,61 @@
+{{- if .Values.global.localStorage.defaultStorageClass.enabled }}
+{{- $storage := required "global.localStorage is required" .Values.global.localStorage }}
+{{- $name := printf "%s-default-storage" .Values.lvmCluster.name }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ $name }}
+  namespace: openshift-storage
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  schedule: {{ $storage.defaultStorageClass.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      activeDeadlineSeconds: 300
+      template:
+        spec:
+          serviceAccountName: {{ $name }}
+          restartPolicy: OnFailure
+          tolerations:
+          - key: node-role.kubernetes.io/control-plane
+            operator: Exists
+            effect: NoSchedule
+          securityContext:
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+          - name: set-default-storage-class
+            image: {{ required "global.lvmsCompatibility.cliImage is required" .Values.global.lvmsCompatibility.cliImage | quote }}
+            command: [bash, -ceu]
+            args:
+            - |
+              target={{ $storage.storageClassName }}
+              if oc get storageclass "$target" >/dev/null 2>&1; then
+                current=$(oc get storageclass "$target" -o jsonpath='{.metadata.annotations.storageclass\.kubernetes\.io/is-default-class}' 2>/dev/null || true)
+                if [ "$current" = "true" ]; then
+                  echo "$target is already the default storage class; nothing to do"
+                  exit 0
+                fi
+                # Only act if no storage class is currently the cluster default.
+                any_default=$(oc get storageclass -o jsonpath='{range .items[*]}{.metadata.annotations.storageclass\.kubernetes\.io/is-default-class}{"\n"}{end}' 2>/dev/null | grep -x 'true' | head -1 || true)
+                if [ -n "$any_default" ]; then
+                  echo "Another storage class is already the cluster default; leaving $target untouched"
+                  exit 0
+                fi
+                echo "No default storage class found; marking $target as default"
+                oc annotate storageclass "$target" storageclass.kubernetes.io/is-default-class=true --overwrite
+                exit 0
+              else
+                echo "Storage class $target not present yet; will retry on next schedule"
+                exit 1
+              fi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop: [ALL]
+              readOnlyRootFilesystem: true
+{{- end }}
