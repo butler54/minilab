@@ -38,6 +38,7 @@ monitoringStack:
   selectorLabel: minilab-observability
   prometheusReplicas: 1
   prometheusStorageSizeGiB: 10
+  alertmanagerReplicas: 1
 
 uiPlugin:
   name: monitoring

@@ -13,6 +13,7 @@ spec:
   retention: {{ $obs.retention | quote }}
   alertmanagerConfig:
     disabled: false
+    replicas: {{ $stack.alertmanagerReplicas }}
   prometheusConfig:
     replicas: {{ $stack.prometheusReplicas }}
     persistentVolumeClaim:
