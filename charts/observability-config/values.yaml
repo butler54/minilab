@@ -45,9 +45,8 @@ uiPlugin:
 
 datasources:
   platform:
-    name: thanos-querier
-    url: https://thanos-querier.openshift-monitoring.svc.cluster.local:9091
-    proxySecret: thanos-querier-datasource-secret
+    # COO creates this authenticated default datasource in its own project.
+    name: accelerators-thanos-querier-datasource
   external:
     name: minilab-stack
 

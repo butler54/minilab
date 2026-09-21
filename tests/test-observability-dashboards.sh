@@ -21,12 +21,12 @@ external_datasources=$(echo "$rendered" | yq e 'select(.kind == "PersesDashboard
 echo "$rendered" | yq e 'select(.kind == "UIPlugin") | .spec.monitoring.perses.enabled' - | grep -qx 'true' \
   || { echo "UIPlugin does not enable Perses"; exit 1; }
 
-# Global datasource for platform metrics must render.
-echo "$rendered" | yq e 'select(.kind == "PersesGlobalDatasource" and .metadata.name == "thanos-querier")' - >/dev/null \
-  || { echo "missing platform global datasource"; exit 1; }
-echo "$rendered" | yq e 'select(.kind == "PersesGlobalDatasource" and .metadata.name == "thanos-querier") | .spec.client.tls.caCert.certPath' - | grep -qx '/ca/service-ca.crt' \
-  || { echo "platform datasource does not trust the OpenShift service CA"; exit 1; }
-echo "$rendered" | yq e 'select(.kind == "PersesGlobalDatasource" and .metadata.name == "thanos-querier") | .spec.config.plugin.spec.proxy.spec.secret' - | grep -qx 'thanos-querier-datasource-secret' \
-  || { echo "platform datasource is missing its TLS proxy secret"; exit 1; }
+# Platform-backed dashboards live in COO's project and use its operator-managed
+# authenticated default Thanos datasource rather than a duplicate custom proxy.
+for dashboard in openshift-system-overview application-overview; do
+  echo "$rendered" | yq e 'select(.kind == "PersesDashboard" and .metadata.name == "'"$dashboard"'") | .metadata.namespace' - \
+    | grep -qx 'openshift-cluster-observability-operator' \
+    || { echo "platform dashboard $dashboard is not in the COO project"; exit 1; }
+done
 
 printf 'observability dashboards validation passed\n'

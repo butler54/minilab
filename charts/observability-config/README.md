@@ -6,7 +6,7 @@ Configures the Cluster Observability Operator (COO) dashboarding and alerting fo
 
 - **Monitoring `UIPlugin`**: enables the Red Hat build of Perses in the OpenShift console under `Observe > Dashboards (Perses)`.
 - **`MonitoringStack`**: one lightweight Prometheus (plus Thanos and Alertmanager) used to scrape external Prometheus exporters and evaluate alert rules; 30-day retention, persistent storage on the pattern's LVMS class.
-- **Perses datasources and dashboards**: `PersesGlobalDatasource`/`PersesDatasource` for the in-cluster Thanos Querier and the stack Prometheus; `PersesDashboard` resources for OCP system workloads, application workloads, and external components. All dashboards are managed as code in this chart.
+- **Perses datasources and dashboards**: COO's operator-managed `accelerators-thanos-querier-datasource` supplies authenticated platform metrics in the COO project; this chart supplies the pattern-local Prometheus datasource for external components. `PersesDashboard` resources are managed as code in this chart.
 - **Alertmanager to PagerDuty**: single PagerDuty receiver and default route delivered through the operator-native config Secret (`alertmanager-<stack>` with `alertmanager.yaml`, rendered by the ExternalSecret with the routing key templated from Vault — never in Git).
 - **RBAC**: Perses viewer/editor role bindings to OpenShift groups for controlled access.
 

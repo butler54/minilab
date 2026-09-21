@@ -5,7 +5,7 @@ apiVersion: perses.dev/v1alpha2
 kind: PersesDashboard
 metadata:
   name: openshift-system-overview
-  namespace: {{ $obs.stackNamespace }}
+  namespace: {{ $obs.cooNamespace }}
   annotations:
     perses.dev/tags: "openshift,system"
     argocd.argoproj.io/sync-wave: "2"
@@ -130,7 +130,7 @@ apiVersion: perses.dev/v1alpha2
 kind: PersesDashboard
 metadata:
   name: application-overview
-  namespace: {{ $obs.stackNamespace }}
+  namespace: {{ $obs.cooNamespace }}
   annotations:
     perses.dev/tags: "application,workloads"
     argocd.argoproj.io/sync-wave: "2"
@@ -359,7 +359,7 @@ apiVersion: perses.dev/v1alpha2
 kind: PersesDashboard
 metadata:
   name: single-node-cluster-summary
-  namespace: {{ $obs.stackNamespace }}
+  namespace: {{ $obs.cooNamespace }}
   annotations:
     perses.dev/tags: "openshift,single-node,lvms,summary"
     argocd.argoproj.io/sync-wave: "2"

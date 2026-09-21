@@ -15,9 +15,11 @@ dashboard=$(echo "$rendered" | yq e 'select(.kind == "PersesDashboard" and .meta
 
 echo "$dashboard" | yq e '.spec.config.display.name' - | grep -q 'Single-Node OpenShift Cluster Summary' \
   || { echo "single-node cluster summary dashboard missing"; exit 1; }
+echo "$dashboard" | yq e '.metadata.namespace' - | grep -qx 'openshift-cluster-observability-operator' \
+  || { echo "cluster summary dashboard is not in the COO project"; exit 1; }
 
 # All summary queries use the existing global platform Thanos datasource.
-datasource_count=$(echo "$dashboard" | yq e '.. | select(.kind? == "PrometheusTimeSeriesQuery") | .spec.datasource' - | grep -c 'thanos-querier' || true)
+datasource_count=$(echo "$dashboard" | yq e '.. | select(.kind? == "PrometheusTimeSeriesQuery") | .spec.datasource.name' - | grep -c 'accelerators-thanos-querier-datasource' || true)
 [ "$datasource_count" -ge 9 ] \
   || { echo "cluster summary panels do not use the platform Thanos datasource"; exit 1; }
 

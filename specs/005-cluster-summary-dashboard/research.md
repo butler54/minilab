@@ -12,12 +12,12 @@
 
 ## Decision: Query LVMS metrics via the platform Thanos datasource
 
-**Rationale**: Existing cluster-state panels (node readiness and cluster operators) already use the platform Thanos datasource. Once platform monitoring scrapes the existing LVMS ServiceMonitor, the same datasource provides the LVMS series. This keeps the summary dashboard in one datasource context and avoids forwarding metrics into the COO stack.
+**Rationale**: COO already provides a working, authenticated `accelerators-thanos-querier-datasource` in its own project. Once platform monitoring scrapes the existing LVMS ServiceMonitor, that datasource provides the LVMS series. Platform-backed dashboards are placed in the COO project so they can reuse this datasource directly, avoiding a duplicate custom Thanos proxy, TLS secret, and authentication configuration.
 
 **Alternatives considered**:
 
 - Query the COO stack Prometheus: rejected — it is not configured with the authenticated LVMS ServiceMonitor and would duplicate collection.
-- Add a separate LVMS datasource: rejected — one platform datasource is sufficient.
+- Add a custom global Thanos datasource: rejected — it duplicates COO-managed TLS/authentication wiring and caused certificate verification failures.
 
 ## Decision: LVMS utilization panels focus on volume-group and thin-pool capacity
 

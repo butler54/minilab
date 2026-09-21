@@ -2,33 +2,8 @@
 {{- $obs := .Values.global.observability }}
 {{- $ds := .Values.datasources }}
 {{- $stack := .Values.monitoringStack }}
-apiVersion: perses.dev/v1alpha2
-kind: PersesGlobalDatasource
-metadata:
-  name: {{ $ds.platform.name }}
-  namespace: {{ $obs.stackNamespace }}
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
-spec:
-  client:
-    tls:
-      enable: true
-      caCert:
-        type: file
-        certPath: /ca/service-ca.crt
-  config:
-    display:
-      name: "Platform Thanos Querier"
-    default: true
-    plugin:
-      kind: PrometheusDatasource
-      spec:
-        proxy:
-          kind: HTTPProxy
-          spec:
-            url: {{ $ds.platform.url | quote }}
-            secret: {{ $ds.platform.proxySecret | quote }}
----
+# COO provides the authenticated platform Thanos datasource in its own project.
+# Keep only the pattern-local datasource here; external dashboards use it by name.
 apiVersion: perses.dev/v1alpha2
 kind: PersesDatasource
 metadata:

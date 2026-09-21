@@ -6,7 +6,7 @@
 
 ## Summary
 
-Add a Perses dashboard managed in `charts/observability-config` that summarizes the single-node OpenShift lab: explicit SNO context, node readiness, cluster operator health, CPU/memory capacity, and LVMS disk/thin-pool utilization. Enable the existing LVMS-generated ServiceMonitor for platform monitoring by adding the documented `openshift.io/cluster-monitoring: "true"` label to `openshift-storage`; the dashboard reads these metrics through the existing platform Thanos global datasource. No duplicate COO scrape target is added.
+Add a Perses dashboard managed in `charts/observability-config` that summarizes the single-node OpenShift lab: explicit SNO context, node readiness, cluster operator health, CPU/memory capacity, and LVMS disk/thin-pool utilization. Enable the existing LVMS-generated ServiceMonitor for platform monitoring by adding the documented `openshift.io/cluster-monitoring: "true"` label to `openshift-storage`; the dashboard is placed in the COO project and reads these metrics through COO's existing authenticated platform datasource. No duplicate COO scrape target or custom Thanos proxy is added.
 
 ## Technical Context
 

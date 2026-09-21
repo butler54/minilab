@@ -13,7 +13,7 @@
 | Requirement | Contract |
 |-------------|----------|
 | Identity | One `PersesDashboard` managed in `charts/observability-config/templates/perses-dashboards.yaml` |
-| Datasource | Existing global platform Thanos datasource (`thanos-querier`) |
+| Datasource | COO operator-managed platform datasource (`accelerators-thanos-querier-datasource`) in the COO project |
 | Single-node context | Markdown/status panel plus ready-node/node-count signal |
 | Health | Node readiness and cluster operator health/degradation panels |
 | Capacity | CPU and memory utilization panels |
