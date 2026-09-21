@@ -4,8 +4,9 @@
 
 | Invocation | Contract |
 |------------|----------|
-| `make bootstrap-storage` | Validates and establishes the MachineConfig, backing file, systemd unit, and fixed loop-device mapping only. It is safe to rerun after success. |
-| `make install` | Runs `bootstrap-storage` as an ordered prerequisite of `pattern-install`. It does not claim LVMS, StorageClass, or Vault readiness; T006 has not verified the framework readiness semantics. |
+| `make bootstrap-storage` | Validates and establishes the MachineConfig, backing file, systemd unit, and fixed loop-device mapping only. It is safe to rerun after success. Applying the MachineConfig may reboot the sole SNO node and briefly interrupt the API; the bootstrap tolerates that expected outage. |
+| `make check-bootstrap-storage` | Read-only verification that the storage MachineConfig is applied, the machine config pool is not degraded, and the backing file and fixed loop mapping are valid. It never changes host storage. |
+| `make install` | Runs `check-bootstrap-storage` as an ordered prerequisite of `pattern-install`. It does not apply storage or claim LVMS, StorageClass, or Vault readiness; T006 has not verified the framework readiness semantics. |
 | `LOCAL_STORAGE_CAPACITY_GIB=<integer> make bootstrap-storage` | Selects usable local PVC capacity for this invocation. The omitted value is `100`. |
 
 ## Exit Behavior

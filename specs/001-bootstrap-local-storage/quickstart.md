@@ -3,20 +3,22 @@
 ## Prerequisites
 
 - A supported connected SNO cluster and an authenticated `oc` context.
-- A persistent host root filesystem with capacity for the configured usable PVC capacity plus bootstrap overhead and normal OpenShift operating reserve.
+- A persistent host `/var` filesystem with capacity for the configured usable PVC capacity plus bootstrap overhead and normal OpenShift operating reserve.
 - The pattern branch pushed to the configured remote before the standard pattern installer reconciles it.
 - No existing conflicting mapping for the configured loop device.
+- A maintenance window: applying the storage MachineConfig may reboot the sole node and briefly interrupt the API.
 
 ## Default Validation
 
-1. Run `./pattern.sh make bootstrap-storage`.
+1. Run `./pattern.sh make bootstrap-storage`. The script preflights the node, applies the MachineConfig, tolerates the expected API interruption during the SNO reboot, and verifies the loop device.
 2. Confirm the bootstrap reports the default 100 GiB usable capacity, 120 GiB backing allocation, at least 20 GiB retained host reserve, successful systemd unit state, and a stable exact loop mapping.
-3. Run `./pattern.sh make install`.
-4. Run `./pattern.sh make validate-schema` and `./pattern.sh make argo-healthcheck`.
-5. Confirm the LVMS operator, LVMCluster, generated `lvms-loopback` storage class, and its CSI components are ready.
-6. Confirm Vault's persistent claim is bound to `lvms-loopback` and Vault reports ready.
-7. Create a 5 GiB RWO PVC using `lvms-loopback` and a consumer pod; write then read a test value after restarting the pod.
-8. Delete the test PVC and perform the documented retained-volume cleanup before repeating capacity-boundary validation.
+3. Run `./pattern.sh make check-bootstrap-storage` to confirm the prerequisite is ready without mutating host storage.
+4. Run `./pattern.sh make install`.
+5. Run `./pattern.sh make validate-schema` and `./pattern.sh make argo-healthcheck`.
+6. Confirm the LVMS operator, LVMCluster, generated `lvms-loopback` storage class, and its CSI components are ready.
+7. Confirm Vault's persistent claim is bound to `lvms-loopback` and Vault reports ready.
+8. Create a 5 GiB RWO PVC using `lvms-loopback` and a consumer pod; write then read a test value after restarting the pod.
+9. Delete the test PVC and perform the documented retained-volume cleanup before repeating capacity-boundary validation.
 
 ## Configured Capacity Validation
 

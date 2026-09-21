@@ -9,19 +9,6 @@ function version {
     echo "$1" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'
 }
 
-# We need this check mostly for CI testing, we do not want to run container in container
-function is_container() {
-    [ -n "${KUBERNETES_SERVICE_HOST:-}" ] && return 0
-    [ -f /.dockerenv ] && return 0
-    [ -f /run/.containerenv ] && return 0
-    return 1
-}
-
-if is_container; then
-    echo "Already running in a container"
-    exec "$@"
-fi
-
 if [ -z "${PATTERN_UTILITY_CONTAINER:-}" ]; then
 	PATTERN_UTILITY_CONTAINER="quay.io/validatedpatterns/utility-container"
 fi
@@ -123,19 +110,17 @@ podman run -it --rm --pull=newer \
     -e PATTERN_NAME \
     -e TARGET_BRANCH \
     -e TARGET_CLUSTERGROUP \
-    -e TARGET_VARIANT \
     -e TARGET_ORIGIN \
     -e TOKEN_NAMESPACE \
     -e TOKEN_SECRET \
     -e UUID_FILE \
     -e VALUES_SECRET \
-    -e 'VP_*' \
-    "${PKI_HOST_MOUNT_ARGS[@]:-}" \
+    "${PKI_HOST_MOUNT_ARGS[@]+"${PKI_HOST_MOUNT_ARGS[@]}"}" \
     -v "$(pwd -P)":"$(pwd -P)" \
     -v "${HOME}":"${HOME}" \
     -v "${HOME}":/pattern-home \
     "${PODMAN_ARGS[@]}" \
-    "${EXTRA_ARGS_ARRAY[@]}" \
+    "${EXTRA_ARGS_ARRAY[@]+"${EXTRA_ARGS_ARRAY[@]}"}" \
     -w "$(pwd -P)" \
     "$PATTERN_UTILITY_CONTAINER" \
     "$@"

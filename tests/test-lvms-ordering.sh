@@ -5,6 +5,9 @@ prod="$root/values-prod.yaml"
 wave() { yq -r ".clusterGroup.applications.$1.annotations.\"argocd.argoproj.io/sync-wave\"" "$prod"; }
 [[ $(wave lvms-config) == -10 && $(wave vault) == +10 ]]
 [[ $(yq -r '.clusterGroup.namespaces.openshift-storage.operatorGroup' "$prod") == true ]]
+[[ $(yq -r '.clusterGroup.namespaces.openshift-storage.targetNamespaces[0]' "$prod") == openshift-storage ]] || {
+  printf 'LVMS OperatorGroup must be OwnNamespace (openshift-storage), not AllNamespaces\n' >&2; exit 1;
+}
 [[ $(yq -r '.clusterGroup.subscriptions.lvms-operator.installPlanApproval' "$prod") == Automatic ]]
 [[ $(yq -r '.clusterGroup.subscriptions.lvms-operator.channel' "$prod") == stable-4.22 ]]
 [[ $(yq -r '.clusterGroup.subscriptions.lvms-operator.csv' "$prod") == lvms-operator.v4.22.0 ]]

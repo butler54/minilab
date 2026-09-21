@@ -33,18 +33,20 @@ oc() {
     *' df -BG '*) printf '200\n' ;;
     *'losetup -j "$file"'*)
       [[ ${MOCK_BACKING_FILE_OTHER_LOOP:-false} == true ]] && return 1
-      [[ ${MOCK_PREFLIGHT:-safe} == safe ]] && printf '1\n' || return 1
-      ;;
-    *'existing=1'*)
-      [[ ${MOCK_PREFLIGHT:-safe} == safe ]] && printf '1\n' || return 1
+      [[ ${MOCK_PREFLIGHT:-safe} == safe ]] && printf 'MINILAB_EXISTING=1\n' || return 1
       ;;
     *' apply -f - '*) : ;;
   esac
 }
 
-assert_eq "$(preflight_host_storage sno.example.test /var/lib/minilab/lvms-loopback.img /dev/loop10 120)" 1
+assert_eq "$(preflight_host_storage sno.example.test /var/lib/minilab/lvms-loopback.img /dev/loop10 120)" MINILAB_EXISTING=1
 [[ $(<"$oc_calls") == *'bash -ceu'* && $(<"$oc_calls") == *'/var/lib/minilab/lvms-loopback.img'* && $(<"$oc_calls") == *'/dev/loop10'* && $(<"$oc_calls") == *'stat -c %s'* && $(<"$oc_calls") == *'du -B1'* && $(<"$oc_calls") == *'losetup -n -O BACK-FILE'* ]] || {
   printf 'preflight did not use the expected fixed remote arguments\n' >&2; exit 1;
+}
+: > "$oc_calls"
+assert_eq "$(host_available_gib sno.example.test)" 200
+[[ $(<"$oc_calls") == *'df -BG --output=avail /var'* ]] || {
+  printf 'available-space probe did not use the writable /var filesystem\n' >&2; exit 1;
 }
 : > "$oc_calls"
 if (MOCK_PREFLIGHT=unsafe main) >/dev/null 2>&1; then
@@ -63,7 +65,18 @@ if (LOCAL_STORAGE_CAPACITY_GIB=invalid main) >/dev/null 2>&1; then
 fi
 [[ ! -s $oc_calls ]] || { printf 'malformed capacity reached oc before validation\n' >&2; exit 1; }
 unit=$(render_unit /var/lib/minilab/lvms-loopback.img /dev/loop10 120)
-[[ $unit == *'losetup "$loop"'* ]] || { printf 'unit does not reject a conflicting loop device\n' >&2; exit 1; }
-[[ $unit == *'existing backing file has incompatible size'* ]] || { printf 'unit does not reject an incompatible existing file\n' >&2; exit 1; }
+script=$(render_script)
+[[ $unit == *'ExecStart=/usr/local/bin/minilab-lvms-loopback.sh "/var/lib/minilab/lvms-loopback.img" "/dev/loop10" "120"'* ]] || { printf 'unit does not invoke the separate loopback script with fixed arguments\n' >&2; exit 1; }
+[[ $unit != *'$'* ]] || { printf 'unit ExecStart must not contain shell variables (systemd would expand them)\n' >&2; exit 1; }
 [[ $unit == *'Before=crio.service kubelet.service'* ]] || { printf 'unit is not ordered before kubelet workloads\n' >&2; exit 1; }
-printf 'bootstrap calculation, preflight, validation, conflict, and rerun safeguards passed\n'
+[[ $unit == *'WantedBy=kubelet.service'* ]] || { printf 'unit must only want kubelet, not require it\n' >&2; exit 1; }
+[[ $unit == *'RequiresMountsFor=/var/lib/minilab'* ]] || { printf 'unit must require the backing filesystem mount\n' >&2; exit 1; }
+[[ $unit != *'RequiredBy=kubelet.service'* ]] || { printf 'unit must not hard-require kubelet\n' >&2; exit 1; }
+[[ $unit != *'DefaultDependencies=no'* ]] || { printf 'unit must not disable default dependencies\n' >&2; exit 1; }
+[[ $script == *'losetup "$loop"'* ]] || { printf 'script does not reject a conflicting loop device\n' >&2; exit 1; }
+[[ $script == *'existing backing file has incompatible size'* ]] || { printf 'script does not reject an incompatible existing file\n' >&2; exit 1; }
+[[ $script == *'fallocate -l "${size}G" "$file"'* ]] || { printf 'script does not allocate the backing file\n' >&2; exit 1; }
+template=$(<"$root/bootstrap/machineconfigs/99-minilab-lvms-loopback.yaml.tpl")
+[[ $template != *'directories:'* ]] || { printf 'MachineConfig must not declare ignition directories (MCO irreconcilable)\n' >&2; exit 1; }
+[[ $template == *'${LOOPBACK_SCRIPT_BASE64}'* && $template == *'${SYSTEMD_UNIT_BASE64}'* ]] || { printf 'MachineConfig must ship both the loopback script and the unit\n' >&2; exit 1; }
+printf 'bootstrap calculation, preflight, validation, conflict, unit safety, and rerun safeguards passed\n'

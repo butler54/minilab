@@ -6,7 +6,8 @@ clusterGroup:
     external-secrets:
     openshift-storage:
       operatorGroup: true
-      targetNamespaces: []
+      targetNamespaces:
+      - openshift-storage
   subscriptions:
     lvms-operator:
       name: lvms-operator

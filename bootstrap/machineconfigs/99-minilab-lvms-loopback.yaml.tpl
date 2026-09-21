@@ -9,10 +9,11 @@ spec:
     ignition:
       version: 3.2.0
     storage:
-      directories:
-      - path: /var/lib/minilab
-        mode: 0750
       files:
+      - path: /usr/local/bin/minilab-lvms-loopback.sh
+        mode: 0755
+        contents:
+          source: data:text/plain;charset=utf-8;base64,${LOOPBACK_SCRIPT_BASE64}
       - path: /etc/systemd/system/minilab-lvms-loopback.service
         mode: 0644
         contents:

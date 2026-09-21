@@ -14,11 +14,11 @@ Provide 100 GiB of configurable local dynamic PVC capacity for the single-node l
 
 **Primary Dependencies**: Validated Patterns `rhvp.cluster_utils`, OpenShift Machine Config Operator, OpenShift LVM Storage Operator, Argo CD, and the HashiCorp Vault pattern chart.
 
-**Storage**: One persistent, preallocated loopback backing file on the SNO host root filesystem; one LVMS thin pool providing 100 GiB of usable, non-overprovisioned RWO PVC capacity by default. Backing size is `ceil(capacityGiB / 0.85)` rounded up to 4 GiB; bootstrap requires that allocation plus a 20 GiB host reserve.
+**Storage**: One persistent, preallocated loopback backing file on the SNO host `/var` filesystem; one LVMS thin pool providing 100 GiB of usable, non-overprovisioned RWO PVC capacity by default. Backing size is `ceil(capacityGiB / 0.85)` rounded up to 4 GiB; bootstrap requires that allocation plus a 20 GiB host reserve.
 
 **Testing**: Shell tests for capacity calculation, unsafe mapping rejection, and idempotence; Helm render tests; Make dependency tests; YAML parsing; `oc` readiness checks; and end-to-end PVC write/read verification across pod and node restart.
 
-**Target Platform**: Connected, supported single-node OpenShift lab with sufficient persistent root filesystem capacity; loopback-backed LVMS is explicitly lab-only and has no node-loss protection.
+**Target Platform**: Connected, supported single-node OpenShift lab with sufficient persistent `/var` filesystem capacity; loopback-backed LVMS is explicitly lab-only and has no node-loss protection.
 
 **Project Type**: Validated Pattern repository with Make/Ansible bootstrap and Helm/Argo CD GitOps configuration.
 
