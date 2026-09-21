@@ -20,6 +20,8 @@ validate-observability: ## Renders and validates the observability configuration
 	@tests/test-observability-alerts.sh
 	@tests/test-observability-configurability.sh
 	@tests/test-observability-rbac.sh
+	@tests/test-observability-override.sh
+	@tests/test-cluster-summary-dashboard.sh
 
 
 include Makefile-common

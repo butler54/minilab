@@ -13,8 +13,9 @@ for dashboard in openshift-system-overview application-overview external-compone
 done
 
 # The external dashboard must reference the stack datasource.
-echo "$rendered" | yq e 'select(.kind == "PersesDashboard" and .metadata.name == "external-components") | .. | select(.kind? == "PrometheusTimeSeriesQuery") | .spec.datasource' - \
-  | grep -q 'minilab-stack' || { echo "external dashboard does not reference stack datasource"; exit 1; }
+external_datasources=$(echo "$rendered" | yq e 'select(.kind == "PersesDashboard" and .metadata.name == "external-components") | .. | select(.kind? == "PrometheusTimeSeriesQuery") | .spec.datasource' -)
+[[ "$external_datasources" == *"minilab-stack"* ]] \
+  || { echo "external dashboard does not reference stack datasource"; exit 1; }
 
 # UIPlugin must render with Perses enabled.
 echo "$rendered" | yq e 'select(.kind == "UIPlugin") | .spec.monitoring.perses.enabled' - | grep -qx 'true' \
