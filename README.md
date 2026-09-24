@@ -16,6 +16,18 @@ The pattern also ensures an LVMS-based default storage class for workloads that 
 
 Run local checks with `tests/validate-pattern-config.sh`, `tests/test-bootstrap-local-storage.sh`, `tests/test-lvms-ordering.sh`, `tests/test-vault-storage-override.sh`, `tests/test-default-storage-class.sh`, and `tests/test-pattern-wrapper.sh`.
 
+## OpenShell Agent Sandboxing (optional)
+
+This pattern can deploy NVIDIA OpenShell — kernel-level agent sandboxing (Landlock/seccomp/network isolation, deny-by-default egress, OCSF security events) — plus SPIFFE/SPIRE workload identity via Red Hat's Zero Trust Workload Identity Manager (ZTWIM), all reconciled from Git. Design and verification runbook: `specs/006-openshell-gitops-install/`.
+
+- **Off by default.** Enable after seeding secrets: set `global.dnsZone` and `global.acmeEmail` in `values-global.yaml`, review `overrides/values-openshell.yaml` (currently placeholders: hostname, OIDC issuer), seed the vault keys declared in `values-secret.yaml.template` (`openshell-cloudflare`, `openshell-gateway-kek` — see the secrets contract in the spec), then set `global.openshell.enabled: true`.
+- **Gateway access**: the chart renders a TLS-passthrough Route at `openshell.gatewayHostname`; cert-manager (Red Hat operator) issues the external cert via Let's Encrypt DNS-01 against Cloudflare — start with `issuer: staging` and flip to `prod` only after staging issuance proves out (Let's Encrypt allows 5 duplicate certs per SAN set per week). Point DNS at the cluster ingress yourself: the hostname must resolve for clients.
+- **User authentication**: OpenShift's built-in OAuth server is the gateway's OIDC issuer (upstream does not support mTLS user auth on Kubernetes gateways). A public PKCE `OAuthClient` (`openshell-cli`) is managed in Git; no client secret exists. Fallback: cluster-local port-forward (`oc -n openshell port-forward svc/openshell 8080:8080`).
+- **Security posture**: sandbox pods get the `privileged` SCC via a Git-managed RoleBinding (upstream OpenShift requirement, evaluation-grade on this lab). Sandbox capacity is bounded by a namespace ResourceQuota sized from `openshell.sandbox.maxConcurrent` (default 3), not by chart knobs (upstream has none in 0.0.116).
+- **SPIFFE/SPIRE**: ZTWIM deploys SPIRE from Git and a `ClusterSPIFFEID` registers sandbox pods; the gateway exchanges sandbox JWT-SVIDs for short-lived OpenAI tokens, so provider keys (delivered only from Vault to the gateway) never enter sandboxes. The living readiness/gap record is `docs/openshell-spiffe-assessment.md`.
+- **Policy as code**: baseline + operator policies live in `charts/openshell-policy/` (reconciled ConfigMap; source of truth in Git). Applying policy to sandboxes is a documented imperative step — upstream 0.0.116 has no declarative policy consumer.
+- **Status**: the full platform is built and statically validated (`make validate-openshell`); cluster bring-up and runtime proofs (quickstart V-* gates) run in a separate testing phase against the designated cluster.
+
 ## Dashboarding and Alerting
 
 This pattern provides dashboarding and alerting for OpenShift system workloads, application workloads, and external components using the Cluster Observability Operator (COO) and the Red Hat build of Perses. Perses dashboards are managed as code in `charts/observability-config/` and surfaced in the OpenShift console under `Observe > Dashboards (Perses)` — the single cluster-OAuth-protected access point.
