@@ -1,0 +1,17 @@
+global:
+  openshell:
+    enabled: false
+    sandbox:
+      maxConcurrent: 3
+
+# Pattern secret store (mirrors charts/observability-config).
+secretStore:
+  name: vault-backend
+  kind: ClusterSecretStore
+
+kek:
+  # Vault path holding the gateway credential-storage KEK (research.md D4).
+  remoteKey: secret/data/global/openshell-gateway-kek
+  field: kek
+  refreshInterval: 5m0s
+  secretName: openshell-kek

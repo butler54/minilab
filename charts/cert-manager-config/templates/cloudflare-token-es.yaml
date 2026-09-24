@@ -1,0 +1,23 @@
+{{- if .Values.global.openshell.enabled }}
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: cloudflare-api-token-es
+  namespace: cert-manager
+  annotations:
+    # Secret must exist before the issuers (research D6: operand <=1.21.0
+    # validates solvers at issuer creation).
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  refreshInterval: {{ .Values.cloudflare.refreshInterval }}
+  secretStoreRef:
+    name: {{ .Values.secretStore.name }}
+    kind: {{ .Values.secretStore.kind }}
+  target:
+    name: cloudflare-api-token
+  data:
+  - secretKey: api-token
+    remoteRef:
+      key: {{ .Values.cloudflare.remoteKey }}
+      property: {{ .Values.cloudflare.field }}
+{{- end }}

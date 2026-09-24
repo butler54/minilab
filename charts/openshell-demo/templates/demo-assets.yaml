@@ -1,0 +1,38 @@
+{{- if and .Values.global.openshell.enabled .Values.global.openshell.demo.enabled }}
+# FR-014/FR-010: OpenAI key from vault, gateway-side consumption only (research
+# D8: provider token grant exchanges JWT-SVID -> provider token at the gateway,
+# so this Secret is never mounted into a sandbox).
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: openai-api-key-es
+  namespace: openshell
+spec:
+  refreshInterval: {{ .Values.openai.refreshInterval }}
+  secretStoreRef:
+    name: {{ .Values.secretStore.name }}
+    kind: {{ .Values.secretStore.kind }}
+  target:
+    name: {{ .Values.openai.secretName }}
+  data:
+  - secretKey: api-key
+    remoteRef:
+      key: {{ .Values.openai.remoteKey }}
+      property: {{ .Values.openai.field }}
+---
+# Demo sandbox DEFINITION as data for the documented imperative creation step
+# (quickstart imperative-steps table). Consumed by the operator runbook:
+#   oc -n openshell get cm openshell-demo-sandbox -o jsonpath='{.data.sandbox\.yaml}'
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openshell-demo-sandbox
+  namespace: openshell
+data:
+  sandbox.yaml: |
+    name: {{ .Values.demo.sandboxName }}
+    image: {{ .Values.demo.harnessImage }}
+    # Model/endpoint + credential are registered against the GATEWAY provider
+    # store (openshell provider registration step, quickstart V-DEMO). The
+    # sandbox receives only short-lived SPIFFE-derived tokens (research D8).
+{{- end }}

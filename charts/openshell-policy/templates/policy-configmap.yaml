@@ -1,0 +1,15 @@
+{{- if .Values.global.openshell.enabled }}
+# Every *.yaml file under policies/ becomes a key in this ConfigMap (Git is the
+# source of truth). Upstream 0.0.116 has no declarative policy consumer and its
+# user auth is interactive OIDC, so APPLICATION to the gateway is the recorded
+# imperative step documented in README.md and quickstart (Constitution II).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openshell-policy
+  namespace: openshell
+  annotations:
+    checksum/policy: {{ (.Files.Glob "policies/**.yaml").AsConfig | sha256sum | quote }}
+data:
+{{ (.Files.Glob "policies/*.yaml").AsConfig | indent 2 }}
+{{- end }}

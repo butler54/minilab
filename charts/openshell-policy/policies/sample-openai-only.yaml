@@ -1,0 +1,11 @@
+# SAMPLE - replace with operator-derived policy (the operator brings their own
+# policy configuration per spec clarification; this file proves the mechanism).
+# Allows the demo coding agent to reach the OpenAI API only.
+metadata:
+  name: sample-openai-only
+  description: SAMPLE allow rule for the demonstration agent workload.
+extends: baseline-deny-all
+endpoints:
+- endpoint: api.openai.com:443:read-only:rest:enforce
+  binaries:
+  - /usr/bin/env # harness runtime placeholder; tighten in the testing phase

@@ -1,0 +1,22 @@
+{{- if and .Values.global.openshell.enabled .Values.global.openshell.ztwim.enabled }}
+# Workload registration for OpenShell sandbox pods (research D8/F1): gateway
+# exchanges the sandbox's JWT-SVID for a short-lived OpenAI access token, so
+# the provider key never enters the sandbox.
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: openshell-sandbox-workloads
+  annotations:
+    argocd.argoproj.io/sync-wave: "+3"
+spec:
+  # Selector shape verified against the Red Hat operator sample
+  # (config/samples/spire.spiffe.io_v1alpha1_clusterspiffeid.yaml): only
+  # workloadSelector.k8sServiceAccount{name,namespace} — no top-level namespace key.
+  spiffeIDTemplate: /openshell/sandbox
+  workloadSelector:
+    k8sServiceAccount:
+      name: openshell-sandbox
+      namespace: openshell
+  # ttl is integer SECONDS in the Red Hat operator's schema (see sample).
+  ttl: 3600
+{{- end }}

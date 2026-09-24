@@ -1,0 +1,26 @@
+global:
+  openshell:
+    enabled: false
+    trustDomain: ""
+    ztwim:
+      enabled: false
+  dnsZone: example.com
+
+spireServer:
+  persistenceSize: 2Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+spireAgent:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+spiffeCsiDriver:
+  resources:
+    requests:
+      cpu: 25m
+      memory: 64Mi

@@ -1,0 +1,34 @@
+{{- if .Values.global.openshell.enabled }}
+# Least-privilege access for the router-CA fetch job: read ONLY the router-ca
+# ConfigMap from openshift-config-managed (its ca-bundle.crt signs the OAuth
+# issuer route's certificate). Fully declarative — replaces any imperative copy.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: openshell-router-ca-pull
+  namespace: openshift-config-managed
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: openshell-router-ca-reader
+rules:
+- apiGroups: [""]
+  resources: ["configmaps"]
+  resourceNames: ["router-ca"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: openshell-router-ca-pull
+  namespace: openshift-config-managed
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: openshell-router-ca-reader
+subjects:
+- kind: ServiceAccount
+  name: openshell-router-ca-pull
+  namespace: openshift-config-managed
+{{- end }}

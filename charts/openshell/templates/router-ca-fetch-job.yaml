@@ -1,0 +1,32 @@
+{{- if .Values.global.openshell.enabled }}
+# One-shot job: copy router-ca's bundle into the openshell namespace as the
+# ConfigMap server.oidc.caConfigMapName points at. Idempotent (oc apply); runs
+# before the gateway workload via sync wave. Router CA rotation is the
+# documented manual re-trigger (delete the job, resync).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: openshell-oidc-ca-fetch
+  namespace: openshift-config-managed
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      serviceAccountName: openshell-router-ca-pull
+      restartPolicy: Never
+      containers:
+      - name: fetch
+        image: {{ $.Values.global.lvmsCompatibility.cliImage | quote }}
+        command:
+        - /bin/bash
+        - -ec
+        - |
+          bundle=$(oc get configmap router-ca -n openshift-config-managed -o jsonpath='{.data.ca-bundle\.crt}')
+          [ -n "$bundle" ] || { echo "router-ca cm empty"; exit 1; }
+          oc create configmap openshell-oidc-ca -n openshell \
+            --from-literal=ca.crt="$bundle" \
+            --dry-run=client -o yaml | oc apply -f -
+          echo "openshell-oidc-ca synced"
+{{- end }}

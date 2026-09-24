@@ -19,6 +19,17 @@ clusterGroup:
     minilab-observability:
       labels:
         monitoring.rhobs/stack: minilab
+    openshell:
+      labels:
+        monitoring.rhobs/stack: minilab
+    agent-sandbox-system:
+    cert-manager-operator:
+      operatorGroup: true
+      targetNamespaces: []
+    cert-manager:
+    zero-trust-workload-identity-manager:
+      operatorGroup: true
+      targetNamespaces: []
   subscriptions:
     lvms-operator:
       name: lvms-operator
@@ -36,6 +47,16 @@ clusterGroup:
       name: cluster-observability-operator
       namespace: openshift-cluster-observability-operator
       channel: stable
+      installPlanApproval: Automatic
+    cert-manager-operator:
+      name: openshift-cert-manager-operator
+      namespace: cert-manager-operator
+      channel: stable-v1
+      installPlanApproval: Automatic
+    ztwim:
+      name: openshift-zero-trust-workload-identity-manager
+      namespace: zero-trust-workload-identity-manager
+      channel: stable-v1
       installPlanApproval: Automatic
   applications:
     lvms-config:
@@ -66,6 +87,55 @@ clusterGroup:
       path: charts/observability-config
       annotations:
         argocd.argoproj.io/sync-wave: "+20"
+    openshell-platform:
+      name: openshell-platform
+      namespace: openshell
+      project: default
+      path: charts/openshell-platform
+      annotations:
+        argocd.argoproj.io/sync-wave: "-3"
+    agent-sandbox:
+      name: agent-sandbox
+      namespace: agent-sandbox-system
+      project: default
+      path: charts/agent-sandbox
+      annotations:
+        argocd.argoproj.io/sync-wave: "-5"
+    cert-manager-config:
+      name: cert-manager-config
+      namespace: cert-manager
+      project: default
+      path: charts/cert-manager-config
+      annotations:
+        argocd.argoproj.io/sync-wave: "-6"
+    ztwim-config:
+      name: ztwim-config
+      namespace: zero-trust-workload-identity-manager
+      project: default
+      path: charts/ztwim-config
+      annotations:
+        argocd.argoproj.io/sync-wave: "-4"
+    openshell:
+      name: openshell
+      namespace: openshell
+      project: default
+      path: charts/openshell
+      annotations:
+        argocd.argoproj.io/sync-wave: "0"
+    openshell-policy:
+      name: openshell-policy
+      namespace: openshell
+      project: default
+      path: charts/openshell-policy
+      annotations:
+        argocd.argoproj.io/sync-wave: "+1"
+    openshell-demo:
+      name: openshell-demo
+      namespace: openshell
+      project: default
+      path: charts/openshell-demo
+      annotations:
+        argocd.argoproj.io/sync-wave: "+2"
   projects:
   - default
   - external-secrets
@@ -74,3 +144,4 @@ clusterGroup:
   sharedValueFiles:
   - '/overrides/values-storage-{{ $.Values.global.storageProvider }}.yaml'
   - '/overrides/values-observability.yaml'
+  - '/overrides/values-openshell.yaml'

@@ -1,0 +1,6 @@
+global:
+  openshell:
+    enabled: false
+
+# No chart-level values. Policy CONTENT lives as files under policies/ and is
+# rendered verbatim into the ConfigMap by templates/policy-configmap.yaml.

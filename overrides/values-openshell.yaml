@@ -1,0 +1,68 @@
+global:
+  # OpenShell agent sandbox platform (see specs/006-openshell-gitops-install/).
+  # Everything here is the operator-facing dial surface defined in
+  # contracts/values-contract.md — chart pins and internal defaults are
+  # deliberately NOT exposed.
+  openshell:
+    # Master switch. Keep false until G0 (vault seeds) and G1 (values review)
+    # from quickstart.md are complete.
+    enabled: false
+    # Public gateway FQDN. MUST end with global.dnsZone. A DNS record pointing
+    # this host at the cluster ingress is a documented operator step (runbook).
+    # PLACEHOLDER — replace with the real hostname before enabling.
+    gatewayHostname: openshell.example.com
+    # Which ClusterIssuer issues the gateway's external certificate.
+    # Start with staging; flip to prod only after staging issuance is proven
+    # (Let's Encrypt limits duplicate SAN sets to 5/7 days on the prod endpoint).
+    issuer: staging
+    # SPIFFE trust domain for ZTWIM. Immutable after first reconcile.
+    # Empty string = fall back to global.dnsZone.
+    trustDomain: ""
+    # Concurrent sandbox capacity envelope; drives namespace ResourceQuota.
+    sandbox:
+      maxConcurrent: 3
+    # Set enabled=false to skip SPIFFE identity components entirely (e.g. ZTWIM
+    # operator unavailable on the cluster version — FR-011 fallback). ALSO
+    # comment out the `ztwim` subscription and its namespace in
+    # values-prod.yaml, and set spiffe.enabled=false in the passthrough below
+    # (asserted by tests/test-openshell-values.sh).
+    ztwim:
+      enabled: true
+    # Demonstration coding agent (FR-014). Requires OpenAI key seeded in vault.
+    demo:
+      enabled: false
+
+# Pass-through to the vendored upstream OpenShell subchart (key = alias in
+# charts/openshell/Chart.yaml). Only OPERATOR-DRIVEN dials live here; static
+# pins stay in charts/openshell/values.yaml. HOSTNAME AND ISSUER MUST stay in
+# sync with global.openshell.* above — tests/test-openshell-render.sh fails on
+# drift. PLACEHOLDER values — replace before enabling (G1 in quickstart.md).
+openshell:
+  openshiftRoute:
+    enabled: true
+    # Keep == global.openshell.gatewayHostname
+    host: openshell.example.com
+  certManager:
+    enabled: true
+    serverIssuerRef:
+      # Keep == "letsencrypt-{{ global.openshell.issuer }}"
+      name: letsencrypt-staging
+      kind: ClusterIssuer
+    # Keep [0] == global.openshell.gatewayHostname
+    serverDnsNames:
+    - openshell.example.com
+  server:
+    # SPIFFE provider-token grants (research F1; consumable at 0.0.116).
+    # MUST be false whenever global.openshell.ztwim.enabled is false — mounted
+    # CSI volumes would otherwise break gateway/sandbox startup.
+    providerTokenGrants:
+      spiffe:
+        enabled: true
+        workloadApiSocketPath: /spiffe-workload-api/spire-agent.sock
+    oidc:
+      # PLACEHOLDER — OpenShift OAuth issuer of the TARGET cluster, e.g.
+      # https://oauth-openshift.apps.<cluster-domain>. Confirm in V-AUTH.
+      issuer: https://oauth-openshift.apps.example.com
+      # Matches the OAuthClient name in charts/openshell/templates/oauthclient.yaml
+      audience: openshell-cli
+      caConfigMapName: openshell-oidc-ca
