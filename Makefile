@@ -24,4 +24,15 @@ validate-observability: ## Renders and validates the observability configuration
 	@tests/test-cluster-summary-dashboard.sh
 
 
+.PHONY: validate-openshell
+validate-openshell: ## Renders and validates the OpenShell platform charts and their shell tests
+	@tests/test-openshell-values.sh
+	@tests/test-openshell-secrets.sh
+	@tests/test-openshell-quota.sh
+	@tests/test-openshell-render.sh
+	@tests/test-openshell-ordering.sh
+	@tests/test-openshell-pins.sh
+	@tests/test-openshell-ztwim.sh
+
+
 include Makefile-common
