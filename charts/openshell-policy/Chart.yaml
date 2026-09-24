@@ -1,0 +1,5 @@
+apiVersion: v2
+name: openshell-policy
+description: OpenShell sandbox policy source-of-truth — deny-all baseline plus operator drop-in policies, carried in Git (feature 006-openshell-gitops-install)
+type: application
+version: 0.1.0

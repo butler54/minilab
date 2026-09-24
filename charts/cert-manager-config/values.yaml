@@ -1,0 +1,15 @@
+global:
+  openshell:
+    enabled: false
+  dnsZone: example.com
+  acmeEmail: acme@example.com
+
+secretStore:
+  name: vault-backend
+  kind: ClusterSecretStore
+
+cloudflare:
+  # Vault path for the Cloudflare API token (see contracts/secrets-contract.md).
+  remoteKey: secret/data/global/openshell-cloudflare
+  field: api-token
+  refreshInterval: 5m0s

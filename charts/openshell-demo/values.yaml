@@ -1,0 +1,29 @@
+global:
+  openshell:
+    enabled: false
+    demo:
+      enabled: false
+
+secretStore:
+  name: vault-backend
+  kind: ClusterSecretStore
+
+openai:
+  remoteKey: secret/data/global/openshell-openai
+  field: api-key
+  refreshInterval: 5m0s
+  secretName: openai-api-key
+
+demo:
+  # Signed harness image family per Red Hat blog supply-chain guidance.
+  # Pinned by digest (FR-005) — quay.io/aipcc/base-images/agentic/ family;
+  # replace with the chosen harness image digest before enabling the demo.
+  # Default harness: opencode. Model/endpoint for the gateway-side provider
+  # registration is set at registration time (gateway credential store),
+  # never in the sandbox.
+  # Signed Red Hat harness image (blog supply-chain guidance), digest-pinned
+  # (FR-005). Tag 1.18.31-1790038455 @ quay.io/aipcc/base-images/agentic/opencode
+  # as of 2026-09-24. Refresh procedure: pick new tag, pin its digest, re-run
+  # the testing-phase V-DEMO.
+  sandboxName: demo-agent
+  harnessImage: quay.io/aipcc/base-images/agentic/opencode@sha256:5743452ce2dde8d91d3d8998d8667efa45da27e53c170dbd614516603a44d7d3

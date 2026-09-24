@@ -1,0 +1,26 @@
+{{- if .Values.global.openshell.enabled }}
+# Gateway credential-storage KEK from vault (research D4): the upstream chart
+# would otherwise generate a fresh random key per GitOps render and silently
+# break its stored provider credentials.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: openshell-kek-es
+  namespace: openshell
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  refreshInterval: {{ .Values.kek.refreshInterval }}
+  secretStoreRef:
+    name: {{ .Values.secretStore.name }}
+    kind: {{ .Values.secretStore.kind }}
+  target:
+    name: {{ .Values.kek.secretName }}
+  data:
+    # In-cluster Secret data key REQUIRED by the upstream chart helper
+    # (openshell.credentialStorageKeyEncryptionKeySecretKey = "key-encryption-key").
+  - secretKey: key-encryption-key
+    remoteRef:
+      key: {{ .Values.kek.remoteKey }}
+      property: {{ .Values.kek.field }}
+{{- end }}

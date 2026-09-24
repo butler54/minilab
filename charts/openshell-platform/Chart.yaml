@@ -1,0 +1,5 @@
+apiVersion: v2
+name: openshell-platform
+description: OpenShell namespace platform posture — SCC binding, capacity guardrails, and gateway KEK secret wiring (feature 006-openshell-gitops-install)
+type: application
+version: 0.1.0

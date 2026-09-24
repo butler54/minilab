@@ -1,0 +1,5 @@
+apiVersion: v2
+name: ztwim-config
+description: Zero Trust Workload Identity Manager operand configuration — SPIRE server/agent/CSI driver and OpenShell workload registration (feature 006-openshell-gitops-install)
+type: application
+version: 0.1.0

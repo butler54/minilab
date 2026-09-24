@@ -1,0 +1,15 @@
+{{- if .Values.global.openshell.enabled }}
+# Public OAuthClient for the openshell CLI (PKCE flow; no client secret, so no
+# secret material lands in Git or vault). metadata.name doubles as the OIDC
+# audience (upstream chart default: openshell-cli).
+apiVersion: oauth.openshift.io/v1
+kind: OAuthClient
+metadata:
+  name: openshell-cli
+grantMethod: auto
+# PLACEHOLDER REDIRECTS — confirmed against the openshell CLI callback during
+# the testing phase (quickstart V-AUTH). `oc`-style loopback callbacks.
+redirectURIs:
+- http://127.0.0.1:8080/callback
+- http://localhost:8080/callback
+{{- end }}

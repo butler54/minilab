@@ -1,0 +1,39 @@
+{{- if .Values.global.openshell.enabled }}
+{{- $max := .Values.global.openshell.sandbox.maxConcurrent | int }}
+# FR-012 / research D9: the upstream chart (0.0.116) exposes no sandbox CPU/mem
+# or max-concurrency knobs, so namespace quota is the GitOps-native guardrail
+# for the maxConcurrent envelope. Formula (visible on purpose):
+#   pods:  2 per sandbox (sandbox + supervisor sidecar/workspace) + 14 platform
+#   cpu:   2 cores per sandbox + 2 margin (requests)
+#   mem:   4 GiB per sandbox + 4 GiB margin (requests)
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: openshell-capacity
+  namespace: openshell
+spec:
+  hard:
+    pods: {{ add (mul $max 2) 14 | quote }}
+    requests.cpu: {{ add (mul $max 2) 2 | quote }}
+    requests.memory: {{ add (mul $max 4) 4 }}Gi
+---
+# LimitRange gives un-sized pods (sandbox workloads) sane defaults so the quota
+# arithmetic above actually binds them.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: openshell-defaults
+  namespace: openshell
+spec:
+  limits:
+  - type: Container
+    defaultRequest:
+      cpu: 500m
+      memory: 1Gi
+    default:
+      cpu: "2"
+      memory: 4Gi
+    max:
+      cpu: "4"
+      memory: 8Gi
+{{- end }}

@@ -1,0 +1,24 @@
+{{- if .Values.global.openshell.enabled }}
+# FR-009: gateway operational metrics into the pattern MonitoringStack.
+# The stack selects namespaces labeled `monitoring.rhobs/stack: minilab`
+# (openshell ns carries it) and resources labeled
+# `app.kubernetes.io/part-of: minilab-observability`.
+# Selector matches the chart-name label so it is release-name independent.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: openshell-gateway
+  namespace: openshell
+  labels:
+    app.kubernetes.io/part-of: minilab-observability
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: helm-chart
+  endpoints:
+  - port: metrics
+    interval: 30s
+# NOTE (verified at implementation): supervisor metrics live on ephemeral
+# sandbox pods, not a Service. If the testing phase shows a stable supervisor
+# metrics port, extend with a PodMonitor. Tracked as part of V-METRICS.
+{{- end }}

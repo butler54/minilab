@@ -1,0 +1,15 @@
+# Baseline policy for all sandboxes.
+#
+# OpenShell sandboxes are deny-all-egress by default; this baseline documents
+# that posture explicitly and is applied with:
+#   openshell sandbox create --policy <this-or-derived-file> --name <sandbox>
+#
+# FORMAT NOTE: this file mirrors the upstream CLI grammar
+# (host:port:access:protocol:mode, same shape as `--add-endpoint`). Validate
+# the exact file schema against the deployed 0.0.116 CLI during the testing
+# phase (quickstart V-EGRESS) — upstream policy-file schema is documented at
+# https://docs.nvidia.com/openshell/latest/sandboxes/manage-sandboxes.
+metadata:
+  name: baseline-deny-all
+  description: Deny everything; sandboxes start with no outbound access.
+endpoints: []
