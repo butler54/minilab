@@ -9,7 +9,7 @@ secretStore:
   kind: ClusterSecretStore
 
 openai:
-  remoteKey: secret/data/global/openshell-openai
+  remoteKey: secret/data/hub/openshell-openai
   field: api-key
   refreshInterval: 5m0s
   secretName: openai-api-key

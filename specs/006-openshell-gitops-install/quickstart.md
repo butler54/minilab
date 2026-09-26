@@ -8,7 +8,7 @@ Runnable validation proving the feature end-to-end, mapped to the spec's Success
 
 | Gate | Action | Proves |
 |------|--------|--------|
-| G0 Seed | Create vault keys from `contracts/secrets-contract.md` (`secret/data/global/openshell-{cloudflare,gateway-kek,openai}`) | FR-010 prerequisites exist |
+| G0 Seed | Create vault keys from `contracts/secrets-contract.md` (`secret/data/hub/openshell-{cloudflare,gateway-kek,openai}`) | FR-010 prerequisites exist |
 | G1 Lint | `make validate-schema` | values contract validity |
 | G2 Static tests | `tests/test-openshell-*.sh` (render, ordering, pin checks) | chart correctness, wave ordering |
 | G3 Cluster checks | `make validate-cluster` | cluster-side preconditions |

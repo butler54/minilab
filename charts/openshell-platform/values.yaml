@@ -15,7 +15,7 @@ secretStore:
 
 kek:
   # Vault path holding the gateway credential-storage KEK (research.md D4).
-  remoteKey: secret/data/global/openshell-gateway-kek
+  remoteKey: secret/data/hub/openshell-gateway-kek
   field: kek
   refreshInterval: 5m0s
   secretName: openshell-kek
