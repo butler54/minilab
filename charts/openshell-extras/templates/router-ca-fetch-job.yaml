@@ -8,9 +8,12 @@ kind: Job
 metadata:
   name: openshell-oidc-ca-fetch
   namespace: openshift-config-managed
-  # NOTE: do NOT wave-annotate this job negatively — it must apply together with
-  # its own ServiceAccount/RBAC (same app). A -2 wave made Argo wait for the job
-  # to be healthy before applying the SA it needs (deadlock, fixed in review).
+  annotations:
+    # Argo GitOps hook: the job is re-created (BeforeHookCreation) on each sync,
+    # dodging batch/Job pod-spec immutability on image changes, and the app no
+    # longer health-blocks waiting for a one-shot batch Job.
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
   backoffLimit: 4
   template:
