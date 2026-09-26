@@ -9,6 +9,8 @@ All secret VALUES live in the pattern's vault. Git contains only ExternalSecret 
 | `secret/data/hub/openshell-cloudflare` | `cloudflare-api-token-es` | `cloudflare-api-token` | `cert-manager` | `api-token` | ACME DNS-01 solver (the `acme` ClusterIssuer) |
 | `secret/data/hub/openshell-gateway-kek` | `openshell-kek-es` | `openshell-kek` | `openshell` | `key-encryption-key` (data key required by upstream chart helper; vault field is `kek`) | Gateway credential storage (`server.credentialStorage.existingSecret`, D4) |
 | `secret/data/hub/openshell-openai` | `openai-api-key-es` | `openai-api-key` | `openshell` | `api-key` | Gateway-side provider credential (D8); never mounted into sandbox pods |
+| `secret/data/hub/openshell-keycloak` | `keycloak-admin-user`, `postgresql-db` (rhbk chart) | `keycloak-admin-user`, `postgresql-db` | `keycloak-system` | `admin-password`, `db-password` | Keycloak bootstrap admin + PostgreSQL password. **Infrastructure secrets only — not identity sources.** |
+| `secret/data/hub/openshell-github-oauth` | `keycloak-github-oauth-es` (rhbk chart `extraSecrets`) | `keycloak-github-oauth` | `keycloak-system` | `client-id`, `client-secret` | GitHub OAuth App credentials for the realm's GitHub identity provider; referenced via `realmPlaceholders` `${GITHUB_CLIENT_ID}` / `${GITHUB_CLIENT_SECRET}` |
 
 (Vault paths follow the rule from PR review: the path prefix MUST equal the `vaultPrefixes` entry of the same secret in `values-secret.yaml.template` — `hub` here because this deployment is the hub cluster and that is the valid prefix for it. `tests/test-openshell-secrets.sh` derives expected paths from the seed template so drift is caught when either side moves. KEK via `onMissingValue: generate`, the other two via `prompt`.)
 

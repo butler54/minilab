@@ -21,7 +21,7 @@ for entry in seed.get("secrets", []):
     prefixes = entry.get("vaultPrefixes", [])
     if prefixes and name.startswith("openshell"):
         expected_key[name] = prefixes[0]
-assert len(expected_key) == 3, f"expected 3 openshell vault entries, got {len(expected_key)}"
+assert len(expected_key) == 5, f"expected 5 openshell vault entries, got {len(expected_key)}"
 
 # (ExternalSecret template -> its openshell-<name> secret)
 expected = {
@@ -102,6 +102,27 @@ for rel, want in expected.items():
                 found = True
     if not found:
         fail.append(f"{rel}: ExternalSecret data for {want['vault_name']} (property {want['property']}, secretKey {want['secretKey']}) not found")
+
+# rh-keycloak: the ESO wiring lives in the external rhbk chart, but the vault
+# paths are pinned by OUR overrides/values-keycloak.yaml — drift-check them
+# against the seed template prefixes.
+kc = yaml.safe_load(open(os.path.join(root, "overrides/values-keycloak.yaml")))
+kcv = kc.get("keycloak", {})
+kc_prefix = expected_key.get("openshell-keycloak")
+kc_path = f"secret/data/{kc_prefix}/openshell-keycloak"
+for section in ("adminUser", "postgresqlDb"):
+    k = kcv.get(section, {}).get("passwordVaultKey", "")
+    if k != kc_path:
+        fail.append(f"keycloak.{section}.passwordVaultKey {k!r} != derived path {kc_path!r}")
+for es in (kcv.get("extraSecrets") or []):
+    for d in es.get("data", []):
+        k = d.get("remoteRef", {}).get("key", "")
+        gh_path = f"secret/data/{expected_key.get('openshell-github-oauth')}/openshell-github-oauth"
+        if k != gh_path:
+            fail.append(f"keycloak extraSecrets remoteRef {k!r} != derived path {gh_path!r}")
+    secret_names = {d.get("secretKey") for d in es.get("data", [])}
+    if "github_client_id" not in secret_names or "github_client_secret" not in secret_names:
+        fail.append("keycloak.github oauth ExternalSecret must sync client-id AND client-secret")
 
 # No secret material in Git: block stringData and obvious literals outside the
 # seed template (values-secret.yaml.template, which documents vault inputs).
