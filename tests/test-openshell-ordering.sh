@@ -3,7 +3,7 @@ set -euo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # Asserts the sync-wave ordering from specs/006-openshell-gitops-install/plan.md:
-#   cert-manager-config -6 < agent-sandbox -5 < ztwim-config -4 < openshell-platform -3 < openshell 0 < openshell-policy +1 < openshell-demo +2
+#   cert-manager-config -7 < cert-manager -6 < agent-sandbox -5 < ztwim -4 < openshell-platform -3 < openshell-extras -1 < openshell 0 < openshell-policy +1 < openshell-demo +2
 python3 - "$root" <<'EOF'
 import sys, yaml
 
@@ -20,9 +20,11 @@ for name, app in apps.items():
 
 expected_order = [
     "cert-manager-config",
+    "cert-manager",
     "agent-sandbox",
-    "ztwim-config",
+    "ztwim",
     "openshell-platform",
+    "openshell-extras",
     "openshell",
     "openshell-policy",
     "openshell-demo",
@@ -38,6 +40,9 @@ if present:
 required_pairs = [
     ("agent-sandbox", "openshell"),       # CRDs+controller before gateway
     ("openshell-platform", "openshell"),  # SCC+quota+KEK before gateway
+    ("openshell-extras", "openshell"),    # OAuthClient/CA job before gateway
+    ("cert-manager-config", "cert-manager"),  # cloudflare Secret before issuers
+    ("cert-manager", "openshell"),        # external cert issuer before gateway
 ]
 for a, b in required_pairs:
     if a in waves and b in waves and not waves[a] < waves[b]:

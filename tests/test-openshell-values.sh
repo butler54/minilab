@@ -32,14 +32,16 @@ if trust and not re.fullmatch(r"[a-z0-9]([a-z0-9.-]*[a-z0-9])?", trust):
 
 # spiffe enablement MUST track ztwim availability (FR-011 fallback): a CSI
 # mount for a driver that may not exist must never be enabled.
-ov_raw = yaml.safe_load(open(os.path.join(root, "overrides/values-openshell.yaml")))
-sub = ov_raw.get("openshell", {})  # top-level subchart passthrough
-spiffe = ((sub.get("server") or {}).get("providerTokenGrants") or {}).get("spiffe", {})
+dial_doc = yaml.safe_load(open(os.path.join(root, "overrides/values-openshell.yaml")))
+if "openshell" in dial_doc:
+    fail.append("overrides/values-openshell.yaml must NOT contain a top-level 'openshell:' passthrough block (superseded by overrides/values-openshell-gateway.yaml in refactor 007)")
+gwv = yaml.safe_load(open(os.path.join(root, "overrides/values-openshell-gateway.yaml")))
+spiffe = ((gwv.get("server") or {}).get("providerTokenGrants") or {}).get("spiffe", {})
 ztwim_on = bool(ov.get("ztwim", {}).get("enabled", False))
 if spiffe.get("enabled") and not ztwim_on:
     fail.append("spiffe providerTokenGrants enabled while openshell.ztwim.enabled=false")
 if ztwim_on and not spiffe.get("enabled"):
-    fail.append("openshell.ztwim.enabled=true but passthrough spiffe.enabled is not true")
+    fail.append("openshell.ztwim.enabled=true but gateway override spiffe.enabled is not true")
 
 # The pattern's shared values file must be wired so the overrides actually apply.
 prod = yaml.safe_load(open(os.path.join(root, "values-prod.yaml")))["clusterGroup"]
