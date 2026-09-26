@@ -41,7 +41,7 @@ agentSandbox:
 openshiftRoute:
   enabled: true
   # Keep == global.openshell.gatewayHostname (drift-asserted)
-  host: openshell.apps.sno.tokyo-brunch.com
+  host: openshell.tokyo-brunch.com
 certManager:
   enabled: true
   serverIssuerRef:
@@ -50,7 +50,7 @@ certManager:
     kind: ClusterIssuer
   # Keep [0] == global.openshell.gatewayHostname (drift-asserted)
   serverDnsNames:
-  - openshell.apps.sno.tokyo-brunch.com
+  - openshell.tokyo-brunch.com
 
 podSecurityContext:
   fsGroup: null

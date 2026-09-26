@@ -10,7 +10,7 @@ global:
     # Public gateway FQDN. MUST end with global.dnsZone. A DNS record pointing
     # this host at the cluster ingress is a documented operator step (runbook).
     # PLACEHOLDER — replace with the real hostname before enabling.
-    gatewayHostname: openshell.apps.sno.tokyo-brunch.com
+    gatewayHostname: openshell.tokyo-brunch.com
     # Which ACME endpoint the `acme` ClusterIssuer uses (must track the server
     # URL in overrides/values-certmanager.yaml). Prod per PR review of 006/007;
     # set staging only if ACME rate-limit churn requires it during bring-up.
