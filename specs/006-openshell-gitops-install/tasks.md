@@ -186,6 +186,14 @@ T013+T014 (agent-sandbox) → T015+T016 (wrapper chart) → T017 (OIDC) → T018
 
 ## Notes
 
+**Supersession note 2026-09-24 (specs/007)**: the chart delivery mechanism agreed in this
+feature's plan (vendored wrapper chart + copied upstream charts) was identified as fundamentally
+flawed and **replaced** by external chart references via the framework's multi-source model
+(specs/007-openshell-external-charts). The vendored charts (`charts/openshell`, `charts/agent-sandbox`,
+`charts/ztwim-config`, issuers in `cert-manager-config`) were removed; see the 007 contracts for the
+current external chart registry and values layout. Everything else in this file's runtime/testing-phase
+deferral remains valid.
+
 **Implementation status 2026-09-24**: all repository-side (static) work is complete and green
 (`tests/validate-pattern-config.sh`, `make validate-openshell`, `./pattern.sh make validate-schema`).
 Per operator direction the live cluster is **not yet designated** — every *(runtime)* task and G0

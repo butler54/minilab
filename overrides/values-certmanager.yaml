@@ -1,0 +1,29 @@
+# pattern wiring for the Validated Patterns ocp-certmanager-chart (0.2.0) —
+# consumed ONLY by the `cert-manager` application (extraValueFiles).
+operatorChannel: stable-v1
+
+certmgrOperator:
+  # Single ClusterIssuer per research 007 D5 (VP chart renders one ACME issuer
+  # named `acme`; opening separate staging/prod issuers is unsupported).
+  # `openshell.issuer` flips ONLY the ACME server URL + account-key secret name
+  # below (drift-asserted by tests/test-openshell-render.sh).
+  issuers:
+  - acme:
+      # Keep == global.acmeEmail
+      email: acme@example.com
+      # Staging during bring-up; prod ONLY after staging issuance is proven
+      # (Let's Encrypt limits duplicate SAN sets to 5/7 days on the prod endpoint).
+      server: https://acme-staging-v02.api.letsencrypt.org/directory
+      privateKeySecretRef:
+        name: letsencrypt-staging-account-key
+      solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              # Cloudflare API token delivered by ExternalSecret (charts/cert-manager-config)
+              name: cloudflare-api-token
+              key: api-token
+        selector:
+          # Keep == global.dnsZone
+          dnsZones:
+          - example.com

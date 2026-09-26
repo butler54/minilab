@@ -98,7 +98,12 @@ clusterGroup:
       name: agent-sandbox
       namespace: agent-sandbox-system
       project: default
-      path: charts/agent-sandbox
+      # External git-sourced chart (specs/007 contract): upstream helm/ dir at tag.
+      repoURL: https://github.com/kubernetes-sigs/agent-sandbox
+      path: helm
+      chartVersion: v1.0.3
+      extraValueFiles:
+      - '/overrides/values-agent-sandbox.yaml'
       annotations:
         argocd.argoproj.io/sync-wave: "-5"
     cert-manager-config:
@@ -107,19 +112,49 @@ clusterGroup:
       project: default
       path: charts/cert-manager-config
       annotations:
+        argocd.argoproj.io/sync-wave: "-7"
+    cert-manager:
+      name: cert-manager
+      namespace: cert-manager
+      project: default
+      # VP community chart (specs/007 contract): cert-manager operand config +
+      # single `acme` ClusterIssuer (Cloudflare DNS-01). Operator subscription
+      # stays in clustergroup `subscriptions:` below.
+      chart: ocp-certmanager
+      chartVersion: "0.2.0"
+      extraValueFiles:
+      - '/overrides/values-certmanager.yaml'
+      annotations:
         argocd.argoproj.io/sync-wave: "-6"
-    ztwim-config:
-      name: ztwim-config
+    ztwim:
+      name: ztwim
       namespace: zero-trust-workload-identity-manager
       project: default
-      path: charts/ztwim-config
+      # VP community chart (specs/007 contract): SPIRE stack singleton CRs.
+      # The operator subscription stays in clustergroup `subscriptions:` below.
+      chart: ztwim
+      chartVersion: "0.1.1"
+      extraValueFiles:
+      - '/overrides/values-ztwim.yaml'
       annotations:
         argocd.argoproj.io/sync-wave: "-4"
+    openshell-extras:
+      name: openshell-extras
+      namespace: openshell
+      project: default
+      path: charts/openshell-extras
+      annotations:
+        argocd.argoproj.io/sync-wave: "-1"
     openshell:
       name: openshell
       namespace: openshell
       project: default
-      path: charts/openshell
+      # External OCI chart (specs/007 contract): NVIDIA OpenShell, pinned.
+      repoURL: ghcr.io/nvidia/openshell
+      chart: helm-chart
+      chartVersion: "0.0.116"
+      extraValueFiles:
+      - '/overrides/values-openshell-gateway.yaml'
       annotations:
         argocd.argoproj.io/sync-wave: "0"
     openshell-policy:
