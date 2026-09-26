@@ -71,10 +71,10 @@
 
 **Purpose**: Docs truthfulness and PR hygiene
 
-- [ ] T022 [P] Update README.md openshell section: external chart sourcing model (+ link to contracts/external-chart-contract.md bump runbook), remove wrapper-chart/vendoring references, `acme` issuer flip semantics
-- [ ] T023 [P] Update docs/openshell-spiffe-assessment.md pointers: ZTWIM operand config now via VP `ztwim` chart 0.1.1 (registry row), workload registration in charts/openshell-platform
-- [ ] T024 Update specs/006-openshell-gitops-install/tasks.md implementation-status note: superseded approach recorded (vendored wrapper copied upstream charts → replaced by 007 external sourcing); no other 006 artifact edits
-- [ ] T025 Final re-run of all gates from T020, commit refactor to 006-openshell-gitops-install, and update PR #6 body summarizing the external-sourcing refactor
+- [x] T022 [P] Update README.md openshell section: external chart sourcing model (+ link to contracts/external-chart-contract.md bump runbook), remove wrapper-chart/vendoring references, `acme` issuer flip semantics
+- [x] T023 [P] Update docs/openshell-spiffe-assessment.md pointers: ZTWIM operand config now via VP `ztwim` chart 0.1.1 (registry row), workload registration in charts/openshell-platform
+- [x] T024 Update specs/006-openshell-gitops-install/tasks.md implementation-status note: superseded approach recorded (vendored wrapper copied upstream charts → replaced by 007 external sourcing); no other 006 artifact edits
+- [x] T025 Final re-run of all gates from T020, commit refactor to 006-openshell-gitops-install, and update PR #6 body summarizing the external-sourcing refactor
 
 ---
 
