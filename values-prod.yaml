@@ -32,7 +32,8 @@ clusterGroup:
       targetNamespaces: []
     keycloak-system:
       operatorGroup: true
-      targetNamespaces: []
+      # RHBK is OwnNamespace/SingleNamespace-only (csv.installModes) — scope it.
+      targetNamespaces: [keycloak-system]
   subscriptions:
     lvms-operator:
       name: lvms-operator
