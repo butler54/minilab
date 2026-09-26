@@ -6,18 +6,18 @@ global:
   openshell:
     # Master switch. Keep false until G0 (vault seeds) and G1 (values review)
     # from quickstart.md are complete.
-    enabled: false
+    enabled: true
     # Public gateway FQDN. MUST end with global.dnsZone. A DNS record pointing
     # this host at the cluster ingress is a documented operator step (runbook).
     # PLACEHOLDER — replace with the real hostname before enabling.
-    gatewayHostname: openshell.example.com
+    gatewayHostname: openshell.apps.sno.tokyo-brunch.com
     # Which ACME endpoint the `acme` ClusterIssuer uses (must track the server
     # URL in overrides/values-certmanager.yaml). Prod per PR review of 006/007;
     # set staging only if ACME rate-limit churn requires it during bring-up.
     issuer: prod
     # SPIFFE trust domain for ZTWIM. Immutable after first reconcile.
     # Empty string = fall back to global.dnsZone.
-    trustDomain: ""
+    trustDomain: sno.tokyo-brunch.com
     # Concurrent sandbox capacity envelope; drives namespace ResourceQuota.
     sandbox:
       maxConcurrent: 3

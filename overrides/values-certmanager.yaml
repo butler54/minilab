@@ -10,7 +10,7 @@ certmgrOperator:
   issuers:
   - acme:
       # Keep == global.acmeEmail
-      email: acme@example.com
+      email: hostmaster@tokyo-brunch.com
       server: https://acme-v02.api.letsencrypt.org/directory
       privateKeySecretRef:
         name: letsencrypt-prod-account-key
@@ -24,4 +24,4 @@ certmgrOperator:
         selector:
           # Keep == global.dnsZone
           dnsZones:
-          - example.com
+          - tokyo-brunch.com

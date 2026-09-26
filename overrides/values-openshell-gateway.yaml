@@ -30,7 +30,7 @@ server:
       workloadApiSocketPath: /spiffe-workload-api/spire-agent.sock
   oidc:
     # PLACEHOLDER — OpenShift OAuth issuer of the TARGET cluster (V-AUTH).
-    issuer: https://oauth-openshift.apps.example.com
+    issuer: https://oauth-openshift.apps.sno.tokyo-brunch.com
     audience: openshell-cli
     caConfigMapName: openshell-oidc-ca
 
@@ -41,7 +41,7 @@ agentSandbox:
 openshiftRoute:
   enabled: true
   # Keep == global.openshell.gatewayHostname (drift-asserted)
-  host: openshell.example.com
+  host: openshell.apps.sno.tokyo-brunch.com
 certManager:
   enabled: true
   serverIssuerRef:
@@ -50,7 +50,7 @@ certManager:
     kind: ClusterIssuer
   # Keep [0] == global.openshell.gatewayHostname (drift-asserted)
   serverDnsNames:
-  - openshell.example.com
+  - openshell.apps.sno.tokyo-brunch.com
 
 podSecurityContext:
   fsGroup: null

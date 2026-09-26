@@ -6,7 +6,7 @@
 
 spire:
   # Keep == global.openshell.trustDomain-or-global.dnsZone (drift-asserted).
-  trustDomain: example.com
+  trustDomain: sno.tokyo-brunch.com
   bundleConfigMap: spire-bundle
   clusterName: minilab-prod
   server:

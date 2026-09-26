@@ -27,8 +27,8 @@ global:
   # zone hosted at Cloudflare and the Let's Encrypt account contact.
   # PLACEHOLDER values — replace before enabling; validate-schema asserts
   # openshell.gatewayHostname ends with this zone.
-  dnsZone: example.com
-  acmeEmail: acme@example.com
+  dnsZone: tokyo-brunch.com
+  acmeEmail: hostmaster@tokyo-brunch.com
   # Pattern-wide default repo for multi-source chart applications (VP community
   # charts: ocp-certmanager, ztwim, vault, external-secrets — coco-pattern model).
   # Per-app repoURL overrides (ghcr.io/nvidia, github.com git) take precedence.
