@@ -36,8 +36,9 @@ else:
     sa = ws.get("k8sServiceAccount", {})
     if sa.get("namespace") != "openshell" or sa.get("name") != "openshell-sandbox":
         fail.append(f"ClusterSPIFFEID selector wrong: {sa}")
-    if not isinstance(cs.get("spec", {}).get("ttl"), int):
-        fail.append("ClusterSPIFFEID ttl must be integer seconds")
+    ttl = cs.get("spec", {}).get("ttl")
+    if not (isinstance(ttl, str) and ttl.endswith("s")):
+        fail.append(f"ClusterSPIFFEID ttl must be a duration string (e.g. '3600s'), got {ttl!r}")
 
 # Toggle off -> no ztwim-dependent content from pattern-owned charts
 off = render("openshell-platform", kwsets=["--set", "global.openshell.ztwim.enabled=false"])

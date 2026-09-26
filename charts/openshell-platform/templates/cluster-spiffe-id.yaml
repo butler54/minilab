@@ -17,6 +17,8 @@ spec:
     k8sServiceAccount:
       name: openshell-sandbox
       namespace: openshell
-  # ttl is integer SECONDS in the Red Hat operator's schema (see sample).
-  ttl: 3600
+  # ttl is a duration STRING in this operator's CRD (API errors on integer:
+  # "must be of type string"). Sample YAMLs show plain 3600 but the API requires
+  # the unit-suffixed form.
+  ttl: "3600s"
 {{- end }}
