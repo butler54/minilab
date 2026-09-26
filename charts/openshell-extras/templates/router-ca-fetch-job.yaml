@@ -8,8 +8,9 @@ kind: Job
 metadata:
   name: openshell-oidc-ca-fetch
   namespace: openshift-config-managed
-  annotations:
-    argocd.argoproj.io/sync-wave: "-2"
+  # NOTE: do NOT wave-annotate this job negatively — it must apply together with
+  # its own ServiceAccount/RBAC (same app). A -2 wave made Argo wait for the job
+  # to be healthy before applying the SA it needs (deadlock, fixed in review).
 spec:
   backoffLimit: 4
   template:
