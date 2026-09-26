@@ -24,6 +24,7 @@ spec:
   backoffLimit: 4
   template:
     spec:
+      serviceAccountName: openshell-oidc-ca-fetch
       restartPolicy: Never
       containers:
       - name: fetch
