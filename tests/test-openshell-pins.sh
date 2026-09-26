@@ -31,7 +31,7 @@ for sr in scan_roots:
 
 # 2. Feature charts' ExternalChartRefs: exact versions (no ranges/floats).
 prod = yaml.safe_load(open(os.path.join(root, "values-prod.yaml")))["clusterGroup"]
-for key in ("openshell", "agent-sandbox", "cert-manager", "ztwim"):
+for key in ("openshell", "agent-sandbox", "cert-manager", "ztwim", "rh-keycloak"):
     app = prod.get("applications", {}).get(key, {})
     v = str(app.get("chartVersion", ""))
     if not (re.fullmatch(r"\d+\.\d+\.\d+", v) or re.fullmatch(r"v\d+\.\d+\.\d+", v)):
@@ -39,13 +39,15 @@ for key in ("openshell", "agent-sandbox", "cert-manager", "ztwim"):
 
 # 3. Feature images use concrete tags or digests (checks known pinned entries).
 gw = yaml.safe_load(open(os.path.join(root, "overrides/values-openshell-gateway.yaml")))
-img = gw.get("image", {}).get("tag", "")
+OSC_VER = "0.1.1"
+img = gw.get("gateway", {}).get("image", {}).get("tag", "")
 sup = (gw.get("supervisor", {}) or {}).get("image", {}).get("tag", "")
-if img != "0.0.116" or sup != "0.0.116":
-    fail.append(f"gateway/supervisor tags must be 0.0.116 (got {img!r}/{sup!r})")
-sandbox_img = (gw.get("server", {}) or {}).get("sandboxImage", "")
-if "@sha256:" not in sandbox_img:
-    fail.append("server.sandboxImage must be digest-pinned")
+rt = (gw.get("sandboxRuntime", {}) or {}).get("image", {}).get("tag", "")
+if img != OSC_VER or sup != OSC_VER or rt != OSC_VER:
+    fail.append(f"gateway/supervisor/sandboxRuntime tags must be {OSC_VER} (got {img!r}/{sup!r}/{rt!r})")
+sandbox_img = (gw.get("sandbox", {}) or {}).get("image", {}).get("digest", "")
+if not sandbox_img.startswith("sha256:"):
+    fail.append("sandbox.image must be digest-pinned")
 asb = yaml.safe_load(open(os.path.join(root, "overrides/values-agent-sandbox.yaml")))
 if asb.get("image", {}).get("tag") != "v1.0.3":
     fail.append("agent-sandbox image.tag must equal its pinned chart version")

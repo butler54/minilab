@@ -1,26 +1,34 @@
 # NVIDIA OpenShell gateway — upstream chart ROOT values (research.md D4).
 # Consumed ONLY by the `openshell` application (extraValueFiles); keys here are
 # the upstream chart's own value paths, not a wrapper alias.
-# Static pins:   research 006 D4/D10
-# Operator dials: dial⇄override map in values-layout-contract.md (drift-tested)
+# Chart: oci://ghcr.io/nvidia/openshell/helm-chart — pin lives in values-prod.yaml.
+# 0.1.x schema migration per https://docs.nvidia.com/openshell/latest/upgrade/0-1-0
 
 replicaCount: 1
 
-image:
-  tag: "0.0.116"
-
+# 0.1.x: per-component image maps; empty digest/tag falls back to chart
+# appVersion, keep explicit tags == chartVersion (drift-asserted by tests).
+gateway:
+  image:
+    tag: "0.1.1"
+sandboxRuntime:
+  image:
+    tag: "0.1.1"
 supervisor:
   image:
-    tag: "0.0.116"
-  sideloadMethod: init-container
-  topology: combined
+    tag: "0.1.1"
+
+# Default sandbox workload image. 0.1.x chart default is the minimal
+# nvcr.io/nvidia/base/ubuntu image; keep the digest-pinned community base
+# (fuller toolset) so pulls stay reproducible.
+sandbox:
+  image:
+    repository: ghcr.io/nvidia/openshell-community/sandboxes/base
+    digest: sha256:aeef1c63f00e2913ea002ccb3aaf925f338b5c5d70e63576f0d95c16a138044e
 
 server:
   telemetryEnabled: false
-  appArmorProfile: Unconfined
   disableTls: false
-  # Digest-pinned snapshot of upstream base:latest (2026-09-23, chart 0.0.116 era).
-  sandboxImage: ghcr.io/nvidia/openshell-community/sandboxes/base@sha256:aeef1c63f00e2913ea002ccb3aaf925f338b5c5d70e63576f0d95c16a138044e
   credentialStorage:
     existingSecret: openshell-kek
   # SPIFFE provider-token grants — tracks global.openshell.ztwim.enabled (drift-asserted).
@@ -29,10 +37,16 @@ server:
       enabled: true
       workloadApiSocketPath: /spiffe-workload-api/spire-agent.sock
   oidc:
-    # PLACEHOLDER — OpenShift OAuth issuer of the TARGET cluster (V-AUTH).
-    issuer: https://oauth-openshift.apps.sno.tokyo-brunch.com
+    # Keycloak (rh-keycloak app, keycloak-system ns), GitHub social login.
+    # Publicly-trusted ACME cert on the IdP → no caConfigMapName needed.
+    issuer: https://keycloak.tokyo-brunch.com/realms/openshell
     audience: openshell-cli
-    caConfigMapName: openshell-oidc-ca
+    rolesClaim: realm_access.roles
+    adminRole: openshell-admin
+    userRole: openshell-user
+  tls:
+    # Bearer-only OIDC listeners: CLI users hold no client certs.
+    enableMtls: false
 
 agentSandbox:
   preflight:

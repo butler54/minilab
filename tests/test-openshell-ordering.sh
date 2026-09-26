@@ -2,8 +2,9 @@
 set -euo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
-# Asserts the sync-wave ordering from specs/006-openshell-gitops-install/plan.md:
-#   cert-manager-config -7 < cert-manager -6 < agent-sandbox -5 < ztwim -4 < openshell-platform -3 < openshell-extras -1 < openshell 0 < openshell-policy +1 < openshell-demo +2
+# Asserts the sync-wave ordering from specs/006-openshell-gitops-install/plan.md
+# plus the rh-keycloak chain added for OIDC:
+#   cert-manager-config -7 < cert-manager -6 < agent-sandbox -5 < ztwim -4 < openshell-platform -3 < openshell-keycloak-config -3 < rh-keycloak -2 < openshell 0 < openshell-policy +1 < openshell-demo +2
 python3 - "$root" <<'EOF'
 import sys, yaml
 
@@ -24,14 +25,13 @@ expected_order = [
     "agent-sandbox",
     "ztwim",
     "openshell-platform",
-    "openshell-extras",
+    "openshell-keycloak-config",
+    "rh-keycloak",
     "openshell",
     "openshell-policy",
     "openshell-demo",
 ]
 present = [n for n in expected_order if n in waves]
-if present != [n for n in expected_order if n in apps] and len(present) != len([n for n in expected_order]):
-    pass  # waves may be added incrementally; check order of those present
 if present:
     seq = [waves[n] for n in present]
     if seq != sorted(seq):
@@ -40,13 +40,22 @@ if present:
 required_pairs = [
     ("agent-sandbox", "openshell"),       # CRDs+controller before gateway
     ("openshell-platform", "openshell"),  # SCC+quota+KEK before gateway
-    ("openshell-extras", "openshell"),    # OAuthClient/CA job before gateway
     ("cert-manager-config", "cert-manager"),  # cloudflare Secret before issuers
+    ("openshell-keycloak-config", "rh-keycloak"),  # IdP TLS cert before Keycloak
+    ("rh-keycloak", "openshell"),         # IdP must exist before OIDC gateway
     ("cert-manager", "openshell"),        # external cert issuer before gateway
 ]
 for a, b in required_pairs:
     if a in waves and b in waves and not waves[a] < waves[b]:
         fail.append(f"{a} (wave {waves[a]}) must precede {b} (wave {waves[b]})")
+
+# Subscriptions for the operator-backed apps must exist.
+sub_map = prod.get("subscriptions", {})
+if isinstance(sub_map, dict) and "rhbk" not in sub_map:
+    fail.append("subscriptions.rhbk (rhbk-operator) missing — rh-keycloak needs RHBK operator")
+nsmap = prod.get("namespaces", {})
+if "keycloak-system" not in nsmap:
+    fail.append("namespaces.keycloak-system missing")
 
 if fail:
     for f in fail:

@@ -30,6 +30,9 @@ clusterGroup:
     zero-trust-workload-identity-manager:
       operatorGroup: true
       targetNamespaces: []
+    keycloak-system:
+      operatorGroup: true
+      targetNamespaces: []
   subscriptions:
     lvms-operator:
       name: lvms-operator
@@ -57,6 +60,11 @@ clusterGroup:
       name: openshift-zero-trust-workload-identity-manager
       namespace: zero-trust-workload-identity-manager
       channel: stable-v1
+      installPlanApproval: Automatic
+    rhbk:
+      name: rhbk-operator
+      namespace: keycloak-system
+      channel: stable-v26.6
       installPlanApproval: Automatic
   applications:
     lvms-config:
@@ -141,13 +149,25 @@ clusterGroup:
       - '/overrides/values-ztwim.yaml'
       annotations:
         argocd.argoproj.io/sync-wave: "-4"
-    openshell-extras:
-      name: openshell-extras
-      namespace: openshell
+    rh-keycloak:
+      name: rh-keycloak
+      namespace: keycloak-system
       project: default
-      path: charts/openshell-extras
+      # External VP OCI chart: Red Hat build of Keycloak + realm import.
+      # src: https://github.com/validatedpatterns/rhbk-chart (mirrors layered-zero-trust)
+      chart: rhbk
+      chartVersion: "0.1.0"
+      extraValueFiles:
+      - '/overrides/values-keycloak.yaml'
       annotations:
-        argocd.argoproj.io/sync-wave: "-1"
+        argocd.argoproj.io/sync-wave: "-2"
+    openshell-keycloak-config:
+      name: openshell-keycloak-config
+      namespace: keycloak-system
+      project: default
+      path: charts/openshell-keycloak-config
+      annotations:
+        argocd.argoproj.io/sync-wave: "-3"
     openshell:
       name: openshell
       namespace: openshell
@@ -156,7 +176,7 @@ clusterGroup:
       # src: https://github.com/NVIDIA/OpenShell (oci://ghcr.io/nvidia/openshell/helm-chart)
       repoURL: ghcr.io/nvidia/openshell
       chart: helm-chart
-      chartVersion: "0.0.116"
+      chartVersion: "0.1.1"
       extraValueFiles:
       - '/overrides/values-openshell-gateway.yaml'
       annotations:

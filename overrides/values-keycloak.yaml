@@ -1,0 +1,124 @@
+# RH build of Keycloak (VP `rhbk` chart) — root values for the `rh-keycloak` app.
+# IdP for OpenShell OIDC; GitHub is the sole upstream identity source.
+# ClusterIssuer `acme` issues the public cert (charts/openshell-keycloak-config).
+
+keycloak:
+  # Operator-managed instance name; services derive from it (operator svc = <name>-service).
+  name: keycloak
+
+  # Infra admin user (admin console/API) — password from vault via ESO.
+  adminUser:
+    enabled: true
+    username: admin
+    passwordVaultKey: secret/data/hub/openshell-keycloak
+    secretName: keycloak-admin-user
+
+  # In-cluster PostgreSQL backing store — password from the same vault entry,
+  # property `db-password` (chart hardcodes the property names).
+  postgresqlDb:
+    database: keycloak
+    username: keycloak
+    passwordVaultKey: secret/data/hub/openshell-keycloak
+    secretName: postgresql-db
+
+  tls:
+    # ACME-issued cert served by the Keycloak pod itself (publicly trusted, so
+    # gateway + CLI need no private CA bundle). Created by
+    # charts/openshell-keycloak-config; name must stay in sync there.
+    secret: keycloak-external-tls
+    serviceServing: false
+
+  ingress:
+    enabled: true
+    # Keep == global.openshell.keycloak.hostname (openshell-keycloak-config cert dnsNames)
+    hostname: keycloak.tokyo-brunch.com
+    # Keycloak pod terminates TLS with the LE cert; reencrypt would require
+    # plumbing a private destination CA.
+    termination: passthrough
+
+  realms:
+    - realm: openshell
+      displayName: OpenShell
+      enabled: true
+      registrationAllowed: false
+      attributes:
+        oauth2DeviceAuthorizationGrantEnabled: "true"
+      # Any GitHub login gets openshell-user (hardcoded IdP mapper below).
+      # `openshell-admin` is NOT auto-granted: after first GitHub login the
+      # operator's federated user exists in Keycloak and the runbook step
+      # (KC admin UI, password in vault) assigns it. Hardcoding admin in the
+      # realm would make ANY GitHub-authenticated person a gateway admin.
+      roles:
+        realm:
+        - name: openshell-admin
+        - name: openshell-user
+      clients:
+        - clientId: openshell-cli
+          name: OpenShell CLI
+          publicClient: true
+          standardFlowEnabled: true
+          implicitFlowEnabled: false
+          directAccessGrantsEnabled: false
+          serviceAccountsEnabled: false
+          redirectUris:
+          # CLI binds an ephemeral loopback port; Keycloak allows port wildcards
+          # on loopback authorities (RFC 8252 semantics).
+          - http://127.0.0.1:*/callback
+          - http://localhost:*/callback
+          attributes:
+            pkce.code.challenge.method: S256
+            oauth2.device.authorization.grant.enabled: "true"
+          protocolMappers:
+          - name: openshell-cli-audience
+            protocol: openid-connect
+            protocolMapper: oidc-audience-mapper
+            config:
+              included.client.audience: openshell-cli
+              access.token.claim: "true"
+              id.token.claim: "false"
+      identityProviders:
+        - alias: github
+          providerId: github
+          enabled: true
+          trustEmail: true
+          storeToken: false
+          config:
+            clientId: ${GITHUB_CLIENT_ID}
+            clientSecret: ${GITHUB_CLIENT_SECRET}
+            syncMode: IMPORT
+      # Auto-grant openshell-user to every GitHub-federated login (safe role:
+      # workspace-scoped access only, no platform admin operations).
+      identityProviderMappers:
+      - name: github-to-openshell-user
+        identityProviderAlias: github
+        identityProviderMapper: oidc-hardcoded-role-idp-mapper
+        config:
+          role.value: openshell-user
+
+  # GitHub OAuth App credentials → keycloak-github-oauth Secret (from vault).
+  extraSecrets:
+  - name: keycloak-github-oauth-es
+    targetName: keycloak-github-oauth
+    data:
+    - secretKey: github_client_id
+      remoteRef:
+        key: secret/data/hub/openshell-github-oauth
+        property: client-id
+    - secretKey: github_client_secret
+      remoteRef:
+        key: secret/data/hub/openshell-github-oauth
+        property: client-secret
+    templateData:
+      client-id: "{{ .github_client_id }}"
+      client-secret: "{{ .github_client_secret }}"
+
+  # Map ${GITHUB_*} placeholders in the realm above to the synced Secret keys.
+  realmPlaceholders:
+    GITHUB_CLIENT_ID:
+      secret:
+        name: keycloak-github-oauth
+        key: client-id
+    GITHUB_CLIENT_SECRET:
+      secret:
+        name: keycloak-github-oauth
+        key: client-secret

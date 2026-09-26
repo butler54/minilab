@@ -1,0 +1,20 @@
+{{- if .Values.global.openshell.enabled }}
+# Publicly-trusted Let's Encrypt cert for the Keycloak IdP endpoint.
+# Keycloak serves this cert directly (passthrough Route), so gateway and CLI
+# trust OIDC discovery/JWKS with system roots — no private-CA plumbing.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: openshell-keycloak-external
+  namespace: keycloak-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  secretName: {{ .Values.cert.secretName }}
+  dnsNames:
+  - {{ .Values.global.openshell.keycloak.hostname | required "openshell.keycloak.hostname must be set" }}
+  issuerRef:
+    # Single VP ClusterIssuer (research 007 D5) — must match overrides/values-certmanager.yaml.
+    name: acme
+    kind: ClusterIssuer
+{{- end }}

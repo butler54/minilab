@@ -1,5 +1,0 @@
-apiVersion: v2
-name: openshell-extras
-description: OpenShift OAuth OIDC integration for OpenShell — public PKCE OAuthClient and router-CA fetch job (pattern-owned; 006 D3, refactor 007)
-type: application
-version: 0.1.0

@@ -39,8 +39,8 @@ for d in yaml.safe_load_all(sys.stdin):
 ')
 [ "$pods" = "24" ] || { echo "quota did not scale with maxConcurrent=5 (pods=$pods)"; exit 1; }
 
-# Disabled feature renders nothing.
-off=$(helm template openshell-platform "$chart" -f "$root/values-global.yaml" -f "$root/overrides/values-openshell.yaml")
+# Disabled feature renders nothing (force off regardless of committed dials).
+off=$(helm template openshell-platform "$chart" -f "$root/values-global.yaml" -f "$root/overrides/values-openshell.yaml" --set 'global.openshell.enabled=false')
 count=$(echo "$off" | python3 -c '
 import sys, yaml
 print(sum(1 for d in yaml.safe_load_all(sys.stdin) if d))

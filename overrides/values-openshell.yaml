@@ -21,6 +21,10 @@ global:
     # Concurrent sandbox capacity envelope; drives namespace ResourceQuota.
     sandbox:
       maxConcurrent: 3
+    # Keycloak IdP for gateway OIDC (rh-keycloak app). DNS record for this FQDN
+    # at the cluster ingress is a documented operator step (runbook).
+    keycloak:
+      hostname: keycloak.tokyo-brunch.com
     # Set enabled=false to skip SPIFFE identity components entirely (e.g. ZTWIM
     # operator unavailable on the cluster version — FR-011 fallback). ALSO
     # comment out the `ztwim` subscription+namespace and the `ztwim` application

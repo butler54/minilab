@@ -1,0 +1,5 @@
+apiVersion: v2
+name: openshell-keycloak-config
+description: Keycloak platform config for OpenShell OIDC — internal TLS CA bundle + GitHub OAuth app external secret
+type: application
+version: 0.1.0

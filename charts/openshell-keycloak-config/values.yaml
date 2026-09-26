@@ -1,0 +1,8 @@
+global:
+  openshell:
+    enabled: false
+    keycloak:
+      hostname: keycloak.tokyo-brunch.com
+
+cert:
+  secretName: keycloak-external-tls
