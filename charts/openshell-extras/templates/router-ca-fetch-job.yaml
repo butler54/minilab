@@ -1,13 +1,14 @@
 {{- if .Values.global.openshell.enabled }}
 # One-shot job: copy router-ca's bundle into the openshell namespace as the
-# ConfigMap server.oidc.caConfigMapName points at. Idempotent (oc apply); runs
-# before the gateway workload via sync wave. Router CA rotation is the
-# documented manual re-trigger (delete the job, resync).
+# ConfigMap server.oidc.caConfigMapName points at. Idempotent (oc apply).
+# Runs in `openshell` — NOT openshift-config-managed, which carries a CVO-owned
+# default-deny-all NetworkPolicy (pods there cannot reach the API server).
+# Router CA rotation is the documented manual re-trigger (delete the job, resync).
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: openshell-oidc-ca-fetch
-  namespace: openshift-config-managed
+  namespace: openshell
   annotations:
     # Argo GitOps hook: the job is re-created (BeforeHookCreation) on each sync,
     # dodging batch/Job pod-spec immutability on image changes, and the app no
