@@ -22,7 +22,9 @@ spec:
       restartPolicy: Never
       containers:
       - name: fetch
-        image: {{ $.Values.global.lvmsCompatibility.cliImage | quote }}
+        # Digested OCP 4.22.13 release cli (registry.redhat.io removed :latest;
+        # keep in sync with values-global.yaml lvmsCompatibility.cliImage)
+        image: quay.io/openshift-release-dev/ocp-v4.0-art-dev@sha256:84b0aa6c19cdedba485212a5b599bdb9fd6975d5c808aaf4f115500b782ee600
         command:
         - /bin/bash
         - -ec
