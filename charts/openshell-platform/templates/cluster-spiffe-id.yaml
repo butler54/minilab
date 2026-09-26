@@ -9,14 +9,13 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "+3"
 spec:
-  # Selector shape verified against the Red Hat operator sample
-  # (config/samples/spire.spiffe.io_v1alpha1_clusterspiffeid.yaml): only
-  # workloadSelector.k8sServiceAccount{name,namespace} — no top-level namespace key.
+  # Selector shape: this operator's CRD (v1alpha1) has NO workloadSelector.k8sServiceAccount
+  # field — schema exposes workloadSelectorTemplates (string list); unknown
+  # fields are silently pruned (found live 2026-09-26).
+  workloadSelectorTemplates:
+  - k8s:sa:openshell-sandbox
+  - k8s:ns:openshell
   spiffeIDTemplate: /openshell/sandbox
-  workloadSelector:
-    k8sServiceAccount:
-      name: openshell-sandbox
-      namespace: openshell
   # ttl is a duration STRING in this operator's CRD (API errors on integer:
   # "must be of type string"). Sample YAMLs show plain 3600 but the API requires
   # the unit-suffixed form.
