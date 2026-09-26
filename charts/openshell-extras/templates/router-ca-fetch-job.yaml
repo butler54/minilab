@@ -1,25 +1,29 @@
 {{- if .Values.global.openshell.enabled }}
-# One-shot job: copy router-ca's bundle into the openshell namespace as the
-# ConfigMap server.oidc.caConfigMapName points at. Idempotent (oc apply).
-# Runs in `openshell` — NOT openshift-config-managed, which carries a CVO-owned
-# default-deny-all NetworkPolicy (pods there cannot reach the API server).
-# Router CA rotation is the documented manual re-trigger (delete the job, resync).
+# One-shot job: capture the OAuth route's serving CA chain by probing the
+# public OAuth endpoint and write it as ConfigMap server.oidc.caConfigMapName.
+#
+# Why probe the endpoint instead of reading openshift-config-managed/router-ca:
+# (1) openshift-config-managed is CVO-owned with a default-deny-all NetworkPolicy
+#     (pods there cannot reach the API server);
+# (2) the OpenShift ingress operator does not reliably publish router-ca on
+#     every cluster build (absent here);
+# (3) the serving chain is public TLS material — no privileged reads needed
+#     (least-privilege by elimination: no RBAC at all).
+# Re-trigger manually after router CA rotation: delete the job + resync.
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: openshell-oidc-ca-fetch
   namespace: openshell
   annotations:
-    # Argo GitOps hook: the job is re-created (BeforeHookCreation) on each sync,
-    # dodging batch/Job pod-spec immutability on image changes, and the app no
-    # longer health-blocks waiting for a one-shot batch Job.
+    # Argo GitOps hook: re-created (BeforeHookCreation) on each sync, dodging
+    # batch/Job pod-spec immutability; app health does not block on one-shots.
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
   backoffLimit: 4
   template:
     spec:
-      serviceAccountName: openshell-router-ca-pull
       restartPolicy: Never
       containers:
       - name: fetch
@@ -30,10 +34,12 @@ spec:
         - /bin/bash
         - -ec
         - |
-          bundle=$(oc get configmap router-ca -n openshift-config-managed -o jsonpath='{.data.ca-bundle\.crt}')
-          [ -n "$bundle" ] || { echo "router-ca cm empty"; exit 1; }
+          host={{ printf "oauth-openshift.%s" $.Values.global.localClusterDomain | quote }}
+          echo | openssl s_client -connect "${host}:443" -servername "$host" -showcerts 2>/dev/null \
+            | awk '/BEGIN CERTIFICATE/,/END CERTIFICATE/{print; if (/END CERTIFICATE/) exit}' > /tmp/ca.crt
+          openssl x509 -in /tmp/ca.crt -noout -subject || { echo "no cert chain captured"; exit 1; }
           oc create configmap openshell-oidc-ca -n openshell \
-            --from-literal=ca.crt="$bundle" \
-            --dry-run=client -o yaml | oc apply -f -
-          echo "openshell-oidc-ca synced"
+            --from-file=ca.crt=/tmp/ca.crt \
+            --dry-run=client -o yaml | oc apply --server-side -f -
+          echo "openshell-oidc-ca synced from ${host}"
 {{- end }}
