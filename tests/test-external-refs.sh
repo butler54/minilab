@@ -26,7 +26,9 @@ for dirpath, dirnames, filenames in os.walk(os.path.join(root, "charts")):
             if deps:
                 fail.append(f"{rel}/Chart.yaml: wrapper-style OCI/git dependencies not allowed (use ExternalChartRef instead): {[d.get('name') for d in deps]}")
     base = os.path.basename(dirpath)
-    if base == "crds" and "agent-sandbox-rc" in dirpath or base == "crds":
+    # Pattern-owned charts may not carry vendored CRD content (any crds/ dir is
+    # upstream-shaped content by definition for this feature's charts).
+    if base == "crds":
         fail.append(f"{rel}: vendored CRD directory present")
 
 # Known upstream-content signatures that must never be committed
