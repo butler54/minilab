@@ -1,6 +1,10 @@
 global:
   openshell:
     enabled: false
+    # Hermetic default so the chart self-renders without nil-pointer when the
+    # operator dials are not supplied (refactor 007, T026).
+    ztwim:
+      enabled: false
     sandbox:
       maxConcurrent: 3
 

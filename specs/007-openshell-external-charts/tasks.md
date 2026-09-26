@@ -110,3 +110,10 @@ Phases 1–2 alone are not shippable (tree half-referenced); the true atomic MVP
 - The 006 chart `openshell-extras` (T012) is pattern-owned (our OAuth/CA integration), NOT an upstream copy — same for openshell-platform/policy/demo and the slimmed cert-manager-config: FR-001 is satisfied even though local charts remain
 - VP community charts are external upstreams under FR-003; their own CI covers internal correctness — our suites assert OUR values wiring, not their templates
 - Offline `helm template` of external sources is NOT a gate (would force local fetches); online smoke row in V-SRC step 4 covers render sanity pre-testing-phase
+
+---
+
+## Phase 6: Convergence (2026-09-26)
+
+- [x] T026 Add hermetic `global.openshell.ztwim.enabled=false` default to charts/openshell-platform/values.yaml so the chart renders safely on its own dials (enabled=true without the toggle set must no-op, not nil-pointer) per FR-002 / data-model PatternOwnedChart hermeticity (partial)
+- [x] T027 Clean the dead typo condition (`agent-sandbox-rc`) in the charts census of tests/test-external-refs.sh — the predicate should flag any crds/ directory (or upstream CRD content) without the vestigial branch per SC-003 (partial)
