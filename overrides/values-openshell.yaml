@@ -11,10 +11,10 @@ global:
     # this host at the cluster ingress is a documented operator step (runbook).
     # PLACEHOLDER — replace with the real hostname before enabling.
     gatewayHostname: openshell.example.com
-    # Which ClusterIssuer issues the gateway's external certificate.
-    # Start with staging; flip to prod only after staging issuance is proven
-    # (Let's Encrypt limits duplicate SAN sets to 5/7 days on the prod endpoint).
-    issuer: staging
+    # Which ACME endpoint the `acme` ClusterIssuer uses (must track the server
+    # URL in overrides/values-certmanager.yaml). Prod per PR review of 006/007;
+    # set staging only if ACME rate-limit churn requires it during bring-up.
+    issuer: prod
     # SPIFFE trust domain for ZTWIM. Immutable after first reconcile.
     # Empty string = fall back to global.dnsZone.
     trustDomain: ""

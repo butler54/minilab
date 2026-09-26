@@ -3,7 +3,9 @@ set -euo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # Contract: specs/006-openshell-gitops-install/contracts/secrets-contract.md
-# 1. Every ExternalSecret remoteRef must match the contracted vault path/key.
+# 1. Every ExternalSecret remoteRef key must be derived from the vaultPrefix
+#    declared for that secret in values-secret.yaml.template (hub|global —
+#    alignment is what makes the path valid, per PR review).
 # 2. No secret literals anywhere in charts/ or values files.
 python3 - "$root" <<'EOF'
 import os, re, sys, yaml
@@ -11,13 +13,21 @@ import os, re, sys, yaml
 root = sys.argv[1]
 fail = []
 
-# (chart-dir, file-glob, expected remoteRef key -> {property, secretKey, target})
+# Derive expected vault paths from the seed template (single source of truth).
+seed = yaml.safe_load(open(os.path.join(root, "values-secret.yaml.template")))
+expected_key = {}
+for entry in seed.get("secrets", []):
+    name = entry.get("name", "")
+    prefixes = entry.get("vaultPrefixes", [])
+    if prefixes and name.startswith("openshell"):
+        expected_key[name] = prefixes[0]
+assert len(expected_key) == 3, f"expected 3 openshell vault entries, got {len(expected_key)}"
+
+# (ExternalSecret template -> its openshell-<name> secret)
 expected = {
     "openshell-platform/templates/openshell-kek-es.yaml": {
-        "key": "secret/data/global/openshell-gateway-kek",
+        "vault_name": "openshell-gateway-kek",
         "property": "kek",
-        # The DATA KEY inside the cluster Secret must be exactly
-        # "key-encryption-key" (hard-required by the upstream chart helper).
         "secretKey": "key-encryption-key",
         "target": "openshell-kek",
         "namespace": "openshell",
@@ -25,7 +35,7 @@ expected = {
         "extra_sets": [],
     },
     "cert-manager-config/templates/cloudflare-token-es.yaml": {
-        "key": "secret/data/global/openshell-cloudflare",
+        "vault_name": "openshell-cloudflare",
         "property": "api-token",
         "secretKey": "api-token",
         "target": "cloudflare-api-token",
@@ -34,7 +44,7 @@ expected = {
         "extra_sets": [],
     },
     "openshell-demo/templates/demo-assets.yaml": {
-        "key": "secret/data/global/openshell-openai",
+        "vault_name": "openshell-openai",
         "property": "api-key",
         "secretKey": "api-key",
         "target": "openai-api-key",
@@ -81,10 +91,17 @@ for rel, want in expected.items():
             continue
         for entry in spec.get("data", []):
             rr = entry.get("remoteRef", {})
-            if rr.get("key") == want["key"] and rr.get("property") == want["property"] and entry.get("secretKey") == want["secretKey"]:
+            key = rr.get("key", "")
+            prefix = expected_key.get(want["vault_name"])
+            expected_path = f"secret/data/{prefix}/{want['vault_name']}"
+            if key != expected_path:
+                fail.append(f"{rel}: remoteRef key {key!r} != derived path {expected_path!r} "
+                            f"(vaultPrefix={prefix!r} from values-secret.yaml.template)")
+                continue
+            if rr.get("property") == want["property"] and entry.get("secretKey") == want["secretKey"]:
                 found = True
     if not found:
-        fail.append(f"{rel}: remoteRef {want['key']} / property {want['property']} not found")
+        fail.append(f"{rel}: ExternalSecret data for {want['vault_name']} (property {want['property']}, secretKey {want['secretKey']}) not found")
 
 # No secret material in Git: block stringData and obvious literals outside the
 # seed template (values-secret.yaml.template, which documents vault inputs).

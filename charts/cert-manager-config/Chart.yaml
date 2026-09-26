@@ -1,5 +1,5 @@
 apiVersion: v2
 name: cert-manager-config
-description: Let's Encrypt ACME ClusterIssuers (DNS-01 via Cloudflare) and their API credential wiring (feature 006-openshell-gitops-install)
+description: Cloudflare API credential wiring consumed by cert-manager ACME DNS-01 issuers
 type: application
 version: 0.1.0

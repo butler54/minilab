@@ -99,6 +99,7 @@ clusterGroup:
       namespace: agent-sandbox-system
       project: default
       # External git-sourced chart (specs/007 contract): upstream helm/ dir at tag.
+      # src: https://github.com/kubernetes-sigs/agent-sandbox
       repoURL: https://github.com/kubernetes-sigs/agent-sandbox
       path: helm
       chartVersion: v1.0.3
@@ -120,6 +121,7 @@ clusterGroup:
       # VP community chart (specs/007 contract): cert-manager operand config +
       # single `acme` ClusterIssuer (Cloudflare DNS-01). Operator subscription
       # stays in clustergroup `subscriptions:` below.
+      # src: https://github.com/validatedpatterns/ocp-certmanager-chart
       chart: ocp-certmanager
       chartVersion: "0.2.0"
       extraValueFiles:
@@ -132,6 +134,7 @@ clusterGroup:
       project: default
       # VP community chart (specs/007 contract): SPIRE stack singleton CRs.
       # The operator subscription stays in clustergroup `subscriptions:` below.
+      # src: https://github.com/validatedpatterns/ztwim-chart
       chart: ztwim
       chartVersion: "0.1.1"
       extraValueFiles:
@@ -150,6 +153,7 @@ clusterGroup:
       namespace: openshell
       project: default
       # External OCI chart (specs/007 contract): NVIDIA OpenShell, pinned.
+      # src: https://github.com/NVIDIA/OpenShell (oci://ghcr.io/nvidia/openshell/helm-chart)
       repoURL: ghcr.io/nvidia/openshell
       chart: helm-chart
       chartVersion: "0.0.116"

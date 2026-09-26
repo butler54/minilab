@@ -86,3 +86,9 @@ Rendering external sources offline: `helm template` against OCI/git sources requ
 | VP chart values drift (`ztwim` 0.1.x, `ocp-certmanager` 0.2.x) | Exact version pins + per-app override keys asserted by suites |
 | Local render tests lose `helm template` depth for external charts | Online smoke step in testing phase; offline merged-values asserts cover rule-based properties |
 | `openshell.*` passthrough removal breaks 006-era test expectations | Suites updated in the same change set (007 tasks), no stale assertions survive |
+
+## Post-review notes (2026-09-26)
+
+- **R1 — No external load balancer required anywhere**: the gateway Route shares the default OpenShift router's wildcard VIP (`*.apps.<cluster-domain>`); TLS passthrough routes by SNI, so the gateway's bare-IP and port needs are identical to every other Route on the cluster. Inbound IPAM alternative (MetalLB/DNS LB) would only be needed if the gateway had to raw-socket a non-route protocol — it does not. cert-manager DNS-01, VP chart pulls, and NVIDIA/agent-sandbox sources are all outbound 443.
+- **R2 — ACME posture**: Cloudflare DNS-01 against Let's Encrypt **production** (review direction); staging remains a values flip of the `acme` issuer's server URL. The single-`acme` topology is unchanged.
+- **R3 — Vault prefix alignment**: openshell secrets use the `hub` vaultPrefix (`secret/data/hub/...`); the prefix is valid for the hub cluster and is asserted aligned between seed template and each ExternalSecret by the secrets test.

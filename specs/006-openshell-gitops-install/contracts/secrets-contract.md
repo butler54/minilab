@@ -6,11 +6,11 @@ All secret VALUES live in the pattern's vault. Git contains only ExternalSecret 
 
 | Vault path (operator seeds) | ExternalSecret (Git) | Cluster Secret | Namespace | Keys | Consumer |
 |-----------------------------|----------------------|----------------|-----------|------|----------|
-| `secret/data/global/openshell-cloudflare` | `cloudflare-api-token-es` | `cloudflare-api-token` | `cert-manager` | `api-token` | ACME DNS-01 solver (both ClusterIssuers) |
-| `secret/data/global/openshell-gateway-kek` | `openshell-kek-es` | `openshell-kek` | `openshell` | `key-encryption-key` (data key required by upstream chart helper; vault field is `kek`) | Gateway credential storage (`server.credentialStorage.existingSecret`, D4) |
-| `secret/data/global/openshell-openai` | `openai-api-key-es` | `openai-api-key` | `openshell` | `api-key` | Gateway-side provider credential (D8); never mounted into sandbox pods |
+| `secret/data/hub/openshell-cloudflare` | `cloudflare-api-token-es` | `cloudflare-api-token` | `cert-manager` | `api-token` | ACME DNS-01 solver (the `acme` ClusterIssuer) |
+| `secret/data/hub/openshell-gateway-kek` | `openshell-kek-es` | `openshell-kek` | `openshell` | `key-encryption-key` (data key required by upstream chart helper; vault field is `kek`) | Gateway credential storage (`server.credentialStorage.existingSecret`, D4) |
+| `secret/data/hub/openshell-openai` | `openai-api-key-es` | `openai-api-key` | `openshell` | `api-key` | Gateway-side provider credential (D8); never mounted into sandbox pods |
 
-(Vault paths follow the repo's `secret/data/global/<name>` ESO convention; the seeds are declared in `values-secret.yaml.template` — KEK via `onMissingValue: generate`, the other two via `prompt`.)
+(Vault paths follow the rule from PR review: the path prefix MUST equal the `vaultPrefixes` entry of the same secret in `values-secret.yaml.template` — `hub` here because this deployment is the hub cluster and that is the valid prefix for it. `tests/test-openshell-secrets.sh` derives expected paths from the seed template so drift is caught when either side moves. KEK via `onMissingValue: generate`, the other two via `prompt`.)
 
 ## Rules
 
