@@ -1,0 +1,22 @@
+{{- if .Values.global.openshell.enabled }}
+# Passthrough Route: Keycloak pod terminates TLS with the ACME cert in
+# {{ .Values.cert.secretName }} (see keycloak.tls.secret in overrides/values-keycloak.yaml).
+# Backend is the RHBK operator-managed keycloak-service on 8443.
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: openshell-keycloak
+  namespace: keycloak-system
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  host: {{ .Values.global.openshell.keycloak.hostname | required "openshell.keycloak.hostname must be set" }}
+  to:
+    kind: Service
+    name: keycloak-service
+  port:
+    targetPort: 8443
+  tls:
+    termination: passthrough
+  wildcardPolicy: None
+{{- end }}

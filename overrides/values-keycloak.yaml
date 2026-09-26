@@ -29,12 +29,16 @@ keycloak:
     serviceServing: false
 
   ingress:
-    enabled: true
-    # Keep == global.openshell.keycloak.hostname (openshell-keycloak-config cert dnsNames)
+    # Chart Ingress DISABLED — ArgoCD waits for it to become Healthy, but the
+    # ingress-to-route controller refuses to convert it while its backend
+    # service (operator-created `keycloak-service`) doesn't exist yet; that
+    # service only exists AFTER the Keycloak CR is applied (sync-wave 36), so
+    # the app deadlocks. We manage our own passthrough Route in
+    # charts/openshell-keycloak-config instead (Routes admit without a backend).
+    enabled: false
+    # Keep == global.openshell.keycloak.hostname — still used by
+    # spec.hostname (URL generation) and the Route in openshell-keycloak-config.
     hostname: keycloak.tokyo-brunch.com
-    # Keycloak pod terminates TLS with the LE cert; reencrypt would require
-    # plumbing a private destination CA.
-    termination: passthrough
 
   realms:
     - realm: openshell
