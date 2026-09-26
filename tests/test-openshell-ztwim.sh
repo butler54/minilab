@@ -2,69 +2,56 @@
 set -euo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
-# Asserts ZTWIM CRs in charts/ztwim-config match the operator schemas verified
-# in convergence (T047) and that the ztwim.enabled toggle works (T048).
+# Downscoped post-refactor (007): upstream SPIRE CRs now come from the VP
+# `ztwim` chart (its own CI covers them). This suite asserts what's OURS:
+# the ClusterSPIFFEID workload registration shape, the ztwim.enabled gate on
+# pattern-owned content, and the values intent carried in overrides/values-ztwim.yaml.
 python3 - "$root" <<'EOF'
-import subprocess, sys, yaml, re
+import subprocess, sys, yaml
 
 root = sys.argv[1]
 fail = []
 
-def render(kwsets):
-    cmd = ["helm", "template", "ztwim-config", f"{root}/charts/ztwim-config",
+def render(chart_dir, kwsets=None):
+    cmd = ["helm", "template", chart_dir, f"{root}/charts/{chart_dir}",
            "-f", f"{root}/values-global.yaml",
            "-f", f"{root}/overrides/values-openshell.yaml",
-           "--set", "global.openshell.enabled=true"]
-    cmd += kwsets
+           "--set", "global.openshell.enabled=true",
+           "--set", "global.openshell.ztwim.enabled=true"]
+    cmd += kwsets or []
     out = subprocess.run(cmd, capture_output=True, text=True)
     if out.returncode != 0:
-        fail.append(f"helm template ztwim-config failed: {out.stderr.strip()[:300]}")
+        fail.append(f"helm template {chart_dir} failed: {out.stderr.strip()[:300]}")
         return []
     return [d for d in yaml.safe_load_all(out.stdout) if d]
 
-docs = render([])
-if len(docs) != 5:
-    fail.append(f"expected 5 manifests (ZTWIM, SpireServer, SpireAgent, SpiffeCSIDriver, ClusterSPIFFEID), got {len(docs)}")
-
-specs = {d["kind"]: d.get("spec", {}) for d in docs if "kind" in d}
-
-ss = specs.get("SpireServer", {})
-if not ss:
-    fail.append("SpireServer missing")
+docs = render("openshell-platform")
+cs = next((d for d in docs if d.get("kind") == "ClusterSPIFFEID"), None)
+if not cs:
+    fail.append("ClusterSPIFFEID not rendered by openshell-platform when ztwim.enabled=true")
 else:
-    for stray in ("trustDomain", "clusterName"):
-        if stray in ss:
-            fail.append(f"SpireServer.spec.{stray} must not be set (lives only on ZeroTrustWorkloadIdentityManager)")
-    ji = ss.get("jwtIssuer", "")
-    if not re.fullmatch(r"(?i)https?://[^\s?#]+", ji):
-        fail.append(f"SpireServer.spec.jwtIssuer must be an http(s) URL, got {ji!r}")
-    for req in ("caSubject", "persistence", "datastore"):
-        if req not in ss:
-            fail.append(f"SpireServer.spec.{req} required by schema")
+    ws = cs.get("spec", {}).get("workloadSelector", {})
+    if "namespace" in ws:
+        fail.append("ClusterSPIFFEID workloadSelector.namespace not in Red Hat operator sample schema")
+    sa = ws.get("k8sServiceAccount", {})
+    if sa.get("namespace") != "openshell" or sa.get("name") != "openshell-sandbox":
+        fail.append(f"ClusterSPIFFEID selector wrong: {sa}")
+    if not isinstance(cs.get("spec", {}).get("ttl"), int):
+        fail.append("ClusterSPIFFEID ttl must be integer seconds")
 
-sa = specs.get("SpireAgent", {})
-for stray in ("trustDomain", "clusterName"):
-    if stray in sa:
-        fail.append(f"SpireAgent.spec.{stray} must not be set")
+# Toggle off -> no ztwim-dependent content from pattern-owned charts
+off = render("openshell-platform", kwsets=["--set", "global.openshell.ztwim.enabled=false"])
+if any(d.get("kind") == "ClusterSPIFFEID" for d in off):
+    fail.append("ClusterSPIFFEID rendered while ztwim.enabled=false")
 
-cs = specs.get("ClusterSPIFFEID", {})
-ws = cs.get("workloadSelector", {})
-if "namespace" in ws:
-    fail.append("ClusterSPIFFEID workloadSelector.namespace not in Red Hat operator sample schema")
-sa_ref = ws.get("k8sServiceAccount", {})
-if sa_ref.get("namespace") != "openshell" or sa_ref.get("name") != "openshell-sandbox":
-    fail.append(f"ClusterSPIFFEID k8sServiceAccount selector wrong: {sa_ref}")
-if not isinstance(cs.get("ttl"), int):
-    fail.append("ClusterSPIFFEID ttl must be integer seconds")
-
-ztwim = specs.get("ZeroTrustWorkloadIdentityManager", {})
-if "trustDomain" not in ztwim or "clusterName" not in ztwim:
-    fail.append("ZeroTrustWorkloadIdentityManager requires trustDomain + clusterName")
-
-# Toggle off -> nothing renders (FR-011 fallback)
-off = render(["--set", "global.openshell.ztwim.enabled=false"])
-if len(off) != 0:
-    fail.append(f"ztwim.enabled=false must render no manifests, got {len(off)}")
+v = yaml.safe_load(open(f"{root}/overrides/values-ztwim.yaml"))
+spire = v.get("spire", {})
+if spire.get("federation", {}).get("enabled") not in (False, "false", None):
+    fail.append("ztwim federation must stay disabled for the lab")
+if (v.get("defaultDenyNetworkPolicy") or {}).get("enabled") is not False:
+    fail.append("default-deny network policies must be off (lab posture)")
+if spire.get("server", {}).get("persistence", {}).get("size") != "2Gi":
+    fail.append("spire persistence must be pinned at 2Gi")
 
 if fail:
     for f in fail:

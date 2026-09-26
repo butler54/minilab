@@ -2,113 +2,72 @@
 set -euo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
+# Facile prova: after the 007 refactor, upstream charts render at values root
+# from external sources, so render-based asserts become merged-values asserts
+# over the dial file + per-app override files (contracts/values-layout-contract.md).
 python3 - "$root" <<'EOF'
-import os, subprocess, sys, yaml
+import os, sys, yaml
 
 root = sys.argv[1]
 fail = []
+load = lambda rel: yaml.safe_load(open(os.path.join(root, rel)))
 
-def render(chart, extra=None):
-    cmd = ["helm", "template", os.path.basename(chart), os.path.join(root, "charts", chart),
-           "-f", os.path.join(root, "values-global.yaml"),
-           "-f", os.path.join(root, "overrides", "values-openshell.yaml"),
-           "--set", "global.openshell.enabled=true"]
-    if extra:
-        cmd += extra
-    out = subprocess.run(cmd, capture_output=True, text=True, cwd=root)
-    if out.returncode != 0:
-        fail.append(f"helm template {chart} failed: {out.stderr.strip()[:400]}")
-        return []
-    return [d for d in yaml.safe_load_all(out.stdout) if d]
+wg  = load("values-global.yaml")["global"]
+dials = load("overrides/values-openshell.yaml")["global"]["openshell"]
+gw  = load("overrides/values-openshell-gateway.yaml")
+zt  = load("overrides/values-ztwim.yaml")
+cm  = load("overrides/values-certmanager.yaml")
+asb = load("overrides/values-agent-sandbox.yaml")
 
-# 1. agent-sandbox renders its CRDs and controller, namespace-agnostic
-docs = render("agent-sandbox", extra=["--include-crds"])
-kinds = [d["kind"] for d in docs if "kind" in d]
-crds = [d["metadata"]["name"] for d in docs if d.get("kind") == "CustomResourceDefinition"]
-if "sandboxes.agents.x-k8s.io" not in crds:
-    fail.append(f"agent-sandbox missing sandboxes CRD (got {crds})")
-if "Deployment" not in kinds:
-    fail.append("agent-sandbox missing controller Deployment")
+zone = wg.get("dnsZone")
+host = dials.get("gatewayHostname")
+issuer = dials.get("issuer")
+trust = dials.get("trustDomain") or zone
+ztwim_on = bool(dials.get("ztwim", {}).get("enabled", False))
 
-# 2. openshell wrapper renders the upstream chart with required values
-chart = os.path.join(root, "charts", "openshell")
-vals_path = os.path.join(chart, "values.yaml")
-if not os.path.isdir(chart):
-    fail.append("charts/openshell missing")
-else:
-    vals = yaml.safe_load(open(vals_path)) or {}
-    vals = vals.get("openshell", {})  # subchart alias in wrapper values
-    server = vals.get("server", {})
-    sup = vals.get("supervisor", {})
-    agent_sb = vals.get("agentSandbox", {})
-    checks = {
-        "agentSandbox.preflight.enabled": (agent_sb.get("preflight") or {}).get("enabled") is False,
-        "server.telemetryEnabled": server.get("telemetryEnabled") is False,
-        "supervisor.sideloadMethod": sup.get("sideloadMethod") == "init-container",
-        "server.credentialStorage.existingSecret": (server.get("credentialStorage") or {}).get("existingSecret") == "openshell-kek",
-    }
-    for k, ok in checks.items():
-        if not ok:
-            fail.append(f"charts/openshell/values.yaml: {k} not set as required")
+chk = lambda cond, msg: fail.append(msg) if not cond else None
 
-    # SCC overrides: fsGroup/runAsUser must be explicitly null
-    psc = vals.get("podSecurityContext", "MISSING")
-    sc = vals.get("securityContext", "MISSING")
-    if not (isinstance(psc, dict) and "fsGroup" in psc and psc["fsGroup"] is None):
-        fail.append("podSecurityContext.fsGroup must be explicitly null")
-    if not (isinstance(sc, dict) and "runAsUser" in sc and sc["runAsUser"] is None):
-        fail.append("securityContext.runAsUser must be explicitly null")
+# dial ⇄ override consistency (contract map)
+chk(gw["openshiftRoute"]["host"] == host, "gateway override openshiftRoute.host != gatewayHostname")
+chk(gw["certManager"]["serverDnsNames"][0] == host, "serverDnsNames[0] != gatewayHostname")
+chk(gw["certManager"]["serverIssuerRef"]["name"] == "acme", "serverIssuerRef.name must be constant 'acme' (007 D5)")
 
-    docs = render("openshell")
-    if not docs and not fail:
-        fail.append("charts/openshell renders no resources")
-    kinds = [d.get("kind") for d in docs]
-    if "StatefulSet" not in kinds:
-        fail.append(f"openshell gateway StatefulSet not rendered (got {sorted(set(kinds))})")
+acme = cm["certmgrOperator"]["issuers"][0]["acme"]
+expected_server = "https://acme-staging-v02.api.letsencrypt.org/directory" if issuer == "staging" else "https://acme-v02.api.letsencrypt.org/directory"
+chk(acme["server"] == expected_server, f"acme.server must track issuer={issuer}: expected {expected_server}")
+chk(acme["privateKeySecretRef"]["name"] == f"letsencrypt-{issuer}-account-key", "acme account-key secret must track issuer dial")
+chk(acme["email"] == wg.get("acmeEmail"), "acme.email != global.acmeEmail")
+chk(acme["solvers"][0]["selector"]["dnsZones"][0] == zone, "acme dnsZones[0] != global.dnsZone")
+api_ref = acme["solvers"][0]["dns01"]["cloudflare"]["apiTokenSecretRef"]
+chk(api_ref.get("name") == "cloudflare-api-token" and api_ref.get("key") == "api-token", "cloudflare apiTokenSecretRef wrong")
 
-# 3. Route/cert-manager surfaces only appear when issuer wiring is on (US3)
-if os.path.isdir(chart):
-    docs = render("openshell")
-    routes = [d for d in docs if d.get("kind") == "Route"]
-    if routes:
-        host = routes[0].get("spec", {}).get("host", "")
-        vals = yaml.safe_load(open(os.path.join(root, "overrides", "values-openshell.yaml")))["global"]["openshell"]
-        if host != vals["gatewayHostname"]:
-            fail.append(f"Route host {host!r} != openshell.gatewayHostname {vals['gatewayHostname']!r}")
-        term = (routes[0].get("spec", {}).get("tls") or {}).get("termination")
-        if term != "passthrough":
-            fail.append(f"Route tls.termination must be passthrough, got {term!r}")
+spiffe = gw["server"]["providerTokenGrants"]["spiffe"]["enabled"]
+chk(spiffe == ztwim_on, f"spiffe.enabled ({spiffe}) must track ztwim.enabled ({ztwim_on})")
 
-    # Subchart passthrough dials must stay in sync with the global feature values
-    ov = yaml.safe_load(open(os.path.join(root, "overrides", "values-openshell.yaml")))
-    g = ov["global"]["openshell"]
-    sub = ov.get("openshell", {})
-    if sub.get("openshiftRoute", {}).get("enabled"):
-        if sub["openshiftRoute"].get("host") != g["gatewayHostname"]:
-            fail.append("openshell.openshiftRoute.host != global.openshell.gatewayHostname")
-        pb = sub.get("certManager", {})
-        if pb.get("serverIssuerRef", {}).get("name") != f"letsencrypt-{g['issuer']}":
-            fail.append("certManager.serverIssuerRef.name != letsencrypt-{{ openshell.issuer }}")
-        if (pb.get("serverDnsNames") or [None])[0] != g["gatewayHostname"]:
-            fail.append("certManager.serverDnsNames[0] != global.openshell.gatewayHostname")
+chk(zt["spire"]["trustDomain"] == trust, "spire.trustDomain != openshell.trustDomain-or-dnsZone")
 
-# 4. openshell-policy baseline renders deny-all + operator drop-in keys
-if os.path.isdir(os.path.join(root, "charts", "openshell-policy")):
-    docs = render("openshell-policy")
-    cm = next((d for d in docs if d.get("kind") == "ConfigMap" and d["metadata"]["name"] == "openshell-policy"), None)
-    if not cm:
-        fail.append("openshell-policy ConfigMap not rendered")
-    else:
-        data = cm.get("data", {})
-        if not any("baseline" in k for k in data):
-            fail.append(f"policy ConfigMap missing a baseline document (keys: {list(data)})")
-        base_doc = next((yaml.safe_load(v) for k, v in data.items() if "baseline" in k), None)
-        if not base_doc or base_doc.get("endpoints") is None:
-            fail.append("baseline policy document must declare endpoints (empty list = deny-all)")
+# NVIDIA static pins (carried from 006 D4/D10)
+server, sup = gw["server"], gw["supervisor"]
+chk(server.get("telemetryEnabled") is False, "telemetry must be off")
+chk(sup.get("sideloadMethod") == "init-container", "supervisor.sideloadMethod must be init-container")
+chk(server.get("disableTls") is False, "disableTls required false for passthrough Route")
+chk((server.get("credentialStorage") or {}).get("existingSecret") == "openshell-kek", "KEK existingSecret name drifted")
+chk("@sha256:" in (server.get("sandboxImage") or ""), "sandboxImage must be digest-pinned")
+chk(gw["image"].get("tag") == "0.0.116" and sup["image"].get("tag") == "0.0.116", "gateway/supervisor image tags must equal 0.0.116")
+chk(gw.get("agentSandbox", {}).get("preflight", {}).get("enabled") is False, "agentSandbox preflight must be disabled for GitOps rendering")
+chk(isinstance(gw.get("podSecurityContext"), dict) and gw["podSecurityContext"].get("fsGroup") is None, "fsGroup must be explicitly null")
+chk(isinstance(gw.get("securityContext"), dict) and gw["securityContext"].get("runAsUser") is None, "runAsUser must be explicitly null")
+chk(gw.get("openshiftRoute", {}).get("enabled") is True, "openshiftRoute.enabled required")
+chk(gw.get("certManager", {}).get("enabled") is True, "certManager.enabled required")
+
+# agent-sandbox values (pinned envelope)
+chk(asb["image"]["tag"] == "v1.0.3", "agent-sandbox image.tag != chartVersion")
+chk(asb.get("namespace", {}).get("create") is False, "agent-sandbox namespace.create must be false")
+chk((asb.get("containerSecurityContext") or {}).get("seccompProfile", {}).get("type") == "RuntimeDefault", "seccomp RuntimeDefault required")
 
 if fail:
     for f in fail:
         print(f, file=sys.stderr)
     sys.exit(1)
-print("openshell render validation passed")
+print("openshell render (merged-values) validation passed")
 EOF

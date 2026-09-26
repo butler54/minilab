@@ -33,6 +33,7 @@ validate-openshell: ## Renders and validates the OpenShell platform charts and t
 	@tests/test-openshell-ordering.sh
 	@tests/test-openshell-pins.sh
 	@tests/test-openshell-ztwim.sh
+	@tests/test-external-refs.sh
 
 
 include Makefile-common
