@@ -16,20 +16,20 @@ Living record per `specs/006-openshell-gitops-install/contracts/ztwim-assessment
 | Item | Status | Evidence |
 |------|--------|----------|
 | ZTWIM operator for OCP 4.22 | **Available, GA** (v1.1.1, channel `stable-v1`, Automatic install plans) | OCP 4.22 ZTWIM chapter; operator release catalog (research.md D7) |
-| Deployed via pattern | Wired: Subscription `ztwim` + `charts/ztwim-config` (singleton `cluster` CRs) | values-prod.yaml, charts/ztwim-config/ |
+| Deployed via pattern | ZTWIM operator Subscription + VP `ztwim` community chart 0.1.1 (external OCI, `validatedpatterns/quay.io`) rendering the singleton `cluster` CRs; workload registration is pattern-owned (`clusters/openshell-platform`) — no SPIRE manifests are copied locally | contracts/external-chart-contract.md registry |
 | SVID issuance on-cluster | **Pending verification** — testing phase V-SPIFFE | — |
 
 ## OpenShell integration points
 
 | Integration point | Status | Evidence / trigger |
 |-------------------|--------|--------------------|
-| `server.providerTokenGrants.spiffe` (gateway exchanges sandbox JWT-SVID → provider token) | **CONSUMABLE at 0.0.116** — values + gateway config + `csi.spiffe.io` mounts confirmed in vendored chart (research F1). Wired ON in `charts/openshell/values.yaml`. End-to-end exchange **pending V-SPIFFE** | vendored chart templates |
+| `server.providerTokenGrants.spiffe` (gateway exchanges sandbox JWT-SVID → provider token) | **CONSUMABLE at 0.0.116** — values + gateway config + `csi.spiffe.io` mounts confirmed in the referenced upstream chart (research F1). Wired ON in `overrides/values-openshell-gateway.yaml`. End-to-end exchange **pending V-SPIFFE** | upstream chart 0.0.116 templates (external OCI source, see specs/007 registry) |
 | SPIFFE identity of the agent runtime itself (per Red Hat blog roadmap) | **DEFERRED** — not shipped upstream as of 0.0.116 | Re-evaluate on each OpenShell release notes / chart values diff |
 | ClusterSPIFFEID registration for `openshell-sandbox` pods | Configured (`/openshell/sandbox`); behavioral verification pending (ClusterSPIFFEID is thinly covered in OCP docs) | testing phase V-SPIFFE |
 
 ## Re-evaluation triggers
 
-1. Any OpenShell chart bump (run the charts/openshell/README.md update procedure and re-run V-SPIFFE).
+1. Any OpenShell chart bump (follow the version-bump rule in specs/007-openshell-external-charts/contracts/external-chart-contract.md and re-run V-SPIFFE).
 2. Any ZTWIM operator release beyond 1.1.1 on `stable-v1`.
 3. OpenShell release notes mentioning "agent identity", "SVID lifecycle", or workload-level attestation.
 

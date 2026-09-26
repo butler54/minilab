@@ -1,0 +1,3 @@
+global:
+  openshell:
+    enabled: false

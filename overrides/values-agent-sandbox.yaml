@@ -1,0 +1,29 @@
+# kubernetes-sigs/agent-sandbox @ v1.0.3 (git source, path helm).
+# Consumed ONLY by the `agent-sandbox` application (extraValueFiles).
+namespace:
+  # Namespace is owned by the pattern clustergroup.
+  create: false
+  name: agent-sandbox-system
+
+image:
+  # Pinned to the same tag as the ExternalChartRef chartVersion.
+  tag: "v1.0.3"
+
+controller:
+  # Core Sandbox API only (OpenShell 0.0.116 requires sandboxes.agents.x-k8s.io
+  # v1beta1; extensions add Claims/Templates/WarmPools we do not use).
+  extensions: false
+
+# Explicit small footprint for a single-node cluster.
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 128Mi
+
+# restricted-v2 friendly; silences SCC warnings on OpenShift.
+containerSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault

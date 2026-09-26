@@ -1,0 +1,31 @@
+# Validated Patterns `ztwim` chart 0.1.1 — consumed ONLY by the `ztwim`
+# application (extraValueFiles). SPIRE operand configuration; the operator
+# itself arrives via the clustergroup `subscriptions:` entry.
+# jwtIssuer is derived upstream by the chart's helper (valid https URL) — the
+# 006-convergence T047 trap (required-field, URL pattern) is designed out.
+
+spire:
+  # Keep == global.openshell.trustDomain-or-global.dnsZone (drift-asserted).
+  trustDomain: example.com
+  bundleConfigMap: spire-bundle
+  clusterName: minilab-prod
+  server:
+    ca:
+      commonName: "minilab SPIRE CA"
+      organization: minilab
+      country: AU
+    persistence:
+      size: 2Gi
+      accessMode: ReadWriteOnce
+      # empty = cluster default StorageClass (LVMS)
+      storageClass: ""
+    datastore:
+      databaseType: sqlite3
+      connectionString: /run/spire/data/datastore.sqlite3
+    federation:
+      enabled: "false"
+
+# Lab posture: no network-policy layer on the ZTWIM namespace (the chart's
+# default-deny stack stays off; OpenShell enforces its own sandbox egress).
+defaultDenyNetworkPolicy:
+  enabled: false

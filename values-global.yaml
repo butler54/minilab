@@ -29,6 +29,10 @@ global:
   # openshell.gatewayHostname ends with this zone.
   dnsZone: example.com
   acmeEmail: acme@example.com
+  # Pattern-wide default repo for multi-source chart applications (VP community
+  # charts: ocp-certmanager, ztwim, vault, external-secrets — coco-pattern model).
+  # Per-app repoURL overrides (ghcr.io/nvidia, github.com git) take precedence.
+  multiSourceRepoUrl: quay.io/validatedpatterns
 
 main:
   clusterGroupName: prod

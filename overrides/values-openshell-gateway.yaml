@@ -1,0 +1,58 @@
+# NVIDIA OpenShell gateway — upstream chart ROOT values (research.md D4).
+# Consumed ONLY by the `openshell` application (extraValueFiles); keys here are
+# the upstream chart's own value paths, not a wrapper alias.
+# Static pins:   research 006 D4/D10
+# Operator dials: dial⇄override map in values-layout-contract.md (drift-tested)
+
+replicaCount: 1
+
+image:
+  tag: "0.0.116"
+
+supervisor:
+  image:
+    tag: "0.0.116"
+  sideloadMethod: init-container
+  topology: combined
+
+server:
+  telemetryEnabled: false
+  appArmorProfile: Unconfined
+  disableTls: false
+  # Digest-pinned snapshot of upstream base:latest (2026-09-23, chart 0.0.116 era).
+  sandboxImage: ghcr.io/nvidia/openshell-community/sandboxes/base@sha256:aeef1c63f00e2913ea002ccb3aaf925f338b5c5d70e63576f0d95c16a138044e
+  credentialStorage:
+    existingSecret: openshell-kek
+  # SPIFFE provider-token grants — tracks global.openshell.ztwim.enabled (drift-asserted).
+  providerTokenGrants:
+    spiffe:
+      enabled: true
+      workloadApiSocketPath: /spiffe-workload-api/spire-agent.sock
+  oidc:
+    # PLACEHOLDER — OpenShift OAuth issuer of the TARGET cluster (V-AUTH).
+    issuer: https://oauth-openshift.apps.example.com
+    audience: openshell-cli
+    caConfigMapName: openshell-oidc-ca
+
+agentSandbox:
+  preflight:
+    enabled: false
+
+openshiftRoute:
+  enabled: true
+  # Keep == global.openshell.gatewayHostname (drift-asserted)
+  host: openshell.example.com
+certManager:
+  enabled: true
+  serverIssuerRef:
+    # Keep == "acme" (single VP ClusterIssuer per research 007 D5)
+    name: acme
+    kind: ClusterIssuer
+  # Keep [0] == global.openshell.gatewayHostname (drift-asserted)
+  serverDnsNames:
+  - openshell.example.com
+
+podSecurityContext:
+  fsGroup: null
+securityContext:
+  runAsUser: null
