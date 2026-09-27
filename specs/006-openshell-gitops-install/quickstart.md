@@ -28,20 +28,28 @@ Runnable validation proving the feature end-to-end, mapped to the spec's Success
 4. Flip `openshell.issuer: prod` → cert reissues → workstation verification passes. Renewal: force-renew (`cmctl renew` or delete Certificate → recreated Ready) once to prove the loop.
 5. Gateway serves INTERNAL cert to supervisors meanwhile: sandbox startup working during external staging phase proves the SNI split (research D2).
 
-## V-AUTH — user authentication (spec assumption update; research D3)
+## V-AUTH — user authentication ✅ DONE 2026-09-27 (Keycloak + device flow)
 
-1. Confirm OpenShift OAuth discovery: `oc get --raw /.well-known/oauth-authorization-server` works, and from outside: `curl -s https://<openshift-ingress>/.well-known/oauth-authorization-server`.
-2. Register `OAuthClient` for the openshell CLI (declared in Git) with CLI callback redirect; configure `server.oidc.issuer/audience` (+ `caConfigMapName` for the ingress CA).
-3. `openshell gateway add https://<hostname> --oidc-issuer <issuer>` → `openshell gateway login` → `openshell status` succeeds.
-4. **Failure fallback** (documented): if OpenShift OAuth cannot satisfy the gateway's OIDC requirements, use `oc -n openshell port-forward svc/openshell 8080:8080` local access and record the gap in `docs/openshell-spiffe-assessment.md`'s sibling known-issues note.
+Implemented via RHBK Keycloak (rh-keycloak app) federating GitHub login; OpenShift
+OAuth was disqualified (OAuth2-only, no OIDC discovery/JWKS). Flow:
+`OPENSHELL_NO_BROWSER=1 openshell gateway login k8s` (device flow — RHBK 26.6
+rejects all redirect URIs; known-issue probe in tests/test-openshell-auth-smoke.sh
+flips loud once fixed). Post-first-login: operator grants `openshell-admin` to the
+operator account manually (admin REST or KC console). Encoded offline in
+tests/test-keycloak-realm.sh and live in tests/test-openshell-auth-smoke.sh.
 
-## V-EGRESS — kernel-enforced policy (SC-002, SC-003)
+## V-EGRESS — kernel-enforced policy (SC-002, SC-003) ✅ DONE 2026-09-27 (openshell 0.1.1)
 
 1. Time G4 → first sandbox running a command: `openshell sandbox create --name v1 && openshell sandbox exec ...` → must be **< 5 min** using docs steps only.
-2. In the sandbox: `curl -sv https://example.com` → connection denied (structured 403 or refusal); `openshell term` shows a DENIED OCSF event for the attempt.
-3. Apply the operator's baseline policy: commit/push any `charts/openshell-policy/policies/` change (Git is the source of truth; Argo CD syncs the ConfigMap), then apply it to the sandbox with the documented imperative step (`openshell policy update <sandbox> --file <path> --wait`, research F2 — no declarative consumer exists in 0.0.116) → `curl https://api.openai.com` reaches TLS (401/403 from the API is fine — L7 allowed), `example.com` still DENIED.
-4. nftables sanity (upstream-documented OpenShift caveat): on the node, verify required proxy-bypass reject rules exist in the sandbox's chain (not merely requested).
-5. 100% denial rate for non-allow-listed destinations across ≥10 varied attempts.
+   Note (0.1.1): a policy-less sandbox never leaves `Provisioning` — submit any policy to flip it Ready.
+2. In the sandbox: `openshell sandbox exec -n v1 -- curl https://example.com` → connection refused (rc 7); supervisor OCSF logs show `NET:OPEN DENIED` for the attempt (`oc -n openshell logs <os-supervisor-pod>`).
+3. Apply the policy from Git: `openshell policy set v1 --policy charts/openshell-policy/policies/sample-openai-only.yaml --wait` → `curl https://api.openai.com` returns upstream HTTP (421 observed at the OpenAI edge = transport+TLS reached upstream), `example.com` still DENIED.
+   PROVEN 0.1.1 facts (differ from upstream docs):
+   - Every egress rule needs a non-empty `binaries` list — the supervisor OPA runs `require_binary_identity: true`; missing binaries = silent deny-all for that rule.
+   - `binaries[].path` is the kernel-resolved /proc/<pid>/exe path, not a symlink, never argv[0].
+   - `--add-endpoint` bare `host:port` shorthand does NOT produce a usable rule on 0.1.1; use a full policy YAML via `policy set`.
+4. Mediation is seccomp-notification based (agent relays connect(2) decisions to the supervisor); no nftables/route programming exists in the K8s driver — verification = supervisor OCSF `NET:OPEN DENIED/ALLOWED` events, not node-level iptables.
+5. 100% denial rate for non-allow-listed destinations across the recorded attempts (example.com, google.com — rc 7).
 
 ## V-SPIFFE — ZTWIM integration (SC-006, FR-011)
 
