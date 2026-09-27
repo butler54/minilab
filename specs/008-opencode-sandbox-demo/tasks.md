@@ -114,3 +114,9 @@ Task: "Create deploy/openshell/demo/run-demo.sh preflight+create+inject+attach+p
 
 - All live gRPC/HTTP operations stay CLI-driven (recorded imperative per Constitution II); nothing bespoke hits the gateway API.
 - All file paths above are repo-relative (valid from repo root).
+
+---
+
+## Phase 6: Convergence
+
+- [X] T021 Make run-demo.sh cleanup unconditional on proof failures — currently a FAIL proofs path exits before cleanup runs (leaked sandboxes during 008 testing); wrap with EXIT trap or cleanup-on-fail so FR-009/SC-005 holds in all exit paths per FR-009 (partial)

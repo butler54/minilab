@@ -24,6 +24,8 @@ cleanup() {
   created=0
   echo "PASS cleanup ($SANDBOX)"
 }
+# Unconditional cleanup on ANY exit (proof FAIL paths included) once a sandbox exists.
+trap 'cleanup' EXIT
 
 preflight() {
   openshell status -g "$GATEWAY" >/dev/null 2>&1 \
