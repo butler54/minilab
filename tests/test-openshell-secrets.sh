@@ -21,7 +21,7 @@ for entry in seed.get("secrets", []):
     prefixes = entry.get("vaultPrefixes", [])
     if prefixes and name.startswith("openshell"):
         expected_key[name] = prefixes[0]
-assert len(expected_key) == 5, f"expected 5 openshell vault entries, got {len(expected_key)}"
+assert len(expected_key) == 6, f"expected 6 openshell vault entries, got {len(expected_key)}"
 
 # (ExternalSecret template -> its openshell-<name> secret)
 expected = {
