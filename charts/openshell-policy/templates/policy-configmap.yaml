@@ -1,8 +1,8 @@
 {{- if .Values.global.openshell.enabled }}
 # Every *.yaml file under policies/ becomes a key in this ConfigMap (Git is the
-# source of truth). Upstream 0.0.116 has no declarative policy consumer and its
-# user auth is interactive OIDC, so APPLICATION to the gateway is the recorded
-# imperative step documented in README.md and quickstart (Constitution II).
+# source of truth). APPLICATION to the gateway is the recorded imperative step
+# documented in README.md and quickstart V-EGRESS (Constitution II):
+#   openshell policy set <sandbox> --policy <file> --wait
 apiVersion: v1
 kind: ConfigMap
 metadata:

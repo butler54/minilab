@@ -1,11 +1,33 @@
 # SAMPLE - replace with operator-derived policy (the operator brings their own
 # policy configuration per spec clarification; this file proves the mechanism).
-# Allows the demo coding agent to reach the OpenAI API only.
-metadata:
-  name: sample-openai-only
-  description: SAMPLE allow rule for the demonstration agent workload.
-extends: baseline-deny-all
-endpoints:
-- endpoint: api.openai.com:443:read-only:rest:enforce
-  binaries:
-  - /usr/bin/env # harness runtime placeholder; tighten in the testing phase
+# Allows the demo coding agent to reach the OpenAI API only; every other
+# destination stays denied (baseline posture).
+#
+# PROVEN LIVE (V-EGRESS, 2026-09-27, openshell 0.1.1):
+#   - host api.openai.com via `curl` returned HTTP 421 (upstream TLS+HTTP OK);
+#     all other hosts rc=7 (policy refused at connect time).
+#   - `binaries` is MANDATORY: rego binary_allowed() denies any binary not
+#     listed, and `require_binary_identity: true` is injected by the gateway.
+#     Use kernel-resolved paths (readlink -f), never symlinks/argv[0].
+version: 1
+filesystem_policy:
+  include_workdir: true
+  read_only:
+  - /usr
+  - /lib
+  - /etc
+  - /var/log
+  - /proc
+  - /dev/urandom
+  read_write:
+  - /tmp
+  - /dev/null
+network_policies:
+  allow_api_openai_com_443:
+    name: allow_api_openai_com_443
+    endpoints:
+    - host: api.openai.com
+      port: 443
+      access: full
+    binaries:
+    - path: /usr/bin/curl # probe binary; demo harness may add its runtime (e.g. node)
