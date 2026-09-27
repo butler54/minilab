@@ -1,0 +1,31 @@
+# SAMPLE - demo policy for the governed coding agent reaching Matilda only.
+# All other destinations stay denied (baseline posture).
+#
+# PROVEN LIVE (V-EGRESS learnings, openshell 0.1.1): binaries list is mandatory
+# (require_binary_identity); use kernel-resolved /proc/<pid>/exe paths.
+# The MATILDA_API_KEY env inside the sandbox is an openshell:resolve:env:* placeholder
+# injected at the egress proxy — the real key never leaves the gateway.
+version: 1
+filesystem_policy:
+  include_workdir: true
+  read_only:
+  - /usr
+  - /lib
+  - /etc
+  - /var/log
+  - /proc
+  - /dev/urandom
+  read_write:
+  - /tmp
+  - /dev/null
+network_policies:
+  allow_matilda_maincode_com_443:
+    name: allow_matilda_maincode_com_443
+    endpoints:
+    - host: matilda.maincode.com
+      port: 443
+      protocol: rest # L7 inspection is mandatory for credentialed endpoints (placeholder rewrite)
+      access: full
+      enforcement: enforce
+    binaries:
+    - path: /usr/bin/curl # probe binary; demo harness runtime added at V-DEMO

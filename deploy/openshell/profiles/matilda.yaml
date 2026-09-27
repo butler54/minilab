@@ -1,0 +1,36 @@
+# Matilda (Maincode) provider profile — OpenAI-compatible inference API.
+# Modelled on upstream providers/openai.yaml guidance: "For an OpenAI-compatible
+# service on another host, import a separate profile naming that host".
+#
+# Import (imperative, recorded in quickstart V-DEMO):
+#   openshell provider profile lint   -f deploy/openshell/profiles/matilda.yaml
+#   openshell provider profile import -f deploy/openshell/profiles/matilda.yaml --global
+#   openshell provider create --name matilda --type matilda --credential api_key
+#
+# The real key is stored gateway-side (KEK-encrypted, vaulted seed
+# openshell-matilda). Inside the sandbox MATILDA_API_KEY is an
+# openshell:resolve:env:* placeholder; the egress proxy rewrites it with the
+# real credential at TLS termination — the key never enters the sandbox.
+id: matilda
+display_name: Matilda (Maincode)
+description: Maincode Matilda inference API (OpenAI-compatible)
+category: inference
+inference_capable: true
+credentials:
+  - name: api_key
+    description: Maincode Matilda API key (mc_live_...) from vault openshell-matilda
+    env_vars: [MATILDA_API_KEY]
+    required: true
+    auth_style: bearer
+    header_name: authorization
+discovery:
+  credentials: [api_key]
+endpoints:
+  - host: matilda.maincode.com
+    port: 443
+    protocol: rest
+    access: read-write
+    enforcement: enforce
+# Binaries permitted to reach Matilda. Extend with the demo harness runtime
+# (e.g. /usr/local/bin/node) when V-DEMO runs the governed coding agent.
+binaries: [/usr/bin/curl, /usr/local/bin/curl]
