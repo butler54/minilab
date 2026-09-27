@@ -97,7 +97,7 @@ keycloak:
         identityProviderAlias: github
         identityProviderMapper: oidc-hardcoded-role-idp-mapper
         config:
-          role.value: openshell-user
+          role: openshell-user
 
   # GitHub OAuth App credentials → keycloak-github-oauth Secret (from vault).
   extraSecrets:
