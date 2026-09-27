@@ -31,11 +31,12 @@ if not cs:
     fail.append("ClusterSPIFFEID not rendered by openshell-platform when ztwim.enabled=true")
 else:
     ws = cs.get("spec", {}).get("workloadSelector", {})
-    if "namespace" in ws:
-        fail.append("ClusterSPIFFEID workloadSelector.namespace not in Red Hat operator sample schema")
-    sa = ws.get("k8sServiceAccount", {})
-    if sa.get("namespace") != "openshell" or sa.get("name") != "openshell-sandbox":
-        fail.append(f"ClusterSPIFFEID selector wrong: {sa}")
+    if ws:
+        fail.append(f"ClusterSPIFFEID carries a bare workloadSelector — v1alpha1 CRD prunes it; use workloadSelectorTemplates: {ws}")
+    tmpl = cs.get("spec", {}).get("workloadSelectorTemplates") or []
+    for want in ("k8s:sa:openshell-sandbox", "k8s:ns:openshell"):
+        if want not in tmpl:
+            fail.append(f"ClusterSPIFFEID workloadSelectorTemplates missing {want!r}: {tmpl}")
     ttl = cs.get("spec", {}).get("ttl")
     if not (isinstance(ttl, str) and ttl.endswith("s")):
         fail.append(f"ClusterSPIFFEID ttl must be a duration string (e.g. '3600s'), got {ttl!r}")

@@ -33,7 +33,12 @@ validate-openshell: ## Renders and validates the OpenShell platform charts and t
 	@tests/test-openshell-ordering.sh
 	@tests/test-openshell-pins.sh
 	@tests/test-openshell-ztwim.sh
+	@tests/test-keycloak-realm.sh
 	@tests/test-external-refs.sh
+
+.PHONY: validate-openshell-live
+validate-openshell-live: ## Live-cluster auth smoke test (Keycloak OIDC + gateway); requires oc + DNS access
+	@tests/test-openshell-auth-smoke.sh
 
 
 include Makefile-common
