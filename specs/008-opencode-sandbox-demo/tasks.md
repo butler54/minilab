@@ -62,10 +62,10 @@
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T017 [P] Wire `MODE=smoke deploy/openshell/demo/run-demo.sh --smoke` as opt-in target `make validate-openshell-demo` in `Makefile` (guarded: skip syscall if cluster unreachable, documented)
-- [ ] T018 [P] Verify `make validate-openshell` still green after all feature changes and `pre-commit run --all-files` passes
-- [ ] T019 Run full quickstart V-DEMO acceptance sequence (`specs/008-opencode-sandbox-demo/quickstart.md`) end-to-end capturing outputs into `specs/008-opencode-sandbox-demo/demo-log.md`
-- [ ] T020 Commit/push feature branch `008-opencode-sandbox-demo`, then merge to `main` (repo convention: direct-to-main flow, pre-commit hooks on)
+- [X] T017 [P] Wire `MODE=smoke deploy/openshell/demo/run-demo.sh --smoke` as opt-in target `make validate-openshell-demo` in `Makefile` (guarded: skip syscall if cluster unreachable, documented)
+- [X] T018 [P] Verify `make validate-openshell` still green after all feature changes and `pre-commit run --all-files` passes
+- [X] T019 Run full quickstart V-DEMO acceptance sequence (`specs/008-opencode-sandbox-demo/quickstart.md`) end-to-end capturing outputs into `specs/008-opencode-sandbox-demo/demo-log.md`
+- [X] T020 Commit/push feature branch `008-opencode-sandbox-demo`, then merge to `main` (repo convention: direct-to-main flow, pre-commit hooks on)
 
 ---
 
