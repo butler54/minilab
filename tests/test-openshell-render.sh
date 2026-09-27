@@ -77,6 +77,29 @@ chk(asb["image"]["tag"] == "v1.0.3", "agent-sandbox image.tag != chartVersion")
 chk(asb.get("namespace", {}).get("create") is False, "agent-sandbox namespace.create must be false")
 chk((asb.get("containerSecurityContext") or {}).get("seccompProfile", {}).get("type") == "RuntimeDefault", "seccomp RuntimeDefault required")
 
+# Demo assets drift guards (008-opencode-sandbox-demo)
+import json as _json
+demo_cfg_path = os.path.join(root, "deploy/openshell/demo/opencode-matilda.json")
+if os.path.exists(demo_cfg_path):
+    demo_cfg = _json.load(open(demo_cfg_path))
+    prov = demo_cfg.get("provider", {}).get("matilda", {})
+    chk(prov.get("options", {}).get("apiKey") == "{env:MATILDA_API_KEY}",
+        "demo config apiKey must remain the {env:MATILDA_API_KEY} placeholder")
+    hosts = set()
+    for p in demo_cfg.get("provider", {}).values():
+        bu = (p.get("options") or {}).get("baseURL", "")
+        if bu:
+            hosts.add(bu.split("/")[2])
+    chk(hosts <= {"matilda.maincode.com"}, f"demo config must only reference matilda.maincode.com, got {hosts}")
+else:
+    fail.append("deploy/openshell/demo/opencode-matilda.json missing (008 feature asset)")
+pol = load("charts/openshell-policy/policies/sample-matilda-demo.yaml")
+nps = pol.get("network_policies") or {}
+for rl, rule in nps.items():
+    chk(bool(rule.get("binaries")), f"matilda policy rule {rl} must list binaries (require_binary_identity)")
+    for ep in rule.get("endpoints", []):
+        chk(ep.get("protocol") == "rest", f"matilda policy rule {rl} endpoint must set protocol: rest (credentialed)")
+
 # Default-ingress wildcard plumbing (root cause 2026-09-27: IngressController
 # had no defaultCertificate → *.apps served the operator self-signed cert)
 aw = open(os.path.join(root, "charts/cert-manager-config/templates/apps-wildcard-certificate.yaml")).read()

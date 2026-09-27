@@ -40,6 +40,12 @@ validate-openshell: ## Renders and validates the OpenShell platform charts and t
 validate-openshell-live: check-openshell-cli ## Live-cluster auth smoke test (Keycloak OIDC + gateway); requires oc + DNS access
 	@tests/test-openshell-auth-smoke.sh
 
+.PHONY: validate-openshell-demo
+validate-openshell-demo: ## Scripted V-DEMO smoke (opencode-in-sandbox vs matilda); skips when cluster unreachable
+	@if ! oc get --raw /healthz >/dev/null 2>&1; then echo "skip: cluster unreachable (validate-openshell-demo)"; exit 0; fi; \
+	if ! openshell status -g k8s >/dev/null 2>&1; then echo "skip: gateway auth missing (login: OPENSHELL_NO_BROWSER=1 openshell gateway login k8s)"; exit 0; fi; \
+	DEMO_PROMPT="Reply with exactly: OPENSHELL_VDEMO_OK" deploy/openshell/demo/run-demo.sh --smoke
+
 .PHONY: check-openshell-cli
 check-openshell-cli: ## Asserts the installed openshell CLI matches the chart-pinned server version
 	@tests/check-openshell-cli.sh

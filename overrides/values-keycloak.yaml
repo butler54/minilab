@@ -45,6 +45,7 @@ keycloak:
       displayName: OpenShell
       enabled: true
       registrationAllowed: false
+      accessTokenLifespan: 3600 # keycloak default 300s forced constant refreshes + refresh-rotation races
       attributes:
         oauth2DeviceAuthorizationGrantEnabled: "true"
       # Any GitHub login gets openshell-user (hardcoded IdP mapper below).

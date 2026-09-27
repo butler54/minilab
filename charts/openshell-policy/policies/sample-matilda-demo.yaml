@@ -28,4 +28,6 @@ network_policies:
       access: full
       enforcement: enforce
     binaries:
-    - path: /usr/bin/curl # probe binary; demo harness runtime added at V-DEMO
+    - path: /usr/bin/curl # one-shot smoke probe
+    - path: /usr/bin/node # opencode dependency (npm-global) — resolved live T005
+    - path: /usr/lib/node_modules/opencode-ai/bin/opencode.exe # opencode agent binary — resolved live T005
