@@ -53,9 +53,13 @@ tests/test-keycloak-realm.sh and live in tests/test-openshell-auth-smoke.sh.
 
 ## V-SPIFFE — ZTWIM integration (SC-006, FR-011)
 
-1. `oc describe csv -n zero-trust-workload-identity-manager` → GA operator installed; `ZeroTrustWorkloadIdentityManager`, `SpireServer`, `SpireAgent`, `SpiffeCSIDriver` CRs Ready.
-2. SVID issuance: pod matching the `ClusterSPIFFEID` mounts the `csi.spiffe.io` socket and can fetch an identity (per ZTWIM docs' workload example).
-3. OpenShell consumable point: with `server.providerTokenGrants.spiffe` enabled, the demo sandbox calls OpenAI **with no API key anywhere in the sandbox** (env, files, args) — prove via `openshell sandbox exec -- env` and mounts listing.
+1. `oc describe csv -n zero-trust-workload-identity-manager` → GA operator installed; `ZeroTrustWorkloadIdentityManager`, `SpireServer`, `SpireAgent`, `SpiffeCSIDriver` CRs Ready. ✅ (spire-server PVC wiped at bring-up to purge the pre-migration `example.com` trust domain; trustDomain `sno.tokyo-brunch.com` active; agent mints SVIDs.)
+2. SVID issuance: pod matching the `ClusterSPIFFEID` mounts the `csi.spiffe.io` socket and can fetch an identity (per ZTWIM docs' workload example). ✅ `workloadSelectorTemplates: [k8s:sa:openshell-sandbox, k8s:ns:openshell]`; SVIDs observed minted.
+3. Credential-never-in-sandbox proof ✅ 2026-09-27 — achieved via the static-credential provider flow (matilda is not SVID-aware; pure SPIFFE token-exchange needs a SPIFFE-trusting token issuer and is DEFERRED to the optional upstream `token-issuer` demo):
+   1. `openshell provider profile import -f deploy/openshell/profiles/matilda.yaml --global` (imperative, Git is source of truth for the file).
+   2. `MATILDA_API_KEY=<vault secret/data/hub/openshell-matilda api-key> openshell provider create --name matilda --type matilda --global-profile --credential MATILDA_API_KEY` (credential dest: `--credential` key = the profile env_var name, not the logical name; use `--global-profile` because the profile is platform-scope).
+   3. Add a sandbox with `--provider matilda`, apply `charts/openshell-policy/policies/sample-matilda-demo.yaml`; the endpoint MUST carry `protocol: rest` (gateway rejects L4-only credentialed endpoints).
+   4. Proven: sandbox env has `MATILDA_API_KEY=openshell:resolve:env:v8806951` (placeholder only, zero `mc_live` in env); `curl POST https://matilda.maincode.com/api/v1/code/chat/completions -H "Authorization: Bearer $MATILDA_API_KEY"` → **200** (proxy rewrote the placeholder with the real key); `example.com` → rc 7.
 4. Record results in `docs/openshell-spiffe-assessment.md` (contract: `contracts/ztwim-assessment.md`), including any verified-deferred rows + re-evaluation triggers.
 
 ## V-METRICS — monitoring integration (SC-005a, FR-009)
