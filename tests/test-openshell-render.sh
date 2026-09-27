@@ -77,6 +77,17 @@ chk(asb["image"]["tag"] == "v1.0.3", "agent-sandbox image.tag != chartVersion")
 chk(asb.get("namespace", {}).get("create") is False, "agent-sandbox namespace.create must be false")
 chk((asb.get("containerSecurityContext") or {}).get("seccompProfile", {}).get("type") == "RuntimeDefault", "seccomp RuntimeDefault required")
 
+# Default-ingress wildcard plumbing (root cause 2026-09-27: IngressController
+# had no defaultCertificate → *.apps served the operator self-signed cert)
+aw = open(os.path.join(root, "charts/cert-manager-config/templates/apps-wildcard-certificate.yaml")).read()
+ic = open(os.path.join(root, "charts/cert-manager-config/templates/ingresscontroller-default-cert.yaml")).read()
+zone = wg.get("dnsZone")
+chk("namespace: openshift-ingress" in aw, "apps-wildcard Certificate must land in openshift-ingress")
+chk(f"*.apps." in aw and zone in aw, "apps-wildcard Certificate must cover *.apps.<dnsZone>")
+chk('name: acme' in aw or "issuerRef" in aw, "apps-wildcard Certificate must reference the acme ClusterIssuer")
+chk("ServerSideApply=true" in ic, "IngressController manifest must be ServerSideApply (partial spec management)")
+chk("defaultCertificate" in ic, "IngressController manifest must set spec.defaultCertificate")
+
 if fail:
     for f in fail:
         print(f, file=sys.stderr)

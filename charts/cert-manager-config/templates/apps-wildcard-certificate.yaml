@@ -1,0 +1,17 @@
+{{- if and .Values.global.openshell.enabled .Values.appsWildcard.enabled }}
+# Wildcard LE cert for *.apps.<domain> via the shared `acme` ClusterIssuer
+# (prod, Cloudflare DNS-01). Referenced by the IngressController
+# defaultCertificate so default routes stop serving the self-signed cert.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: apps-wildcard
+  namespace: openshift-ingress
+spec:
+  secretName: {{ .Values.appsWildcard.secretName }}
+  dnsNames:
+  - {{ printf "*.%s" .Values.appsWildcard.domain | quote }}
+  issuerRef:
+    name: {{ .Values.appsWildcard.issuerRef }}
+    kind: ClusterIssuer
+{{- end }}

@@ -1,0 +1,16 @@
+{{- if and .Values.global.openshell.enabled .Values.appsWildcard.enabled }}
+# Point the default IngressController at the ACM wildcard secret. Only
+# spec.defaultCertificate is managed — ServerSideApply keeps the operator
+# authoritative for the rest of the CR (spec.status and unknown fields are
+# untouched by ArgoCD with this option).
+apiVersion: operator.openshift.io/v1
+kind: IngressController
+metadata:
+  name: default
+  namespace: openshift-ingress-operator
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true,Replace=false
+spec:
+  defaultCertificate:
+    name: {{ .Values.appsWildcard.secretName }}
+{{- end }}

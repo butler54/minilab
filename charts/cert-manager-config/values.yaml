@@ -13,3 +13,14 @@ cloudflare:
   field: api-token
   refreshInterval: 5m0s
 
+
+# Default-ingress wildcard certificate: fixes `*.apps.` routes serving the
+# ingress-operator self-signed cert (no IngressController defaultCertificate).
+appsWildcard:
+  enabled: true
+  # Apps domain from ingress.config.openshift.io/cluster spec.domain
+  domain: apps.sno.tokyo-brunch.com
+  # Secret created in openshift-ingress (ingress defaultCertificate lookup is
+  # fixed to that namespace), referenced by the IngressController manifest.
+  secretName: apps-wildcard-tls
+  issuerRef: acme
