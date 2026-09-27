@@ -37,8 +37,23 @@ validate-openshell: ## Renders and validates the OpenShell platform charts and t
 	@tests/test-external-refs.sh
 
 .PHONY: validate-openshell-live
-validate-openshell-live: ## Live-cluster auth smoke test (Keycloak OIDC + gateway); requires oc + DNS access
+validate-openshell-live: check-openshell-cli ## Live-cluster auth smoke test (Keycloak OIDC + gateway); requires oc + DNS access
 	@tests/test-openshell-auth-smoke.sh
+
+.PHONY: check-openshell-cli
+check-openshell-cli: ## Asserts the installed openshell CLI matches the chart-pinned server version
+	@tests/check-openshell-cli.sh
+
+.PHONY: install-openshell-cli
+install-openshell-cli: ## Installs the openshell CLI at the chart-pinned version (brew preferred)
+	@ver=$$(python3 -c "import yaml;p=yaml.safe_load(open('values-prod.yaml'))['clusterGroup'];print(str(p['applications']['openshell']['chartVersion']))"); \
+	if command -v brew >/dev/null 2>&1 && [ "$$(brew info openshell --json=v2 2>/dev/null | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d["casks"][0]["versions"]["stable"] if d.get("casks") else d["formulae"][0]["versions"]["stable"])' 2>/dev/null)" = "$$ver" ]; then \
+	  brew install openshell; \
+	else \
+	  echo "brew formula does not carry $$ver; using upstream installer into ~/.local/bin"; \
+	  OPENSHELL_VERSION=v$$ver OPENSHELL_INSTALL_DIR="$$HOME/.local/bin" curl -fsSL https://github.com/NVIDIA/OpenShell/releases/download/v$$ver/install.sh | sh; \
+	fi; \
+	tests/check-openshell-cli.sh
 
 
 include Makefile-common
