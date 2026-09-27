@@ -107,7 +107,10 @@ aud = pl.get("aud", []); aud = [aud] if isinstance(aud, str) else aud
 assert sys.argv[3] in aud, f"aud {aud} missing {sys.argv[3]}"
 roles = pl.get("realm_access", {}).get("roles", [])
 assert sys.argv[4] in roles, f"realm_access.roles {roles} missing {sys.argv[4]} — hardcoded IdP mapper regression?"
-assert "openshell-admin" not in roles, "token unexpectedly carries openshell-admin (must be operator-granted only)"
+# openshell-admin IS allowed here (operator-granted post-first-login by design);
+# the *IdP mapper* never granting it is enforced offline in test-keycloak-realm.sh.
+if "openshell-admin" in roles:
+    print("note: token carries operator-granted openshell-admin", file=sys.stderr)
 if pl.get("exp", 0) < time.time():
     print("warning: stored token is expired (refresh with: openshell gateway login)", file=sys.stderr)
 EOF
