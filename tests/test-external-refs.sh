@@ -4,9 +4,9 @@ root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # SC-001/SC-002 proofs (specs/007-openshell-external-charts quickstart V-SRC):
 #   a) no upstream chart content under charts/
-#   b) the four ExternalChartRefs carry EXACT pins matching the registry contract
-#   c) agent-sandbox pin matches immutable tag form
-#   d) every override file referenced by the four apps exists
+#   b) the ExternalChartRefs carry EXACT pins matching the registry contract
+#   c) agent-sandbox is downstream OLM (Red Hat build), never an upstream chart ref
+#   d) every override file referenced by the apps exists
 python3 - "$root" <<'EOF'
 import os, re, sys, yaml
 
@@ -51,7 +51,6 @@ prod = yaml.safe_load(open(os.path.join(root, "values-prod.yaml")))["clusterGrou
 apps = prod.get("applications", {})
 expected = {
     "openshell": {"chart": "helm-chart", "repoURL": "ghcr.io/nvidia/openshell", "chartVersion": "0.1.1"},
-    "agent-sandbox": {"path": "helm", "repoURL": "https://github.com/kubernetes-sigs/agent-sandbox", "chartVersion": "v1.0.3"},
     "cert-manager": {"chart": "ocp-certmanager", "chartVersion": "0.2.0"},
     "ztwim": {"chart": "ztwim", "chartVersion": "0.1.1"},
     "rh-keycloak": {"chart": "rhbk", "chartVersion": "0.1.0"},
@@ -74,10 +73,14 @@ for key, want in expected.items():
         if not os.path.exists(os.path.join(root, f.lstrip("/"))):
             fail.append(f"applications.{key}.extraValueFiles references missing file: {f}")
 
-asb = apps.get("agent-sandbox", {})
-v = str(asb.get("chartVersion", ""))
-if v and not re.fullmatch(r"v\d+\.\d+\.\d+", v):
-    fail.append(f"agent-sandbox chartVersion {v!r} must be an immutable release tag (vMAJOR.MINOR.PATCH)")
+# (c) agent-sandbox must NOT be an upstream chart — downstream OLM subscription only
+if "agent-sandbox" in apps:
+    fail.append("applications.agent-sandbox present: upstream kubernetes-sigs chart is forbidden (use Red Hat build of Agent Sandbox via OLM subscription)")
+sub = (prod.get("subscriptions") or {}).get("agent-sandbox", {})
+if sub.get("name") != "agent-sandbox-operator":
+    fail.append(f"subscriptions.agent-sandbox.name must be agent-sandbox-operator, got {sub.get('name')!r}")
+if sub.get("channel") != "preview-0.9":
+    fail.append(f"subscriptions.agent-sandbox.channel must be preview-0.9, got {sub.get('channel')!r}")
 
 if fail:
     for f in fail:

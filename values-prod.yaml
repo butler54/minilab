@@ -23,6 +23,8 @@ clusterGroup:
       labels:
         monitoring.rhobs/stack: minilab
     agent-sandbox-system:
+      operatorGroup: true
+      targetNamespaces: []
     cert-manager-operator:
       operatorGroup: true
       targetNamespaces: []
@@ -67,6 +69,14 @@ clusterGroup:
       namespace: keycloak-system
       channel: stable-v26.6
       installPlanApproval: Automatic
+    agent-sandbox:
+      # Red Hat build of Agent Sandbox (downstream replacement for the upstream
+      # kubernetes-sigs/agent-sandbox helm chart — see docs/openshell-fence-delete-investigation.md).
+      name: agent-sandbox-operator
+      namespace: agent-sandbox-system
+      channel: preview-0.9
+      csv: agent-sandbox-operator.v0.9.0
+      installPlanApproval: Automatic
   applications:
     lvms-config:
       name: lvms-config
@@ -103,19 +113,6 @@ clusterGroup:
       path: charts/openshell-platform
       annotations:
         argocd.argoproj.io/sync-wave: "-3"
-    agent-sandbox:
-      name: agent-sandbox
-      namespace: agent-sandbox-system
-      project: default
-      # External git-sourced chart (specs/007 contract): upstream helm/ dir at tag.
-      # src: https://github.com/kubernetes-sigs/agent-sandbox
-      repoURL: https://github.com/kubernetes-sigs/agent-sandbox
-      path: helm
-      chartVersion: v1.0.3
-      extraValueFiles:
-      - '/overrides/values-agent-sandbox.yaml'
-      annotations:
-        argocd.argoproj.io/sync-wave: "-5"
     cert-manager-config:
       name: cert-manager-config
       namespace: cert-manager

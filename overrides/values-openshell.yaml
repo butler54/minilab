@@ -38,6 +38,7 @@ global:
 
 # NOTE (refactor 007): upstream chart values moved to per-app override files —
 # overrides/values-openshell-gateway.yaml (NVIDIA chart) plus values-ztwim.yaml,
-# values-certmanager.yaml, values-agent-sandbox.yaml. The top-level `openshell:`
+# values-certmanager.yaml (values-agent-sandbox.yaml retired 2026-09-28 when
+# agent-sandbox moved to the downstream OLM subscription). The top-level `openshell:`
 # passthrough block that fed the deleted wrapper chart is gone by design;
 # tests/test-openshell-values.sh fails if it reappears.
