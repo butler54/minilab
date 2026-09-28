@@ -29,10 +29,6 @@ sandbox:
 server:
   telemetryEnabled: false
   disableTls: false
-  # TEMPORARY DIAGNOSTIC (fence-delete root-cause hunt): bump kube client/hyper
-  # log targets to capture the underlying io error behind periodic
-  # `client error (SendRequest)` bursts. Remove once root cause is found.
-  logLevel: "info,kube_client=debug,openshell_driver_kubernetes=debug,hyper_util=debug,hyper=debug,reqwest=debug"
   credentialStorage:
     existingSecret: openshell-kek
   # SPIFFE provider-token grants — tracks global.openshell.ztwim.enabled (drift-asserted).
