@@ -31,7 +31,7 @@ for sr in scan_roots:
 
 # 2. Feature charts' ExternalChartRefs: exact versions (no ranges/floats).
 prod = yaml.safe_load(open(os.path.join(root, "values-prod.yaml")))["clusterGroup"]
-for key in ("openshell", "agent-sandbox", "cert-manager", "ztwim", "rh-keycloak"):
+for key in ("openshell", "cert-manager", "ztwim", "rh-keycloak"):
     app = prod.get("applications", {}).get(key, {})
     v = str(app.get("chartVersion", ""))
     if not (re.fullmatch(r"\d+\.\d+\.\d+", v) or re.fullmatch(r"v\d+\.\d+\.\d+", v)):
@@ -48,9 +48,14 @@ if img != OSC_VER or sup != OSC_VER or rt != OSC_VER:
 sandbox_img = (gw.get("sandbox", {}) or {}).get("image", {}).get("digest", "")
 if not sandbox_img.startswith("sha256:"):
     fail.append("sandbox.image must be digest-pinned")
-asb = yaml.safe_load(open(os.path.join(root, "overrides/values-agent-sandbox.yaml")))
-if asb.get("image", {}).get("tag") != "v1.0.3":
-    fail.append("agent-sandbox image.tag must equal its pinned chart version")
+# agent-sandbox: downstream Red Hat build via OLM, CSV must be exactly pinned
+sub = (prod.get("subscriptions") or {}).get("agent-sandbox", {})
+if sub.get("csv") != "agent-sandbox-operator.v0.9.0":
+    fail.append(f"subscriptions.agent-sandbox.csv must be exactly agent-sandbox-operator.v0.9.0, got {sub.get('csv')!r}")
+if sub.get("channel") != "preview-0.9":
+    fail.append(f"subscriptions.agent-sandbox.channel must be preview-0.9, got {sub.get('channel')!r}")
+if os.path.exists(os.path.join(root, "overrides/values-agent-sandbox.yaml")):
+    fail.append("overrides/values-agent-sandbox.yaml must not exist (upstream helm override file retired)")
 demo = yaml.safe_load(open(os.path.join(root, "charts", "openshell-demo", "values.yaml")))
 hi = demo.get("demo", {}).get("harnessImage", "")
 if "@sha256:" not in hi:

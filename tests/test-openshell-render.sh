@@ -17,7 +17,6 @@ dials = load("overrides/values-openshell.yaml")["global"]["openshell"]
 gw  = load("overrides/values-openshell-gateway.yaml")
 zt  = load("overrides/values-ztwim.yaml")
 cm  = load("overrides/values-certmanager.yaml")
-asb = load("overrides/values-agent-sandbox.yaml")
 
 zone = wg.get("dnsZone")
 host = dials.get("gatewayHostname")
@@ -72,10 +71,16 @@ chk(isinstance(gw.get("securityContext"), dict) and gw["securityContext"].get("r
 chk(gw.get("openshiftRoute", {}).get("enabled") is True, "openshiftRoute.enabled required")
 chk(gw.get("certManager", {}).get("enabled") is True, "certManager.enabled required")
 
-# agent-sandbox values (pinned envelope)
-chk(asb["image"]["tag"] == "v1.0.3", "agent-sandbox image.tag != chartVersion")
-chk(asb.get("namespace", {}).get("create") is False, "agent-sandbox namespace.create must be false")
-chk((asb.get("containerSecurityContext") or {}).get("seccompProfile", {}).get("type") == "RuntimeDefault", "seccomp RuntimeDefault required")
+# agent-sandbox: downstream Red Hat build via OLM subscription (upstream helm
+# chart retired — see docs/openshell-fence-delete-investigation.md appendix)
+prod = load("values-prod.yaml")["clusterGroup"]
+asub = (prod.get("subscriptions") or {}).get("agent-sandbox", {})
+chk(asub.get("name") == "agent-sandbox-operator", "subscriptions.agent-sandbox.name must be agent-sandbox-operator")
+chk(asub.get("namespace") == "agent-sandbox-system", "subscriptions.agent-sandbox.namespace must be agent-sandbox-system")
+chk(asub.get("channel") == "preview-0.9", "subscriptions.agent-sandbox.channel must be preview-0.9")
+chk(asub.get("installPlanApproval") == "Automatic", "subscriptions.agent-sandbox.installPlanApproval must be Automatic")
+chk((prod.get("namespaces") or {}).get("agent-sandbox-system", {}).get("operatorGroup") is True, "namespaces.agent-sandbox-system must declare operatorGroup")
+chk("agent-sandbox" not in (prod.get("applications") or {}), "applications.agent-sandbox (upstream helm) must be gone")
 
 # Demo assets drift guards (008-opencode-sandbox-demo)
 import json as _json
