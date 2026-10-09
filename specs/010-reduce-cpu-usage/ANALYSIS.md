@@ -239,3 +239,23 @@ rest of the day (monitor.log).
 - CPU impact estimate: modest (job churn + image-pull I/O), but the failures inflate health-signal noise and the earlier "10 crashlooping pods" reading.
 
 **OLM residual no-op CSV PUT fan** (~11–18/s, Appendix D): candidate levers `OLMConfig/cluster spec.features.csvCopyLoopInterval` (default ~15s → e.g. 4h) or `disableCopiedCSVs` (needs OLM 4.20+ verification — OCP 4.22 ships it as TechPreview? confirm before toggling). Validate against docs during T024 — do not flip features blind.
+
+## Appendix G — G2 Acceptance (T015, 2026-10-09)
+
+**Chain verification (06:18Z)**: `patterns-operator-config` CM → ArgoCD CR `.spec.extraConfig` →
+runtime `argocd-cm` all carry `timeout.reconciliation: 600s`; controller restarted 06:18:48Z
+(pod would not have reloaded the key otherwise — no auto-restart by GitOps operator).
+
+**Cadence spacing proof (06:44:36Z)**: all 15 Applications show `reconciledAt` ages of
+402–456s — no mid-cycle full reconciliation between 600s cycles (first cycle at
+restart+600s ≈ 06:28:48 matches restart 06:18:48). G2 PASS on cadence enforcement.
+
+**CPU step-down**: app-controller 154→114→99m (samples 06:31Z) vs 835m pre-repair baseline
+and ~204m post-US1 — sustained decline; final attribution recorded at G6 window.
+
+**Pattern tracking correction (06:37Z)**: `operator-deploy` from a non-main checkout had
+re-pointed `gitSpec.targetRevision` to `010-reduce-cpu-usage`; pinned `main.git.{repoURL,
+revision}` in `values-global.yaml` (commit aa1a88e) and re-ran from main — Pattern CR now
+tracks `main` permanently. New Application `openshift-monitoring-config` observed live
+(US3 rollout via GitOps from main, per user directive that ArgoCD runs against main).
+
