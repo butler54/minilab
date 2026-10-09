@@ -1,0 +1,6 @@
+apiVersion: v2
+name: olm-config
+description: OLM platform config for the Minilab SNO (feature 010 CPU reduction)
+type: application
+version: 0.1.0
+kubeVersion: ">=1.29.0-0"

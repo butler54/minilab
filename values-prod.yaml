@@ -119,6 +119,13 @@ clusterGroup:
       project: default
       # Feature 010 US3: CMO minimal collection profile (platform Prometheus CPU).
       path: charts/openshift-monitoring-config
+    olm-config:
+      name: olm-config
+      namespace: patterns-operator
+      project: default
+      # Feature 010 US4: OLMConfig/cluster — disableCopiedCSVs (kills the ~11-18/s
+      # no-op CSV copy-status PUT fan; measured 14.2/s -> 0.21/s live).
+      path: charts/olm-config
     openshell-platform:
       name: openshell-platform
       namespace: openshell
