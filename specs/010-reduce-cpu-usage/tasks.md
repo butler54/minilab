@@ -82,7 +82,7 @@ description: "Task list for Reduce Minilab CPU Usage"
 - [X] T013 [US2] Add `main.gitops.customArgoYaml` block to `values-global.yaml` (pattern-install chart 0.0.18 seam, research.md D3): set `timeout.reconciliation: 600s` plus optional app-controller `statusProcessors`/`operationProcessors` reduction with rationale comments; run `make generate` to confirm `pattern-install` renders the `patterns-operator-config` ConfigMap update
 - [X] T014 [US2] Apply via `make operator-deploy` and restart/roll `argocd-application-controller` if the ConfigMap change is not picked up; hard-refresh `minilab-prod` and confirm `openshift-operators` Subscription transitions to Manual (FR-016 waits on US4 T024: keep approval Manual at apply time)
 - [ ] T015 [US2] Run G2 acceptance per quickstart.md: record restart time; verify observed refresh ages reach ≥600s; after 30m, record app-controller CPU (`sum(rate(container_cpu_usage_seconds_total{namespace="openshift-gitops",pod=~"argocd-application-controller.*",container="application-controller"}[10m])) by (pod) * 1000`) and manual-sync demo (touch a values comment, `make argo-sync`) in ANALYSIS.md; confirm T006 green
-- [ ] T016 [US2] Commit `values-global.yaml` and cadence test on branch `010-reduce-cpu-usage`
+- [X] T016 [US2] Commit `values-global.yaml` and cadence test on branch `010-reduce-cpu-usage`
 
 **Checkpoint**: GitOps baseline churn reduced at 600s (user-approved default 2026-10-09); `junit_operator_deploy.xml` artifact refreshed.
 
