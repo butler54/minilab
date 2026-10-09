@@ -305,3 +305,21 @@ the US3 rollout itself (15-app sync wave + monitoring operator reconcile). A cle
 capture (G4b, 07:10→07:46Z, zero concurrent changes) runs for marginal US3 attribution; result
 appended as Appendix K. This does not change the verdict, which is anchored to the spec baseline.
 
+## Appendix K — G4b Settled-Window Attribution (capture 07:14–07:50Z)
+
+Clean 36-min window, zero concurrent changes, node calm (19–71% with no rollout activity):
+
+| Metric | Value |
+|---|---|
+| Settled mean `prometheus-k8s-0` CPU | **152m** (n=18, 2-min cadence) |
+| vs ~280m incident-era baseline (SC-006) | **−46%** (clarified ≥30% target: **exceeded**) |
+| vs ≈200m clarified threshold | 152m sustained — **well under** |
+| Sample range | 99–250m (no sustained excursion) |
+
+Marginal-attribution note: distinguishing US3's isolated effect from workload variance was not
+possible at this signal-to-noise level (the 129m pre-window of Appendix J was itself a
+low-activity sample). The spec-anchored criterion — ≥30% below the 280m baseline over a
+sustained 30-min window — is met with margin in **both** the rollout window (186m) and the
+settled window (152m). Combined with G5 (alerting intact, node series 12.2s fresh, dashboards
+rendering) and the OLM copy fan kill (Appendix I: CSV PUTs 14.2→0.21/s), US3 closes PASS.
+
