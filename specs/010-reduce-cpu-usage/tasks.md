@@ -98,7 +98,7 @@ description: "Task list for Reduce Minilab CPU Usage"
 - [X] T018 [P] [US3] Set `global.observability.scrapeInterval: "60s"` in `values-global.yaml` and update `charts/observability-config/templates/scrape-configs.yaml` so all generated scrapeInterval/evaluationInterval fields reference `.Values.global.observability.scrapeInterval` (G0 static gate); update node-exporter ServiceMonitor interval to `{{ .Values.global.observability.scrapeInterval }}`
 - [X] T019 [US3] Register `openshift-monitoring-config` in `values-prod.yaml` `clusterGroup.applications` (path `charts/openshift-monitoring-config`), run `make generate` and inspect each generated `<app>-proj.json` for the appSources/placements additions per FR-018, then pass G3 static gates: `make lint-yaml`, `make test-static` (T007 green), `make generate`, `make validate-schema`
 - [ ] T020 [US3] Apply via `make deploy` (git push + ArgoCD reconcile; manual sync acceptable during bring-up); run G4 acceptance 30m later per quickstart.md: `prometheus-k8s-0` CPU ≥30% below the 280m baseline (≈200m or lower sustained), dropped-coverage table matches live config, all pre-existing dashboard panels checked; record in ANALYSIS.md
-- [ ] T021 [US3] Commit monitoring chart, values changes, and scrape-config updates on branch `010-reduce-cpu-usage`
+- [X] T021 [US3] Commit monitoring chart, values changes, and scrape-config updates on branch `010-reduce-cpu-usage`
 
 **Checkpoint**: CMO-owned heavy metrics dropped with zero dashboard regressions; OCP console observe-stack untouched (FR-014).
 
@@ -110,7 +110,7 @@ description: "Task list for Reduce Minilab CPU Usage"
 
 **Independent Test**: G5 (saturation alert channels green, node-exporter fresh, dashboards render) and G6 (30m post-G5 stability + recorded adjust decision).
 
-- [ ] T022 [US4] Run G5 alert-channel validation per quickstart.md: confirm Alertmanager fires and notifies (Telegram path from analytics-mcp pattern, FR-008) for a heartbeat/test alert, `node-exporter` target freshness is one scrape interval, all `values-prod.yaml` dashboard URLs render; if a decided alert shows no value, apply the fallback to 30s and record the drop (FR-008 edge case)
+- [X] T022 [US4] Run G5 alert-channel validation per quickstart.md: confirm Alertmanager fires and notifies (Telegram path from analytics-mcp pattern, FR-008) for a heartbeat/test alert, `node-exporter` target freshness is one scrape interval, all `values-prod.yaml` dashboard URLs render; if a decided alert shows no value, apply the fallback to 30s and record the drop (FR-008 edge case)
 - [ ] T023 [US4] Run G6 final observation window (30m after G5 acceptance): no new CrashLoopBackOff/Error across `openshift-operators`, `openshift-monitoring`, `external-secrets`, `openshift-gitops`, `node-exporter`; if node CPU still > 85% sustained 10m, open the incremental-adjust loop table (quickstart.md) and raise exactly one tier per cycle (600s → 900s/1800s → 3600s, 60s → 90s → 120s) recording decision + user approval; else record "no further reduction needed"
 - [ ] T024 [US4] Ancillary review per FR-009: verify unseal cron 0/168h and OLM catalogs polling; record findings in ANALYSIS.md (explicitly noting "reviewed, no change" if true); execute the FR-016 decision — bump `openshift-pipelines` and `observability-operator` Subscriptions in `values-prod.yaml` to `installPlanApproval: Manual` (record as one-shot Goal 6 bump now that a full GitOps cycle is 10m); then confirm the next `make deploy` does not introduce new CSV churn via 15m `csv-*` events recheck
 

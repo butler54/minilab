@@ -259,3 +259,17 @@ revision}` in `values-global.yaml` (commit aa1a88e) and re-ran from main — Pat
 tracks `main` permanently. New Application `openshift-monitoring-config` observed live
 (US3 rollout via GitOps from main, per user directive that ArgoCD runs against main).
 
+## Appendix H — G5 Acceptance (T022, 2026-10-09T06:50Z)
+
+| Check | Result |
+|---|---|
+| Platform alert pipeline | ✅ Watchdog firing (always-on test alert reaches Alertmanager); +HIGH-4 others incl. UpdateAvailable |
+| Platform AM receivers | ⚠️ **pre-existing**: default CMO AM has placeholder receivers only (`AlertmanagerReceiversNotConfigured` firing) — no real integration ever existed; unchanged by feature 010; recommend wiring platform AM → PagerDuty as a follow-up (documented gap, recorded per FR-008 fallback) |
+| COO minilab Alertmanager (PagerDuty via ESO/vault) | ✅ `alertmanager-minilab-0` 2/2, `prometheus-minilab-0` 3/3, 7d11h uptime; secret chain healthy (ESO synced) |
+| node-exporter freshness | ✅ 12.2s staleness (< 30s bound; CMO kept factory scrape cadence for retained targets, confirming the monitoring-config contract's continuation guarantee) |
+| Core series after `minimal` profile | ✅ `node_cpu_seconds_total` 64 series, `node_memory_*`, `node_filesystem_*`, `kube_pod_info` 212 — dashboard inputs intact |
+| Dashboard rendering | ✅ 6 PersesDashboard CRs present; `perses-0` + `perses-operator` Running; monitoring-plugin Running; UIPlugin `Reconciled=True` |
+| `KubeJobFailed` firing | ⚠️ caused by the **stale Sept job corpses** identified in Appendix F — resolved by T024 cleanup |
+
+**Verdict: G5 PASS** (two noted items are pre-existing/orphan-cleanup matters, not regressions from tuning).
+
