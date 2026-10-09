@@ -36,6 +36,12 @@ global:
 
 main:
   clusterGroupName: prod
+  # Release branch this pattern deploys from. operator-deploy otherwise
+  # inherits the local checkout branch, silently re-pointing ArgoCD away from
+  # main — pin it explicitly (feature 010 lesson).
+  git:
+    repoURL: https://github.com/butler54/minilab.git
+    revision: main
   multiSourceConfig:
     enabled: true
     clusterGroupChartVersion: 0.9.*
