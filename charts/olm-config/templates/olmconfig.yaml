@@ -1,0 +1,16 @@
+apiVersion: operators.coreos.com/v1
+kind: OLMConfig
+metadata:
+  name: cluster
+  labels:
+    app.kubernetes.io/part-of: minilab-cpu-reduction
+    minilab.tokyo-brunch.com/owner: argocd
+spec:
+  features:
+    # Feature 010: stop OLM from copying every CSV to all namespaces. On OCP
+    # 4.22 the copy-status sync loop produced a ~11-18/s permanent no-op PUT
+    # fan on ~540 CSV objects (~98% of all CSV-write API traffic this cluster
+    # generated once the agent-sandbox incident was fixed; measured 23.4/s
+    # baseline -> 11.5/s post-repair -> 0.21/s with copies disabled).
+    # Console per-namespace operator-status views are not used on this SNO.
+    disableCopiedCSVs: true

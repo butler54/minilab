@@ -273,3 +273,17 @@ tracks `main` permanently. New Application `openshift-monitoring-config` observe
 
 **Verdict: G5 PASS** (two noted items are pre-existing/orphan-cleanup matters, not regressions from tuning).
 
+## Appendix I — T024 Ancillary Execution (2026-10-09, ~07:10–07:20Z)
+
+| Item | Action | Result |
+|---|---|---|
+| Unseal cron schedule | `values-prod.yaml` `clusterGroup.imperative.insecureUnsealVaultInsideClusterSchedule: "*/10 * * * *"` (Git; clustergroup knob) | merged to main (d27d0fb) — 288→96 runs/day, stays inside load-secrets' 15m unseal-wait budget |
+| Stale unseal corpses | deleted Job `unsealvault-cronjob-29832540` (Failed, 18d) + its 7 Init:Error pods | gone; cron keeps completing (~55s/round) |
+| Static-installer corpses | deleted 3 old-revision Error pods (etcd/apiserver/scheduler installers) | gone |
+| `lvms-config-readiness` | **left, flagged**: GitOps-tracked by lvms-config app; failed 2026-09-26 (BackoffLimitExceeded), feeds `KubeJobFailed` alert; root cause = pre-existing lvms-config OutOfSync drift — separate incident, outside feature 010 scope | user follow-up |
+| Subscription approval (Goal-6 bump) | `cluster-observability-operator` → `installPlanApproval: Manual` (Git) | merged to main — upgrade churn gated during stabilization |
+| OLM CSV-copy PUT fan | `oc patch olmconfig cluster spec.features.disableCopiedCSVs=true` (live experiment), then Gitified via new `charts/olm-config` chart + `test-olm-config.sh` | **23.4 → 11.5 → 14.2(drain) → 0.21/s** (~99% from incident baseline); ~540 CSV copies removed, 17 originals remain; PUT series identified as `namespace=default, subresource=status` copies-sync — theory confirmed |
+| `csvCopyLoopInterval` | not available in this OCP 4.22 OLMConfig schema (only `disableCopiedCSVs` + `packageServerSyncInterval`) — `olmdates` docs note recorded |
+
+Remaining context: monitor sampler keeps running; G4b settled-window capture in flight (07:10→07:46).
+
