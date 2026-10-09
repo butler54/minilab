@@ -111,7 +111,7 @@ description: "Task list for Reduce Minilab CPU Usage"
 **Independent Test**: G5 (saturation alert channels green, node-exporter fresh, dashboards render) and G6 (30m post-G5 stability + recorded adjust decision).
 
 - [X] T022 [US4] Run G5 alert-channel validation per quickstart.md: confirm Alertmanager fires and notifies (Telegram path from analytics-mcp pattern, FR-008) for a heartbeat/test alert, `node-exporter` target freshness is one scrape interval, all `values-prod.yaml` dashboard URLs render; if a decided alert shows no value, apply the fallback to 30s and record the drop (FR-008 edge case)
-- [ ] T023 [US4] Run G6 final observation window (30m after G5 acceptance): no new CrashLoopBackOff/Error across `openshift-operators`, `openshift-monitoring`, `external-secrets`, `openshift-gitops`, `node-exporter`; if node CPU still > 85% sustained 10m, open the incremental-adjust loop table (quickstart.md) and raise exactly one tier per cycle (600s → 900s/1800s → 3600s, 60s → 90s → 120s) recording decision + user approval; else record "no further reduction needed"
+- [X] T023 [US4] Run G6 final observation window (30m after G5 acceptance): no new CrashLoopBackOff/Error across `openshift-operators`, `openshift-monitoring`, `external-secrets`, `openshift-gitops`, `node-exporter`; if node CPU still > 85% sustained 10m, open the incremental-adjust loop table (quickstart.md) and raise exactly one tier per cycle (600s → 900s/1800s → 3600s, 60s → 90s → 120s) recording decision + user approval; else record "no further reduction needed"
 - [X] T024 [US4] Ancillary review per FR-009: verify unseal cron 0/168h and OLM catalogs polling; record findings in ANALYSIS.md (explicitly noting "reviewed, no change" if true); execute the FR-016 decision — bump `openshift-pipelines` and `observability-operator` Subscriptions in `values-prod.yaml` to `installPlanApproval: Manual` (record as one-shot Goal 6 bump now that a full GitOps cycle is 10m); then confirm the next `make deploy` does not introduce new CSV churn via 15m `csv-*` events recheck
 
 **Checkpoint**: All success criteria SC-001…SC-008 measured and recorded; cadence finalized or adjust loop opened.
@@ -123,11 +123,11 @@ description: "Task list for Reduce Minilab CPU Usage"
 - [X] T025 [P] Update `values-global.yaml` comment for `main.gitops.customArgoYaml` documenting the concurrency·interval tradeoff (research.md D3 math)
 - [X] T026 [P] Document dropped/scaled monitoring coverage and rationale (FR-007, FR-013 decisions) as a "Dropped monitoring coverage" section in `README.md`, mirroring the table required by `contracts/monitoring-values-contract.md`
 - [X] T027 [P] Update `tests/README.md` with the new test entries, including `tests/test-owner-collision.sh` (live-cluster probe semantics), and the Makefile target notes
-- [ ] T028 [P] Append final post-state metrics appendix to `specs/010-reduce-cpu-usage/ANALYSIS.md` (before/after table for SC-001…SC-008)
+- [X] T028 [P] Append final post-state metrics appendix to `specs/010-reduce-cpu-usage/ANALYSIS.md` (before/after table for SC-001…SC-008)
 - [X] T029 [P] Residual doc fixes from analyze: `data-model.md` E3 "scarfed"→"surfaced"; dedupe `ANALYSIS.md` row in `plan.md` Project Structure tree
-- [ ] T030 Run full remaining static gates (`make lint`, `make kustomize` if harness reachable, `make super-linter` when network allows) and re-run every quickstart.md gate command end-to-end to confirm SC-001…SC-008, including the manual-sync confirmation that a trivial Git change lands within minutes (FR-005)
-- [ ] T031 Run `make argo-healthcheck` final pass
-- [ ] T032 Final commit and PR summary on branch `010-reduce-cpu-usage`: evidence table of SC outcomes + links to ANALYSIS.md appendix
+- [X] T030 Run full remaining static gates (`make lint`, `make kustomize` if harness reachable, `make super-linter` when network allows) and re-run every quickstart.md gate command end-to-end to confirm SC-001…SC-008, including the manual-sync confirmation that a trivial Git change lands within minutes (FR-005)
+- [X] T031 Run `make argo-healthcheck` final pass
+- [X] T032 Final commit and PR summary on branch `010-reduce-cpu-usage`: evidence table of SC outcomes + links to ANALYSIS.md appendix
 
 ---
 

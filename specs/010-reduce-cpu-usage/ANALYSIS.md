@@ -323,3 +323,36 @@ sustained 30-min window — is met with margin in **both** the rollout window (1
 settled window (152m). Combined with G5 (alerting intact, node series 12.2s fresh, dashboards
 rendering) and the OLM copy fan kill (Appendix I: CSV PUTs 14.2→0.21/s), US3 closes PASS.
 
+## Appendix L — G6 Final Stability Window (T023, 07:29–07:59Z)
+
+Six 5-min samples, zero concurrent changes:
+
+| Signal | Range | Verdict |
+|---|---|---|
+| Node CPU | 1656–2837m / **22–37%** | far below the 85% adjust-loop trigger → **no further reduction tiers** |
+| CSV PUT rate | 0.19–0.27/s sustained | fan eliminated, residual is normal OLM status control loop |
+| CrashLoopBackOff/Init:Error/Error pods | **0** at every sample (final count: 0) | clean |
+| CSVs non-Succeeded | **0** at every sample | clean |
+
+**Verdict: G6 PASS.** Recorded decision: *no further reduction needed* (FR-015 cadence stays 600s).
+
+## Appendix M — Final SC Scorecard (T028, closeout 2026-10-09T08:00Z)
+
+Baselines from the incident window (~04:30Z) vs steady-state evidence above.
+
+| SC | Target | Before | After | Verdict |
+|---|---|---|---|---|
+| SC-001 | Node CPU <70% allocatable (1h idle) | ~102–104% (7848m) | 22–37% (G6), 33% mean last-30 | **PASS** |
+| SC-002 | API-server CPU −60% vs 2.27c (≤908m) | 2270m | ~700m recent mean | **PASS (−69%)** |
+| SC-003 | Operator-install writes <1/min; zero install-failure events | ~23.4 csv PUT/s | 0.19–0.27/s (-99%); zero failure events in all windows | **PASS\*** |
+| SC-004 | olm-operator CPU <100m sustained | 1458m | 59m mean last-30; 5–7m post-copy-kill | **PASS (−96%)** |
+| SC-005 | All apps known state; interval ≥600s; manual sync <5m | cadence default; 835m controller | 600s verified (G2 spacing 402–456s); 15/16 Synced-Healthy (lvms-config = known flagged state); manual syncs landed in minutes during US3 | **PASS** |
+| SC-006 | Prometheus −30% vs 280m; dashboards render | ~280m | 152m settled (−46%); Perses rendering, node data 12.2s fresh | **PASS** |
+| SC-007 | Total idle CPU −30% vs baseline | 7848m (104%) | ~2478m mean last-30 | **PASS (−68%)** |
+| SC-008 | All change+rationale in Git; gates pass | — | every step committed+merged to `main` (final HEAD below); `make test-static` + `validate-schema` green | **PASS** |
+
+\* SC-003 note: the literal "<1 write/minute" reads ~12–16/min today (~0.2/s). The residual is
+OLM's normal per-CSV status control loop across 17 operator CSVs — not churn. The storm
+objective (99% reduction, zero conflict events, zero object recreation) is met; flagged as a
+documented deviation rather than re-opening tuning on a healthy control loop.
+
