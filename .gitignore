@@ -2,3 +2,8 @@
 values-secret.yaml
 *.tgz
 *.tmp
+kubeconfig*
+.kube/
+*.key
+*.crt
+*.secret.yaml
