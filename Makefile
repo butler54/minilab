@@ -61,5 +61,21 @@ install-openshell-cli: ## Installs the openshell CLI at the chart-pinned version
 	fi; \
 	tests/check-openshell-cli.sh
 
+##@ Static test gate (feature 010)
+# Single deterministic static-test gate: every non-live shell test runs here
+# exactly once, in sorted order. Excluded: live probes (auth smoke, owner
+# collision) and environment-dependent tool checks.
+LIVE_TESTS := tests/test-openshell-auth-smoke.sh tests/test-owner-collision.sh
+ENV_TESTS := tests/check-openshell-cli.sh
+STATIC_TESTS := $(filter-out $(LIVE_TESTS) $(ENV_TESTS),$(wildcard tests/test-*.sh)) tests/validate-pattern-config.sh
+
+.PHONY: test-static
+test-static: ## Runs every static shell test exactly once (deterministic order)
+	@set -e; for t in $(sort $(STATIC_TESTS)); do printf '== %s\n' "$$t"; bash "$$t"; done
+
+.PHONY: test-live
+test-live: ## Runs live-cluster probe tests; skips gracefully when cluster is unreachable
+	@if ! oc get --raw /healthz >/dev/null 2>&1; then echo "skip: cluster unreachable (test-live)"; exit 0; fi
+	@set -e; for t in $(LIVE_TESTS); do printf '== %s\n' "$$t"; bash "$$t"; done
 
 include Makefile-common
