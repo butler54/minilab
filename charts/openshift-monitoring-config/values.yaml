@@ -1,0 +1,19 @@
+# openshift-monitoring-config values
+#
+# Feature 010 (specs/010-reduce-cpu-usage): cut platform Prometheus CPU on the
+# 8-CPU SNO by switching Cluster Monitoring Operator to the minimal metrics
+# collection profile. OCP 4.22 CMO exposes no platform scrapeInterval knob
+# (verified against CMO release-4.22 Documentation/api.md), so the profile
+# switch is the only revert-proof lever for the platform stack.
+#
+# Scope discipline (contract: specs/010-reduce-cpu-usage/contracts/monitoring-config-contract.md):
+# the rendered ConfigMap must contain ONLY the prometheusK8s block below.
+# Do not add enableUserWorkload/telemeterClient/etc. here.
+
+configYaml:
+  prometheusK8s:
+    # minimal collection profile drops the bulk of default ServiceMonitors'
+    # heavy targets (e.g. most kube-state-metrics/etcd detail series) while
+    # keeping default alerting rules, recording rules, telemetry, and console
+    # dashboards functional.
+    collectionProfile: minimal

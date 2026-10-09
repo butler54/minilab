@@ -67,7 +67,7 @@ description: "Task list for Reduce Minilab CPU Usage"
 - [X] T009 [US1] Execute `scripts/repair-agent-sandbox-leak.sh` against the live cluster; watch `csv/agent-sandbox-operator.v0.9.0` recover to `Succeeded` and olm-operator CPU subside ([Heuristic] if CSV does not reach Succeeded within 10m: halt, capture CSV status/events, escalate)
 - [X] T010 [US1] Run G1 acceptance measurement 30m post-fix per quickstart.md: verify CSV `Succeeded` sustained, zero new immutable-selector events, CSV PUT rate < 0.02/s (`sum(rate(apiserver_request_total{group="operators.coreos.com",resource="clusterserviceversions",verb="PUT"}[5m]))`), `tests/test-owner-collision.sh` now green; append measurements to `specs/010-reduce-cpu-usage/ANALYSIS.md`
 - [X] T011 [US1] Run the functional sandbox smoke test (FR-002/clarified): execute `deploy/openshell/demo/run-demo.sh --smoke` (Makefile `demo` target) against the repaired controller; verify one sandbox instantiates and the demo reports `OPENSHELL_VDEMO_OK`; record outcome in ANALYSIS.md ([Heuristic] if smoke fails but soak is clean: capture sandbox CR + controller events, do not roll back the repair)
-- [ ] T012 [US1] Commit repair script, owner-collision test, and ANALYSIS.md post-state on branch `010-reduce-cpu-usage`
+- [X] T012 [US1] Commit repair script, owner-collision test, and ANALYSIS.md post-state on branch `010-reduce-cpu-usage`
 
 **Checkpoint**: OLM hot loop eliminated (largest CPU win banked); US1 acceptance criteria AC1–AC5 met; plan checkpoint "smoke: N/A" is superseded (smoke test required per FR-002 clarification).
 
@@ -80,9 +80,9 @@ description: "Task list for Reduce Minilab CPU Usage"
 **Independent Test**: Wait >600s after apply; observe `.status.reconciledAt` refresh ages reach ≥600s, `argocd-application-controller` CPU steps down (G2), T006 green.
 
 - [X] T013 [US2] Add `main.gitops.customArgoYaml` block to `values-global.yaml` (pattern-install chart 0.0.18 seam, research.md D3): set `timeout.reconciliation: 600s` plus optional app-controller `statusProcessors`/`operationProcessors` reduction with rationale comments; run `make generate` to confirm `pattern-install` renders the `patterns-operator-config` ConfigMap update
-- [ ] T014 [US2] Apply via `make operator-deploy` and restart/roll `argocd-application-controller` if the ConfigMap change is not picked up; hard-refresh `minilab-prod` and confirm `openshift-operators` Subscription transitions to Manual (FR-016 waits on US4 T024: keep approval Manual at apply time)
+- [X] T014 [US2] Apply via `make operator-deploy` and restart/roll `argocd-application-controller` if the ConfigMap change is not picked up; hard-refresh `minilab-prod` and confirm `openshift-operators` Subscription transitions to Manual (FR-016 waits on US4 T024: keep approval Manual at apply time)
 - [ ] T015 [US2] Run G2 acceptance per quickstart.md: record restart time; verify observed refresh ages reach ≥600s; after 30m, record app-controller CPU (`sum(rate(container_cpu_usage_seconds_total{namespace="openshift-gitops",pod=~"argocd-application-controller.*",container="application-controller"}[10m])) by (pod) * 1000`) and manual-sync demo (touch a values comment, `make argo-sync`) in ANALYSIS.md; confirm T006 green
-- [ ] T016 [US2] Commit `values-global.yaml` and cadence test on branch `010-reduce-cpu-usage`
+- [X] T016 [US2] Commit `values-global.yaml` and cadence test on branch `010-reduce-cpu-usage`
 
 **Checkpoint**: GitOps baseline churn reduced at 600s (user-approved default 2026-10-09); `junit_operator_deploy.xml` artifact refreshed.
 

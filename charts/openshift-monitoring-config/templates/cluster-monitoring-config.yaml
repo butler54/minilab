@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+  labels:
+    app.kubernetes.io/part-of: minilab-cpu-reduction
+  annotations:
+    # FR-011 traceability: ownership decision recorded in Git (feature 010).
+    minilab.tokyo-brunch.com/owner: argocd
+    minilab.tokyo-brunch.com/spec: "010-reduce-cpu-usage"
+data:
+  config.yaml: |
+    {{ .Values.configYaml | toYaml | nindent 4 }}

@@ -5,6 +5,9 @@ global:
     stackNamespace: minilab-observability
     retention: 30d
     storageClass: lvms-loopback
+    # Scrape/evaluation cadence for pattern-owned targets (feature 010 US3).
+    # Overlay pins 60s; chart default stays conservative.
+    scrapeInterval: 30s
     externalTargets: []
     dashboards: []
     alertRules: []

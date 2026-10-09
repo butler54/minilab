@@ -229,3 +229,13 @@ Application recovered ≈50% of node CPU within 30 minutes. The 05:16 apiserver
 burst is standalone control-plane activity (no OLM/ArgoCD correlate) and
 decayed within 60s — not a regression. Continuous 2-min sampler running for the
 rest of the day (monitor.log).
+
+## Appendix F — Ancillary Pre-Findings (read-only, for T024 review)
+
+**Unseal cronjob (`imperative/unsealvault-cronjob`)** — spec assumption "0/168h" is wrong:
+- Schedule is **`*/5 * * * *`** — 288 runs/day, each ~55s including a `quay.io/validatedpatterns/imperative-container:v1` pull (667 MB image; layers usually cached).
+- The 7 CrashLoopBackOff/Error `unsealvault-cronjob-29832540-*` pods are **stale corpses from 2026-09-21** (Init:Error, `finishedAt` 2026-09-21T01:00:33Z) — failed jobs' pods never got garbage-collected. Recent jobs (29858765/70/75) all Complete; vault-0 is Running 1/1.
+- Levers for T024: (a) reduce schedule to hourly/daily (unseal is a recovery aid, not a heartbeat); (b) set `failedJobsHistoryLimit`/`successfulJobsHistoryLimit` plus `ttlSecondsAfterFinished` to auto-clean; (c) delete the 7 stale failed pods + 3 old static-pod installer Error pods (`installer-12-sno`, `installer-1-sno`, `installer-3-sno`, all old revisions).
+- CPU impact estimate: modest (job churn + image-pull I/O), but the failures inflate health-signal noise and the earlier "10 crashlooping pods" reading.
+
+**OLM residual no-op CSV PUT fan** (~11–18/s, Appendix D): candidate levers `OLMConfig/cluster spec.features.csvCopyLoopInterval` (default ~15s → e.g. 4h) or `disableCopiedCSVs` (needs OLM 4.20+ verification — OCP 4.22 ships it as TechPreview? confirm before toggling). Validate against docs during T024 — do not flip features blind.

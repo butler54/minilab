@@ -42,4 +42,17 @@ This pattern provides dashboarding and alerting for OpenShift system workloads, 
 - **Retention**: 30 days by default, sized within the pattern's storage budget on the LVMS storage class.
 - **Access control**: Perses viewer/editor roles bound to OpenShift groups declared via `global.observability.rbac`.
 
-The observability configuration surface lives in `overrides/values-observability.yaml` (`externalTargets`, `dashboards`, `alertRules`, `rbac`, `retention`, `stackNamespace`, `storageClass`) and is applied through the pattern's shared-value-files mechanism. See `charts/observability-config/README.md` and `specs/002-deploy-dashboarding/` for the full configuration reference, contracts, and validation guide. Run local validation with `tests/test-observability-dashboards.sh`, `tests/test-observability-alerts.sh`, `tests/test-observability-configurability.sh`, `tests/test-observability-rbac.sh`, `tests/test-observability-override.sh`, and `tests/test-cluster-summary-dashboard.sh` (or `make validate-observability`).
+The observability configuration surface lives in `overrides/values-observability.yaml` (`externalTargets`, `dashboards`, `alertRules`, `rbac`, `retention`, `stackNamespace`, `storageClass`, `scrapeInterval`) and is applied through the pattern's shared-value-files mechanism. See `charts/observability-config/README.md` and `specs/002-deploy-dashboarding/` for the full configuration reference, contracts, and validation guide. Run local validation with `tests/test-observability-dashboards.sh`, `tests/test-observability-alerts.sh`, `tests/test-observability-configurability.sh`, `tests/test-observability-rbac.sh`, `tests/test-observability-override.sh`, and `tests/test-cluster-summary-dashboard.sh` (or `make validate-observability`).
+
+## Reduced Reconciliation and Monitoring Footprint (feature 010)
+
+The 8-CPU SNO deliberately trades freshness for CPU headroom (spec `010-reduce-cpu-usage`, root cause and baselines in `specs/010-reduce-cpu-usage/ANALYSIS.md`):
+
+| What changed | Mechanism | Coverage impact | Rationale |
+|---|---|---|---|
+| ArgoCD full reconciliation | `timeout.reconciliation: 600s` via `main.gitops.customArgoYaml` (patterns-operator seam) | Unattended Git changes may take up to 10m to converge (was ~3m); manual sync and webhooks unaffected | ~70% fewer baseline reconcile passes on the app-controller and API server |
+| Platform Prometheus collection | `collectionProfile: minimal` in `charts/openshift-monitoring-config` (cluster-monitoring-config) | CMO drops low-value default targets (full kube-state-metrics/etcd detail series); platform alerting rules, recording rules, telemetry, and `Observe` console dashboards are preserved by CMO contract; retained targets still scrape at factory 30s | Only revert-proof platform CPU lever on OCP 4.22 (no platform scrapeInterval knob) |
+| Pattern-owned scraping | `global.observability.scrapeInterval: 60s` on external-target ServiceMonitors | External-target metrics staleness 60s (was stack default 30s) | Halves COO-stack scrape CPU; user-requested 60s cadence lands here because the platform stack cannot take it |
+| OLM install-plan approval | `installPlanApproval: Manual` on remaining subscriptions (feature 010 final bump) | Operator upgrades wait for manual approval in ArgoCD/OLM | Prevents unexpected CPU churn waves mid-incident-response |
+
+Single-owner invariant enforced by `tests/test-owner-collision.sh`: no GitOps-tracked Deployment may collide with an OLM CSV-owned Deployment (the incident class that saturated this cluster's CPU). Run it with `make test-live`.
