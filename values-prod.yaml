@@ -1,5 +1,10 @@
 clusterGroup:
   name: prod
+  # Feature 010 FR-009: unseal cron is a recovery aid, not a heartbeat.
+  # */10 (288→96 runs/day, -67%) stays inside load-secrets' 15m unseal wait
+  # window while cutting Vault-adjacent job churn on the 8-CPU SNO.
+  imperative:
+    insecureUnsealVaultInsideClusterSchedule: "*/10 * * * *"
   namespaces:
     minilab:
     vault:
@@ -53,7 +58,9 @@ clusterGroup:
       name: cluster-observability-operator
       namespace: openshift-cluster-observability-operator
       channel: stable
-      installPlanApproval: Automatic
+      # Feature 010 (stabilization): manual approval prevents operator-upgrade
+      # CSV churn waves mid-stabilization; revisit after steady state.
+      installPlanApproval: Manual
     cert-manager-operator:
       name: openshift-cert-manager-operator
       namespace: cert-manager-operator
