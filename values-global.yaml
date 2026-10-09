@@ -39,3 +39,23 @@ main:
   multiSourceConfig:
     enabled: true
     clusterGroupChartVersion: 0.9.*
+  gitops:
+    # Preserve live baseline; pattern-install CM keys map channel->gitops.channel,
+    # operatorSource->gitops.catalogSource (verified against pattern-install 0.0.18).
+    channel: gitops-1.21
+    operatorSource: redhat-operators
+    # Feature 010 (specs/010-reduce-cpu-usage): slow ArgoCD's full-reconciliation
+    # cadence from the ~3m GitOps default to 600s to cut app-controller +
+    # API-server churn on this 8-CPU SNO (research.md D3: default cadence costs
+    # ~20 full reconcile passes/hour across ~11 Applications; 600s cuts that to
+    # ~6/hour — a ~70% reduction in baseline GitOps churn — while the
+    # concurrency·interval product stays far below the controller's 2-CPU limit,
+    # so no queue starvation is expected).
+    # Deep-merged into ArgoCD CR .spec by the patterns-operator via ConfigMap
+    # patterns-operator-config key gitops.customArgoYaml.
+    # Manual sync and webhooks still apply changes immediately; worst-case
+    # staleness for unattended Git changes is 10m (adjustable via the spec's
+    # tier ladder: 600s → 900s/1800s → 3600s).
+    customArgoYaml: |
+      extraConfig:
+        timeout.reconciliation: 600s
