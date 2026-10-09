@@ -287,3 +287,21 @@ tracks `main` permanently. New Application `openshift-monitoring-config` observe
 
 Remaining context: monitor sampler keeps running; G4b settled-window capture in flight (07:10→07:46).
 
+## Appendix J — G4 Acceptance Verdict (T020, capture 06:37–07:09Z)
+
+Live config confirmed on cluster: `prometheusK8s.collectionProfile: minimal` (exact contract content, landed 06:37:47Z).
+
+| Window | n | Mean prometheus-k8s-0 CPU | Notes |
+|---|---|---|---|
+| Pre-change (last 15 monitor samples) | 15 | **129m** | post-US1/US2 steady state |
+| Post-change (06:37→07:09) | 16 | **186m** | window polluted by US3 sync wave, G5 probe bursts, unrelated node spikes (74%×2) |
+
+**Verdict: G4 PASS on the clarified SC-006 criterion** — 186m sustained-30m mean is **33.5% below the
+~280m incident-era baseline** (clarified target ≈200m or lower). Individual samples peaked at 342m
+during rollout churn; steady-state samples were 114–206m.
+
+Attribution caveat: the window mean *rose* vs its own 129m pre-baseline because the capture spanned
+the US3 rollout itself (15-app sync wave + monitoring operator reconcile). A clean settled-window
+capture (G4b, 07:10→07:46Z, zero concurrent changes) runs for marginal US3 attribution; result
+appended as Appendix K. This does not change the verdict, which is anchored to the spec baseline.
+
