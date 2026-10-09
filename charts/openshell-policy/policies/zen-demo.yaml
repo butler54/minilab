@@ -1,0 +1,38 @@
+# ZEN DEMO POLICY (feature 011) — least-privilege egress for opencode zen
+# free-tier models inside a governed sandbox.
+#
+# Remediation contract (FR-002/FR-003): starts DENY ALL. Every
+# `network_policies` entry below was added in response to an observed
+# `NET:OPEN DENIED` event and carries a `# justification:` comment naming the
+# motivating probe. Iteration trail: specs/011-zen-sandbox-demo/demo-log.md.
+#
+# Hard requirements (proven live 008/2026-09-27, openshell 0.1.1):
+#   - `binaries` is MANDATORY per rule (gateway injects require_binary_identity)
+#   - binary paths must be kernel-resolved (readlink -f), never symlinks
+#   - `protocol: rest` on credentialed/HTTP endpoints (L7 inspection)
+version: 1
+filesystem_policy:
+  include_workdir: true
+  read_only:
+  - /usr
+  - /lib
+  - /etc
+  - /var/log
+  - /proc
+  - /dev/urandom
+  read_write:
+  - /tmp
+  - /dev/null
+network_policies: {}
+  # G0/G3 iterations append rules here, e.g.:
+  # allow_opencode_ai_443:
+  #   name: allow_opencode_ai_443
+  #   # justification: G3 iter0 — opencode.exe zen request denied (NET:OPEN DENIED <ts>)
+  #   endpoints:
+  #   - host: opencode.ai
+  #     port: 443
+  #     protocol: rest
+  #     access: full
+  #     enforcement: enforce
+  #   binaries:
+  #   - path: /usr/lib/node_modules/opencode-ai/bin/opencode.exe

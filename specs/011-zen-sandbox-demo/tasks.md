@@ -22,9 +22,9 @@ description: "Task list for 011 zen sandbox demo + server mode"
 
 **Purpose**: Scaffolding for the demo asset family (mirrors 008 layout)
 
-- [ ] T001 Create `deploy/openshell/demo/zen/` directory and `specs/011-zen-sandbox-demo/demo-log.md` with run-table header (timestamps, mode, policy iterations, transcripts, deny proofs, teardown)
-- [ ] T002 [P] Verify openshell CLI pin (`make check-openshell-cli`) and document result in demo-log; if mismatched, `make install-openshell-cli` then re-verify
-- [ ] T003 [P] Create `deploy/openshell/profiles/zen.yaml` modeled on `deploy/openshell/profiles/matilda.yaml` (zen provider profile, credential placeholder `ZEN_API_KEY`, `auth_style: bearer`, endpoint TBD-by-T005, `protocol: rest`)
+- [X] T001 Create `deploy/openshell/demo/zen/` directory and `specs/011-zen-sandbox-demo/demo-log.md` with run-table header (timestamps, mode, policy iterations, transcripts, deny proofs, teardown)
+- [X] T002 [P] Verify openshell CLI pin (`make check-openshell-cli`) and document result in demo-log; if mismatched, `make install-openshell-cli` then re-verify
+- [X] T003 [P] Create `deploy/openshell/profiles/zen.yaml` modeled on `deploy/openshell/profiles/matilda.yaml` (zen provider profile, credential placeholder `ZEN_API_KEY`, `auth_style: bearer`, endpoint TBD-by-T005, `protocol: rest`)
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
@@ -32,13 +32,13 @@ description: "Task list for 011 zen sandbox demo + server mode"
 
 **⚠️ CRITICAL**: No user-story script work begins until T004–T008 are committed
 
-- [ ] T004 Zen keyless probe: attempt a zen `*-free` chat completion anonymously (no bearer) from the workstation; record the exact accept/reject signal in demo-log (research D1). If rejected with actionable detail (e.g. session-id requirement, 401-on-bearer), capture the response verbatim
-- [ ] T005 Resolve zen endpoint + free model identity from `https://models.opencode.ai/api.json` and the zen endpoint probe; finalize `deploy/openshell/demo/zen/opencode-zen.json` (contract Z1: strict JSON, `provider/model-id` form, single host, no secrets) and backfill the T003 profile endpoint
-- [ ] T006 If T004 shows keyless fails: document the free zen API key path — add `openshell-zen` seed to `values-secret.yaml.template` (contract Z6), note the manual `opencode.ai/auth` step in `docs/openshell-demo-opencode.md`-adjacent runbook notes, and switch `opencode-zen.json` to `{env:ZEN_API_KEY}`
-- [ ] T007 Gateway transport spike: check openshell 0.1.1 for any sandbox TCP-forward capability (`openshell sandbox connect --help`, `openshell --help`, gateway docs); record verdict in demo-log per contract Z4 (gateway path viable vs `oc port-forward` fallback engaged)
+- [X] T004 Zen keyless probe: attempt a zen `*-free` chat completion anonymously (no bearer) from the workstation; record the exact accept/reject signal in demo-log (research D1). If rejected with actionable detail (e.g. session-id requirement, 401-on-bearer), capture the response verbatim
+- [X] T005 Resolve zen endpoint + free model identity from `https://models.opencode.ai/api.json` and the zen endpoint probe; finalize `deploy/openshell/demo/zen/opencode-zen.json` (contract Z1: strict JSON, `provider/model-id` form, single host, no secrets) and backfill the T003 profile endpoint
+- [X] T006 If T004 shows keyless fails: document the free zen API key path — add `openshell-zen` seed to `values-secret.yaml.template` (contract Z6), note the manual `opencode.ai/auth` step in `docs/openshell-demo-opencode.md`-adjacent runbook notes, and switch `opencode-zen.json` to `{env:ZEN_API_KEY}`
+- [X] T007 Gateway transport spike: check openshell 0.1.1 for any sandbox TCP-forward capability (`openshell sandbox connect --help`, `openshell --help`, gateway docs); record verdict in demo-log per contract Z4 (gateway path viable vs `oc port-forward` fallback engaged)
 - [ ] T008 Binary-path probe: short-lived probe sandbox from the 008 carrier image; `readlink -f $(which curl node opencode)` inside; confirm `/usr/bin/curl`, `/usr/bin/node`, `/usr/lib/node_modules/opencode-ai/bin/opencode.exe` (update if drifted); delete probe sandbox
-- [ ] T009 Seed `charts/openshell-policy/policies/zen-demo.yaml` from the 008 openai-only sample shape (`version: 1`, filesystem_policy carried over, empty `network_policies` with a header comment stating deny-all-default + justification-comment convention per contract Z2)
-- [ ] T010 [P] Write `tests/test-zen-policy.sh` enforcing contract Z1/Z2 statically (strict JSON, zero secret material, `provider/` prefix on model, per-rule `endpoints`+`binaries` non-empty, `protocol: rest` on HTTP endpoints, `# justification:` comment on every rule, no wildcards/duplicate host:port); wire it into the Makefile `test-static` enumeration; verify green on the T009 seed
+- [X] T009 Seed `charts/openshell-policy/policies/zen-demo.yaml` from the 008 openai-only sample shape (`version: 1`, filesystem_policy carried over, empty `network_policies` with a header comment stating deny-all-default + justification-comment convention per contract Z2)
+- [X] T010 [P] Write `tests/test-zen-policy.sh` enforcing contract Z1/Z2 statically (strict JSON, zero secret material, `provider/` prefix on model, per-rule `endpoints`+`binaries` non-empty, `protocol: rest` on HTTP endpoints, `# justification:` comment on every rule, no wildcards/duplicate host:port); wire it into the Makefile `test-static` enumeration; verify green on the T009 seed
 
 **Checkpoint**: G0 spike answers committed; asset skeletons in Git; static guard green
 
