@@ -8,6 +8,13 @@
 
 **Input**: User description: "Demonstrate the following: 1. a sandbox deployed using openshell cli; 2. That sandbox using opencode zen's free models to do a basic 'hi' query; 3. Remediate the network rules until that works; 4. Then deploy the opencode instance in server mode and access from a local opencode client and do a similar hi"
 
+## Clarifications
+
+### Session 2026-10-09
+
+- Q: Tear everything down at demo end, or leave the server-mode sandbox running for continued use? → A: Full teardown with zero-residual proof (Option A) — FR-009 and US3-AC3 stand as written; a lasting server-mode capability would be a separate follow-on feature.
+- Q: Which connectivity mechanism should the local client use to reach the server-mode agent? → A: Default path MUST be via the openshell gateway (keeps the demo inside the governance boundary); if the gateway path proves unable to carry a persistent server connection, a direct cluster-level forward (e.g. `oc port-forward` to the sandbox pod) is the sanctioned fallback — decided by a planning-phase spike and recorded with evidence. Public exposure remains prohibited in all cases (user answer, 2026-10-09).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Deploy a governed sandbox from the workstation CLI (Priority: P1)
@@ -115,6 +122,10 @@ delivered: locally-driven, remotely-governed agent interaction.
   so remediation never "fixes" the wrong layer.
 - **Cold image pulls**: the first sandbox image pull on a cold node takes
   minutes; the demo communicates this instead of appearing hung.
+- **Gateway transport limits**: the gateway connectivity path may not carry a
+  long-lived server connection (timeouts, buffering, idle reaping); detection
+  and the recorded fallback decision are part of the plan, not demo-day
+  surprises.
 
 ## Requirements *(mandatory)*
 
@@ -141,10 +152,13 @@ delivered: locally-driven, remotely-governed agent interaction.
 - **FR-006**: A basic "hi" query MUST produce an observable, recordable model
   response both interactively (US2) and via server mode (US3); the evidence MUST
   be captured into a committed demo log.
-- **FR-007**: Server-mode access from the local client MUST use the gateway's
-  supported connectivity mechanism (e.g. its port-forwarding/attach facilities);
-  the demo MUST NOT create publicly reachable exposure (no public ingress for
-  the sandbox server).
+- **FR-007**: Server-mode access from the local client MUST default to the
+  openshell gateway connectivity mechanism. If a planning/implementation spike
+  demonstrates the gateway path cannot carry a persistent server connection, a
+  direct cluster-level forward to the sandbox (e.g. `oc port-forward`) is the
+  sanctioned fallback and MUST be recorded with the evidence that forced it.
+  The demo MUST NOT create publicly reachable exposure (no public ingress for
+  the sandbox server) in either case.
 - **FR-008**: Policy assets MUST pass the pattern's static validation gates
   (including sandbox-network-policy linting for TLS, duplicate-host, and binary
   coverage issues) before they are applied; all Git changes land on `main` per
