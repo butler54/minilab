@@ -55,6 +55,8 @@ spec:
   - port: metrics
     scheme: {{ $scheme }}
     path: {{ $path }}
+    interval: {{ $obs.scrapeInterval | default "30s" | quote }}
+    # Feature 010 US3: pattern-owned scrape cadence (overlay pins 60s).
     {{- if $target.labels }}
     relabelings:
     {{- range $k, $v := $target.labels }}

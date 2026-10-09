@@ -106,6 +106,12 @@ clusterGroup:
       path: charts/observability-config
       annotations:
         argocd.argoproj.io/sync-wave: "+20"
+    openshift-monitoring-config:
+      name: openshift-monitoring-config
+      namespace: openshift-monitoring
+      project: default
+      # Feature 010 US3: CMO minimal collection profile (platform Prometheus CPU).
+      path: charts/openshift-monitoring-config
     openshell-platform:
       name: openshell-platform
       namespace: openshell

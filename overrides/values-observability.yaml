@@ -5,6 +5,7 @@ global:
     stackNamespace: minilab-observability
     retention: 30d
     storageClass: lvms-loopback
+    scrapeInterval: 60s
     externalTargets: []
     dashboards: []
     alertRules: []
