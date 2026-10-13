@@ -30,11 +30,16 @@ Delivery: direct commits on `main` (no feature branch, per Clarifications 2026-1
 
 ## Version-Bump Commit
 
-_pending_
+`655f432` on `main` (pushed) — 5-value atomic pin set 0.1.1→0.1.3. Gates: `make test-static` PASS, `./pattern.sh make validate-schema` "All assertions passed".
 
 ## Forced-Sync Record (constitution II — imperative step pre-recorded in quickstart G2)
 
-_pending_
+- Trigger: 2026-10-13T07:41:31Z
+  - `oc -n vp-gitops annotate application/openshell argocd.argoproj.io/refresh=hard`
+  - `oc -n vp-gitops patch application/openshell --type=merge -p '{"operation":{"sync":{"prune":false}}}'`
+- Convergence: `openshell` app Synced+Healthy at 07:42:30Z (**~59s**, SC-001 ✅ ≤15min). Chart-only bump; other openshell apps never left Synced/Healthy.
+- 07:43:33Z gateway pod recreated: `ghcr.io/nvidia/openshell/gateway:0.1.3` Running 1/1 (SC-002 pod side ✅).
+- Health spot-check (T010): all openshell pods clean, no CrashLoops. Non-Healthy list contains ONLY pre-existing `lvms-config` OutOfSync (010 incident, out of scope).
 
 ## Close Record
 

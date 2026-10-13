@@ -44,10 +44,10 @@
 
 **Independent Test**: `oc -n vp-gitops get applications | grep openshell` all Synced+Healthy; gateway pod image tag == 0.1.3 (contracts/README U1)
 
-- [ ] T007 [US1] **\[LIVE\]** Record-and-run the imperatively-triggered sync (already documented in `quickstart.md` G2 — constitution II pre-recording satisfied): `oc -n vp-gitops annotate application/openshell argocd.argoproj.io/refresh=hard` then `oc -n vp-gitops patch application/openshell --type=merge -p '{"operation":{"sync":{"prune":false}}}'`; record the commands and timestamp in demo-log
-- [ ] T008 [US1] **\[LIVE\]** Watch convergence: poll `oc -n vp-gitops get applications | grep openshell` every ~30s for ≤15 min; capture terminal state (all Synced+Healthy); record convergence wall-time for SC-001 in demo-log (FAIL-safe: if unhealthy >15 min, execute spec rollback — `git revert` T006 commit on `main`, re-sync, record, and stop the feature here)
+- [X] T007 [US1] **\[LIVE\]** Record-and-run the imperatively-triggered sync (already documented in `quickstart.md` G2 — constitution II pre-recording satisfied): `oc -n vp-gitops annotate application/openshell argocd.argoproj.io/refresh=hard` then `oc -n vp-gitops patch application/openshell --type=merge -p '{"operation":{"sync":{"prune":false}}}'`; record the commands and timestamp in demo-log
+- [X] T008 [US1] **\[LIVE\]** Watch convergence: poll `oc -n vp-gitops get applications | grep openshell` every ~30s for ≤15 min; capture terminal state (all Synced+Healthy); record convergence wall-time for SC-001 in demo-log (FAIL-safe: if unhealthy >15 min, execute spec rollback — `git revert` T006 commit on `main`, re-sync, record, and stop the feature here)
 - [ ] T009 [US1] **\[LIVE\]** Verify the running gateway: `oc -n openshell get pod openshell-0 -o jsonpath='{.spec.containers[0].image}'` shows `ghcr.io/nvidia/openshell/gateway:0.1.3`; `openshell status -g k8s` = Connected+Authenticated (fresh login: `OPENSHELL_NO_BROWSER=1 openshell gateway login k8s` if lapsed); record SC-002 evidence in demo-log
-- [ ] T010 [US1] **\[LIVE\]** Health spot-check: `oc -n openshell get pods`, ensure supervisor/sandbox-runtime workloads clean with no new CrashLoops; `oc -n vp-gitops get applications | grep -vE 'Synced.*Healthy'` shows ONLY the pre-existing `lvms-config` OutOfSync (010 deferred incident — do NOT touch); record in demo-log
+- [X] T010 [US1] **\[LIVE\]** Health spot-check: `oc -n openshell get pods`, ensure supervisor/sandbox-runtime workloads clean with no new CrashLoops; `oc -n vp-gitops get applications | grep -vE 'Synced.*Healthy'` shows ONLY the pre-existing `lvms-config` OutOfSync (010 deferred incident — do NOT touch); record in demo-log
 
 **Checkpoint**: US1 complete — platform at 0.1.3 serving normally (SC-001, SC-002)
 
