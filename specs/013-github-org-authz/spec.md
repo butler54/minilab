@@ -8,6 +8,13 @@
 
 **Input**: "Configure authorization to openshell via github to be a specific set of users / groups. By members of tempest-concorde is the target. If not I can create a team under this org."
 
+## Clarifications
+
+### Session 2026-10-13
+
+- Q: How should the DENY path be proven end-to-end given the operator is the org's sole owner and cannot remove himself? → A: **Application/evaluator-level negative only** — prove the deny path via the policy/mapping layer's evaluation against a fabricated identity claim plus its observable deny decision (option C); a live non-member GitHub round-trip is NOT performed; the operator is the sole org owner (`admin`/active — probed 2026-10-13) and cannot self-remove, so SC-002 is verified via the synthetic negative rather than a real non-member login.
+- Q: Should feature 013 ship as direct commits to `main` (the 012 delivery model) or use the feature-branch flow with a fold-back? → A: **Direct commits on `main`** — same live-config-on-live-gateway shape as 012; the `013-github-org-authz` branch is folded into `main` and deleted at clarify time (precedent: 012); ArgoCD only converges `main` so live-gate activation is push+sync.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Only org members get in (Priority: P1)
@@ -16,12 +23,12 @@ As the openshell operator, I want the openshell authentication path (the same on
 
 **Why this priority**: Today any GitHub account that can reach Keycloak can complete the org-broker login (011/012 sessions all used the operator's own account; nothing gates *who* GitHub says "hi" for). The gateway is internet-reachable (`https://openshell.tokyo-brunch.com`), so identity-only authn is an open door. Restricting to a named org/team is the minimum viable control.
 
-**Independent Test**: With the feature live, log in with the operator's GitHub account (org member) → session issues. Attempt the same flow with a GitHub identity that is NOT an org member → immediate denial with no usable session.
+**Independent Test**: With the feature live, log in with the operator's GitHub account (org member) → session issues. Attempt the same flow with a GitHub identity that is NOT an org member → immediate denial with no usable session. (Per Clarifications 2026-10-13: the deny-path acceptance proof is executed at the evaluator/policy layer with a synthetic non-member claim — the live non-member GitHub round-trip is out of scope.)
 
 **Acceptance Scenarios**:
 
 1. **Given** the gateway is configured, **When** a GitHub user who IS a member of org `tempest-concorde` completes the login flow, **Then** a working session is issued and they can use the gateway normally.
-2. **Given** the gateway is configured, **When** a GitHub user who is NOT an org member completes the login flow, **Then** they are denied with a human-readable message (or failed callback page) stating access is restricted, and no gateway session/token is issued.
+2. **Given** the gate is configured, **When** the policy/mapping layer evaluates an identity claim for a user not in the org (synthetic/negative case), **Then** the evaluation produces an explicit DENY decision and the platform refuses to issue session material for that flow.
 3. **Given** a denied attempt, **When** the user retries immediately, **Then** the denial is consistent (no race or replay produces a session).
 
 ---
@@ -85,7 +92,7 @@ As the operator, I want the restriction configured declaratively (GitOps, review
 ## Success Criteria *(mandatory)*
 
 - **SC-001**: The operator can log in and use openshell normally with the gate enabled (member path live-proven end-to-end).
-- **SC-002**: A login attempt from a GitHub identity that is not an org member is denied, with no session material issued (zero-privilege window — verified).
+- **SC-002**: The negative path is proven at the policy/evaluator level: a synthetic non-member identity claim produces an explicit DENY with no session material (live non-member GitHub round-trip explicitly out of scope per Clarifications 2026-10-13).
 - **SC-003**: The full gate is expressed as GitOps config on `main`; converged to live state via the normal platform sync within 15 minutes of the enabling commit.
 - **SC-004**: Both an allow and a deny decision are visible in platform observability (logs/events) with identity attribution.
 - **SC-005**: Removing/re-adding the test identity's org membership flips login ability without any openshell-side change (freshness criterion).
@@ -97,4 +104,5 @@ As the operator, I want the restriction configured declaratively (GitOps, review
 - Verification happens at login, not per-request; session lifetimes stay as-is (scheduled separately under minilab#9).
 - Denial UX bar is "clear, actionable, human-readable" — not a compliance-grade error page overhaul.
 - Any one-time GitHub-side prerequisites (OAuth scope consent, team creation) are small-and-recorded exceptions to "everything via Git" (GitHub-side objects are not cluster resources).
+- The operator is currently the org `tempest-concorde`'s ONLY member and owner (probed 2026-10-13); the deny-path proof is bounded to a synthetic negative evaluation (no live non-member round-trip) unless a second GitHub test identity is added later.
 - The openshell apps staying synced/healthy through the change is part of FR-007's no-regression scope and is verifiable via the same live checks used in features 011/012.
