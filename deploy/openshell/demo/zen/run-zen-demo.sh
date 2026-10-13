@@ -122,21 +122,34 @@ query() {
   openshell sandbox exec -n "$SANDBOX" -- true >/dev/null 2>&1 \
     || { echo "FAIL query (sandbox $SANDBOX not exec-live)"; return 1; }
   # Classified zen-query attempt (contract Z3): never "fix" the wrong layer.
-  out=$(openshell sandbox exec -n "$SANDBOX" -- sh -c "cd /sandbox && opencode run --print-logs \"$PROMPT\"" 2>&1 | tail -40)
-  rc=$?
-  if echo "$out" | grep -q "ZEN_HI_OK"; then
-    echo "PASS query (zen free-tier response: ZEN_HI_OK)"; return 0
-  fi
-  if echo "$out" | grep -qiE "Model is unavailable|Upstream request failed|ModelDeprecated"; then
-    echo "FAIL query (classification: provider/model-availability — relay-side, DR2)"
-  elif echo "$out" | grep -qiE "ProviderModelNotFoundError|Model not found"; then
+  # Free-tier catalog churn (012 live evidence 2026-10-13): the opencode
+  # client's model registry rotates at MINUTE granularity — a model verified
+  # serving in one sandbox can be absent from the registry 5 minutes later
+  # (mimo-v2.6-flash-free served 08:22Z, absent 08:27Z, same day). A static
+  # single-model pin cannot survive this; query CANDIDATES in order — config
+  # model first, then the last live-verified serving set — and take the
+  # first that answers ZEN_HI_OK.
+  local cfg_model
+  cfg_model=$(python3 -c "import json;p=json.load(open('$root/deploy/openshell/demo/zen/opencode-zen.json'));m=p.get('model','');print(m.removeprefix('opencode/'))" 2>/dev/null)
+  local candidates="${cfg_model:+$cfg_model }cat-jam-free mimo-v2.6-flash-free muse-spark-1.3-contributor-free big-pickle mimo-v2-flash-free"
+  out=""
+  for m in $candidates; do
+    out=$(openshell sandbox exec -n "$SANDBOX" -- sh -c "cd /sandbox && opencode run -m \"opencode/$m\" --print-logs \"$PROMPT\"" 2>&1 | tail -40)
+    if echo "$out" | grep -q "ZEN_HI_OK"; then
+      echo "PASS query (zen free-tier response: ZEN_HI_OK, model=opencode/$m)"; return 0
+    fi
+  done
+  echo "WARN query: no candidate served (tried: $candidates)"
+  if echo "$out" | grep -qiE "ProviderModelNotFoundError|Model not found"; then
     echo "FAIL query (classification: provider/model-catalog — model absent from client registry, DR1/DR2)"
+  elif echo "$out" | grep -qiE "Model is unavailable|Upstream request failed|ModelDeprecated|Endpoint is unavailable|deprecated"; then
+    echo "FAIL query (classification: provider/model-availability — relay-side, DR2)"
   elif echo "$out" | grep -qiE "FreeTierError|401|invalid_api_key"; then
     echo "FAIL query (classification: auth/free-tier gating)"
   elif echo "$out" | grep -qiE "Permission denied|ENETUNREACH|ETIMEDOUT|ECONNREFUSED|timeout|denied|connect |transport error|fetch failed|resolve"; then
     echo "FAIL query (classification: policy-deny/network)"
   else
-    echo "FAIL query (classification: unknown — $rc)"
+    echo "FAIL query (classification: unknown)"
   fi
   echo "$out" | head -15
   return 1
