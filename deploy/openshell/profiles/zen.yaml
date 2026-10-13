@@ -1,0 +1,30 @@
+# OpenCode Zen free-tier provider profile (feature 011). Keyless: the
+# `*-free` models require NO credential, but only from a genuine opencode
+# client — the relay validates client session identity (direct curl is
+# rejected with 403 FreeTierError; proven 2026-10-09, see
+# specs/011-zen-sandbox-demo/demo-log.md G0/T004). Flat-profile format
+# modelled on deploy/openshell/profiles/matilda.yaml.
+#
+# Import (imperative, recorded in quickstart G2):
+#   openshell provider profile lint   -f deploy/openshell/profiles/zen.yaml
+#   openshell provider profile import -f deploy/openshell/profiles/zen.yaml --global
+#   openshell provider create --name zen --type zen --global-profile
+#     (no --credential: keyless per T004/T006 verdict)
+id: zen
+display_name: OpenCode Zen (free tier)
+description: OpenCode Zen free-tier inference relay (no credential required)
+category: inference
+inference_capable: true
+endpoints:
+  # host verified live: https://opencode.ai/zen/v1 (T005)
+  - host: opencode.ai
+    port: 443
+    protocol: rest
+    access: full
+    enforcement: enforce
+# Binaries permitted to reach zen (kernel-resolved paths, T008-probed).
+binaries:
+  - /usr/bin/curl
+  - /usr/local/bin/curl
+  - /usr/bin/node
+  - /usr/lib/node_modules/opencode-ai/bin/opencode.exe
