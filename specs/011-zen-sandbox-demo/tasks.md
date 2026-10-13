@@ -95,9 +95,9 @@ description: "Task list for 011 zen sandbox demo + server mode"
 
 **Purpose**: Evidence finalization, full gates, GitOps landing
 
-- [ ] T025 [P] Finalize `specs/011-zen-sandbox-demo/demo-log.md`: complete run table, G0 spike answers, G2–G4 evidence, timing budget table vs SC-001/002/004 with actuals
-- [ ] T026 [P] Add a zen-demo section to `docs/openshell-demo-opencode.md` (prereqs, commands, gotchas discovered) keeping the matilda runbook intact
-- [ ] T027 Run full gates: `make test-static` + `make validate-schema` green; G5 zero-residual check (`openshell sandbox list` empty, no demo pods, vault template diff clean); record results in demo-log
+- [X] T025 [P] Finalize `specs/011-zen-sandbox-demo/demo-log.md`: complete run table, G0 spike answers, G2–G4 evidence, timing budget table vs SC-001/002/004 with actuals
+- [X] T026 [P] Add a zen-demo section to `docs/openshell-demo-opencode.md` (prereqs, commands, gotchas discovered) keeping the matilda runbook intact
+- [X] T027 Run full gates: `make test-static` + `make validate-schema` green; G5 zero-residual check (`openshell sandbox list` empty, no demo pods, vault template diff clean); record results in demo-log
 - [ ] T028 Merge all work to `main` per repo flow (feature branch → merge → push; 010 pattern), confirm ArgoCD reconciles cleanly, record merge SHA in demo-log + tasks.md (G6)
 
 ---
