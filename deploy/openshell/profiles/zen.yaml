@@ -3,21 +3,18 @@ kind: ProviderProfile
 metadata:
   name: zen
   description: >-
-    OpenCode Zen free-tier models for the 011 demo. Free `*-free` models;
-    credential path decided by the 011 G0 spike (keyless if accepted, else a
-    no-payment zen API key from opencode.ai/auth sourced from vault
-    secret/data/hub/openshell-zen — never committed to Git).
+    OpenCode Zen free-tier models for the 011 demo. Keyless: the `*-free`
+    models require NO credential, but only from a genuine opencode client —
+    the relay validates client session identity (direct curl is rejected with
+    403 FreeTierError; proven 2026-10-09, see
+    specs/011-zen-sandbox-demo/demo-log.md G0/T004).
 spec:
   # Import: openshell provider profile import deploy/openshell/profiles/zen.yaml --global
-  # Create: openshell provider create --name zen --type zen --global-profile \
-  #           --credential ZEN_API_KEY   (only in key mode; see demo-log G0)
+  # Create: openshell provider create --name zen --type zen --global-profile
+  #   (no --credential: keyless per T004/T006 verdict)
   provider_type: zen
-  credentials:
-    - name: api_key
-      env: ZEN_API_KEY
-      auth_style: bearer
   endpoints:
-    # NOTE: resolved by G0 spike (spec-011 T005) — see specs/011-zen-sandbox-demo/demo-log.md
+    # host verified live: https://opencode.ai/zen/v1 (T005)
     - host: opencode.ai
       port: 443
       protocol: rest

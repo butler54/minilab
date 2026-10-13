@@ -157,4 +157,4 @@ description: "Task list for 011 zen sandbox demo + server mode"
 
 ## Phase 7: Convergence
 
-- [ ] T029 Simplify `deploy/openshell/profiles/zen.yaml` to keyless form — remove the unused `credentials`/`ZEN_API_KEY` block and key-mode comment (update description to record the T004 keyless verdict) per FR-004/demo-log G0 (partial)
+- [X] T029 Simplify `deploy/openshell/profiles/zen.yaml` to keyless form — remove the unused `credentials`/`ZEN_API_KEY` block and key-mode comment (update description to record the T004 keyless verdict) per FR-004/demo-log G0 (partial)
