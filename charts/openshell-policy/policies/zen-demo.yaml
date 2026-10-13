@@ -23,16 +23,17 @@ filesystem_policy:
   read_write:
   - /tmp
   - /dev/null
-network_policies: {}
-  # G0/G3 iterations append rules here, e.g.:
-  # allow_opencode_ai_443:
-  #   name: allow_opencode_ai_443
-  #   # justification: G3 iter0 — opencode.exe zen request denied (NET:OPEN DENIED <ts>)
-  #   endpoints:
-  #   - host: opencode.ai
-  #     port: 443
-  #     protocol: rest
-  #     access: full
-  #     enforcement: enforce
-  #   binaries:
-  #   - path: /usr/lib/node_modules/opencode-ai/bin/opencode.exe
+network_policies:
+  allow_opencode_ai_443:
+    name: allow_opencode_ai_443
+    # justification: G3 iter1 — opencode.exe zen chat stream denied
+    # ("Cannot connect to API" AI_APICallError, providerID=opencode,
+    # 2026-10-13T05:35:09Z, run 2241c95b); target https://opencode.ai/zen/v1
+    endpoints:
+    - host: opencode.ai
+      port: 443
+      protocol: rest
+      access: full
+      enforcement: enforce
+    binaries:
+    - path: /usr/lib/node_modules/opencode-ai/bin/opencode.exe

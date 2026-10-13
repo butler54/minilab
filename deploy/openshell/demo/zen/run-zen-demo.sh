@@ -123,7 +123,7 @@ query() {
     echo "FAIL query (classification: provider/model-catalog — model absent from client registry, DR1/DR2)"
   elif echo "$out" | grep -qiE "FreeTierError|401|invalid_api_key"; then
     echo "FAIL query (classification: auth/free-tier gating)"
-  elif echo "$out" | grep -qiE "Permission denied|ENETUNREACH|ETIMEDOUT|ECONNREFUSED|timeout|denied|connect fail|fetch failed|resolve"; then
+  elif echo "$out" | grep -qiE "Permission denied|ENETUNREACH|ETIMEDOUT|ECONNREFUSED|timeout|denied|connect |transport error|fetch failed|resolve"; then
     echo "FAIL query (classification: policy-deny/network)"
   else
     echo "FAIL query (classification: unknown — $rc)"
