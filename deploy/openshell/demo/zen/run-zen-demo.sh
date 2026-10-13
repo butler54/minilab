@@ -56,24 +56,28 @@ preflight() {
 }
 
 create_one() {
-  # FI1 (2026-10-13): custom --from sandboxes are born admission-rejected until
-  # a policy lands; the policy-set retry loop below must run CONCURRENTLY with
-  # the create RPC (which can hang ~300s during gateway<->apiserver flaps).
-  # NOTE (minilab#8): openshell 0.1.1 actually supports `create --policy` /
-  # `OPENSHELL_SANDBOX_POLICY` — once live-verified, replace this concurrent
-  # create+set dance with a single policy-at-create invocation. The post-create
-  # `policy set` loop remains needed for the iterative US2 remediation flow.
+  # FI1 RESOLVED (012, live-verified 2026-10-13T08:1xZ): openshell 0.1.3 CLI
+  # supports `create --policy` — a sandbox is BORN with our policy
+  # (admission accepted, policy_version 1, zero `policy set` calls). The old
+  # concurrent create+policy-set race (see git history / minilab#8) is
+  # retired. Backward-safety: if a pre-0.1.1 CLI rejects `--policy`, fall
+  # back to the legacy concurrent loop. The post-create iterative
+  # `policy set` flow remains the mechanism for US2 remediation narratives.
   CREATE_EPOCH=$(date +%s)
-  openshell sandbox create --name "$SANDBOX" --from "$IMAGE" --detach >/dev/null 2>&1 &
-  create_pid=$!
-  applied=""
-  for _ in $(seq 1 30); do
-    if openshell policy set "$SANDBOX" --policy "$POLICY" >/dev/null 2>&1; then applied=1; break; fi
-    sleep 3
-  done
-  [ -n "$applied" ] || { echo "FAIL create/policy (sandbox never registered)"; return 1; }
-  wait $create_pid 2>/dev/null || true
-  # Ready-wait: admission flips rejected->accepted once the policy lands.
+  if ! openshell sandbox create --name "$SANDBOX" --from "$IMAGE" --policy "$POLICY" --detach >/dev/null 2>&1; then
+    echo "WARN: create --policy unsupported/failed; falling back to legacy create+policy-set race"
+    openshell sandbox create --name "$SANDBOX" --from "$IMAGE" --detach >/dev/null 2>&1 &
+    create_pid=$!
+    applied=""
+    for _ in $(seq 1 30); do
+      if openshell policy set "$SANDBOX" --policy "$POLICY" >/dev/null 2>&1; then applied=1; break; fi
+      sleep 3
+    done
+    [ -n "$applied" ] || { echo "FAIL create/policy (sandbox never registered)"; return 1; }
+    wait $create_pid 2>/dev/null || true
+  fi
+  # Ready-wait: with policy-at-create the sandbox is born Ready; the loop is
+  # a guard for slow registration only.
   ready=""
   for _ in $(seq 1 30); do
     phase=$(openshell sandbox get "$SANDBOX" -o json 2>/dev/null \

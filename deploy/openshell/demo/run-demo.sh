@@ -35,19 +35,25 @@ preflight() {
 
 setup() {
   preflight
-  openshell sandbox create --name "$SANDBOX" --from "$IMAGE" --provider matilda --detach >/dev/null 2>&1 &
-  create_pid=$!
-  # A policy-less sandbox never leaves Provisioning — apply early, and retry
-  # until the gateway has registered the sandbox record (create RPC latency
-  # varies with first-time image pulls).
-  applied=""
-  for _ in $(seq 1 40); do
-    if openshell policy set "$SANDBOX" --policy "$POLICY" >/dev/null 2>&1; then applied=1; break; fi
-    sleep 5
-  done
-  [ -n "$applied" ] || { echo "FAIL create/policy (sandbox never registered)"; exit 1; }
-  openshell policy set "$SANDBOX" --policy "$POLICY" --wait >/dev/null 2>&1 || true
-  wait $create_pid 2>/dev/null || true
+  # Policy-at-create (012, live-verified minilab#8): a sandbox created with
+  # `--policy` is BORN with the policy active (admission accepted, policy
+  # version 1) — no create+policy-set race. Fallback keeps old CLIs usable.
+  if ! openshell sandbox create --name "$SANDBOX" --from "$IMAGE" --provider matilda --policy "$POLICY" --detach >/dev/null 2>&1; then
+    echo "WARN: create --policy unsupported/failed; falling back to legacy create+policy-set race"
+    openshell sandbox create --name "$SANDBOX" --from "$IMAGE" --provider matilda --detach >/dev/null 2>&1 &
+    create_pid=$!
+    # A policy-less sandbox never leaves Provisioning — apply early, and retry
+    # until the gateway has registered the sandbox record (create RPC latency
+    # varies with first-time image pulls).
+    applied=""
+    for _ in $(seq 1 40); do
+      if openshell policy set "$SANDBOX" --policy "$POLICY" >/dev/null 2>&1; then applied=1; break; fi
+      sleep 5
+    done
+    [ -n "$applied" ] || { echo "FAIL create/policy (sandbox never registered)"; exit 1; }
+    openshell policy set "$SANDBOX" --policy "$POLICY" --wait >/dev/null 2>&1 || true
+    wait $create_pid 2>/dev/null || true
+  fi
   phase=$(openshell sandbox list 2>/dev/null | awk -v n="$SANDBOX" '$1==n {print $NF}')
   [ "$phase" = "Ready" ] \
     && echo "PASS create+policy ($SANDBOX)" || { echo "FAIL create/policy (phase=$phase)"; exit 1; }

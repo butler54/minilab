@@ -8,7 +8,8 @@ Delivery: direct commits on `main` (no feature branch, per Clarifications 2026-1
 
 | Run | Mode | Sandbox | Create→Ready | Fence (5min) | Query | Deny proofs | Teardown | Notes |
 |---|---|---|---|---|---|---|---|---|
-| _pending_ | | | | | | | | |
+| T013/T014 | manual `--policy` birth | fix013-1791879341 | ≤60s (config 08:15:42Z, Ready at first get) | n/a (not zen agent) | n/a | github.com sinkhole-refused(birth); /usr DENY + /tmp OK | deleted, list empty | **U2 core PASS**: admission accepted, policy_version 1, policy_source "sandbox", our zen-demo hash 790c8e02… at birth, zero `policy set` calls |
+| T015 | manual iterative-set | fix013b-1791879401 | ≤60s | n/a | n/a | n/a | deleted, list empty | same-content set = **no-op** (0.1.3 dedupe), changed content → version 2 loaded; retention intact |
 
 ## Timing Table
 
