@@ -10,6 +10,17 @@ Delivery: direct commits on `main` (no feature branch, per Clarifications 2026-1
 |---|---|---|---|---|---|---|---|---|
 | T013/T014 | manual `--policy` birth | fix013-1791879341 | ≤60s (config 08:15:42Z, Ready at first get) | n/a (not zen agent) | n/a | github.com sinkhole-refused(birth); /usr DENY + /tmp OK | deleted, list empty | **U2 core PASS**: admission accepted, policy_version 1, policy_source "sandbox", our zen-demo hash 790c8e02… at birth, zero `policy set` calls |
 | T015 | manual iterative-set | fix013b-1791879401 | ≤60s | n/a | n/a | n/a | deleted, list empty | same-content set = **no-op** (0.1.3 dedupe), changed content → version 2 loaded; retention intact |
+| T019 r1 | smoke (racing model) | zen-1791879491 | 2s | SKIP | FAIL catalog (ling-3.1 rotated out at 08:17Z) | 5/5 | clean | DR2 rotation — registry+relay churned mid-session |
+| T019 r2 | smoke (mimo-v2.6 pin) | zen-1791879851 | 2s | SKIP | FAIL catalog (mimo-v2.6 rotated out again at ~08:27Z) | 5/5 | clean | hydration-settle retry added; did NOT repair (registry rotation, not startup race) |
+| T019 r3 | smoke (multi-candidate fallback) | zen-1791880154 | 2s | SKIP | **PASS ZEN_HI_OK via muse-spark-1.3-contributor-free** | 5/5 | clean | **SC-005 ✅** — config model +5-candidate fallback; live-verified serving set 08:22Z: cat-jam, mimo-v2.6-flash, muse-spark-1.3, big-pickle (mimo-v2 also listed) |
+
+### DR2 addendum (012-evidence): free-tier catalog rotates at MINUTE granularity
+
+Probe matrix in zp13-1791879602 @08:20–08:23Z served 4 models; zp15 @08:27Z showed mimo-v2.6 absent again; registry suggestions rotate per-run. Static single-model pins are unworkable on the free tier; the script's candidate-chain (commit `7c480b4`) is the durable design. `policy set` same-content dedupe + absent `-w` shorthand verified as 0.1.3 CLI surface changes.
+
+### T020 OCSF toggle — ESCAPE HATCH TAKEN
+
+`gateway.ocsfLog.enabled: true` (key path structurally verified against chart 0.1.3 values, analyze I1) converged but **renders zero ocsf wiring** in `helm template` output — dead value in helm-chart 0.1.3; gateway binary never writes `/tmp/gateway-ocsf.jsonl` (verified via distroless-safe debug). Reverted (`65917cf`), reconverged Synced/Healthy. Follow-up: track upstream #3264/#3876 for chart wiring, then re-enable with a values bump.
 
 ## Timing Table
 
