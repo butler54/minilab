@@ -49,3 +49,17 @@
 - SC-003 GitOps-on-main ≤15min → normal sync budget from 012 precedent (57s typical).
 - SC-004 allow+deny events in logs → dex pod logs + KC pod logs captured in evidence log.
 - SC-005 freshness-under-membership-change → same commit-flip mechanism validates; a real org-removal run only if user ever has a second member identity (documented deferred edge).
+
+## R7 — Why Keycloak can't do this alone (persisted for reviewers)
+
+Evaluated exhaustively before choosing dex. Keycloak's GitHub provider only receives the OAuth `/user` profile (id/login/name/email/avatar) — **GitHub never emits org claims**, so there is nothing for IdP mappers to map. Remaining Keycloak levers: Java SPI (custom code + image layer — rejected by house constraints), script authenticators (tech-preview, unsupported in RHBK), KC 26 "Organizations" (KC-managed email-domain orgs, unrelated to GitHub orgs), user-federation (reads identity fact, no per-login GitHub call), static allow-list (loses FR-004 freshness). Only remaining honest options: custom SPI vs upstream purpose-built gate vs give up freshness. Dex chosen (R1).
+
+## R8 — Path-B viability probes (2026-10-13, dex-primary / KC decommission candidate)
+
+- **Gateway OIDC is generic** (helm-chart 0.1.3 values): `issuer`/`audience`/`jwksAllowedOrigins`/`rolesClaim`/`adminRole`/`userRole` (+`scopesClaim`, `caConfigMapName`). Both-admin+user roles or both-empty; nothing Keycloak-specific. Current values in `overrides/values-openshell-gateway.yaml:44-51` point at KC realm.
+- **CLI login flows**: `openshell gateway login --help` — browser flow is the DEFAULT ("Opens a browser for the **edge proxy's** login flow"); KC-era device flow was enabled deliberately (KC client `oauth2.device.authorization.grant.enabled: true`). KC `openshell-cli` client carries wildcard redirect URIs (`http://localhost:*/callback`, `http://127.0.0.1:*/callback`), which dex staticClients CANNOT express — BUT if the "edge proxy" phrasing is literal (gateway-hosted callback), CLI redirect is fixed and dex-compatible. **V1 verification is a Commit-B gate** (plan).
+- **Dex device flow: NOT IMPLEMENTED** (upstream gap, RFC 8628) — accepted trade: daily operator path is laptop-with-browser; headless login disappears if B completes. Recorded at spec Clarifications 2026-10-13.
+- **Role model swap**: KC realm roles (`realm_access.roles` incl. imperative KC-console admin grant) → dex `groups` claim from GitHub team membership (`tempest-concorde:openshell-users` / `tempest-concorde:openshell-admins` with `teamNameField: slug`). Declarative roles via GitHub teams = strictly more GitOps than today. Teams do not yet exist in the org (probed `gh api orgs/tempest-concorde/teams` = empty) — GitHub-side imperative prereq, user-authorized pattern.
+- **Dex+teams semantics note**: orgs list admits org members; `teams` entries shape the groups claim. Gate stays org-wide; access levels come from team membership claims at the gateway.
+- **Dex refresh/token lifetimes** are config-shaped (`refreshTokens`/`expiry` warps) — minilab#9 symptom may or may not disappear post-cutover; OBSERVE V4, don't promise.
+- **KC decommission surface**: workloads `keycloak-0`, `postgresql-db-0`, `rhbk-operator`, `openshell-keycloak-config` app, realm CR, KC route/DNS host `keycloak.tokyo-brunch.com`, vault records `openshell-github-oauth` (+admin creds — check how admin-user secret is wired) — removal tracked under Commit C/D with app-level NFD (no-pv residuendo note: postgres PVC needs explicit cleanup — Committee-enforced recorded imperative).

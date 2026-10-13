@@ -1,49 +1,48 @@
-# Quickstart: 013 github-org-authz validation gates
+# Quickstart: 013 (Path B) validation gates
 
-Run top-to-bottom. Every imperative (non-Git) action is pre-recorded here with exact commands (constitution §II) and must be echoed into the evidence log (`specs/013-github-org-authz/demo-log.md` — create at G1).
+Sequential. ✍ marks recorded imperative actions (constitution §II). Evidence goes to `specs/013-github-org-authz/demo-log.md` (created at G0; one row per Commit phase).
 
-**Timing caution (minilab#9):** gateway sessions die ~50 min after login for the gateway CLI. The LIVE blocks (G4–G6) should be batched within one fresh-login window.
+**Batching:** LIVE steps after Commit B share the token-lifetime hazard (minilab#9 symptom is KC-side; post-cutover observe V4) — run within one login window where possible.
 
 ---
 
-## G0 — static gates (before any live work)
+## G0 — baseline (static + live inventory)
 
-- `make test-static` green; `./pattern.sh make validate-schema` → `All assertions passed`.
+`make test-static`; `./pattern.sh make validate-schema`; snapshot app table (`oc -n vp-gitops get applications`) and KC workloads into evidence log.
 
-## G1 — GitHub-side prerequisites (IMPERATIVE — user actions, record: create GitHub OAuth App `openshell-authz` under org `tempest-concorde`)
+## G1 — GitHub-side prerequisites ✍ (user actions)
 
-- App type: **OAuth App**, org-owned (Settings → Developer settings → OAuth Apps, owned by tempest-concorde).
-- Homepage URL: `https://dex.tokyo-brunch.com` · Authorization callback URL: `https://dex.tokyo-brunch.com/callback`.
-- Record `Client ID`; generate a `Client Secret`.
-- Dex's org check needs user's consent incl. org access: on first login, approve the org authorization for the app (GitHub "Authorize tempest-concorde" button) — one-consent-per-user GitHub behavior, recorded when observed.
+1. Org `tempest-concorde` teams (imperative; spec-assumption authorized): create **openshell-users** and **openshell-admins**; add butler54 to both.
+2. GitHub OAuth App **`openshell-authz`** (org-owned): homepage `https://dex.tokyo-brunch.com`, callback `https://dex.tokyo-brunch.com/callback`; capture Client ID + new Client Secret.
 
-## G2 — vault writes (IMPERATIVE — recorded commands)
+## G2 — vault writes ✍ (recorded commands)
 
-Record a new vault record `secret/data/hub/openshell-dex` with properties:
-`github-client-id` (G1), `github-client-secret` (G1), `kc-client-secret` (random ≥32-char).
-(Same tooling used in 011/012 vault pushes; do NOT commit secrets to git.)
+New record `secret/data/hub/openshell-dex`: `github-client-id`, `github-client-secret` (G1). (No KC-client secrets needed — dex staticClients' secret for the CLI public client is `null`/public; verify static client secret needs at implementation.)
 
-## G3 — Commit A (inert dex deploy): `values-prod.yaml` dex app + `overrides/values-dex.yaml` + `tests/test-external-refs.sh` dex pin
+## G3 — Commit A (inert dex)
 
-- Push; watch `openshell` context converge; `dex` pod Running in `openshell` ns; route `https://dex.tokyo-brunch.com/.well-known/openid-configuration` returns JSON (record first lines).
-- Sanity: old login still works (short device-flow round; record output). If any of this fails: revert commit A, investigate, redo.
+Edits: `values-prod.yaml` (dex app), NEW `overrides/values-dex.yaml` (issuer, github connector orgs:[tempest-concorde + teams], staticClients incl. a throwaway TEST client), `tests/test-external-refs.sh` dex pin. Push; confirm app Synced+Healthy, pod Running, discovery doc 200. Record C1-able discovery evidence.
 
-## G4 — Commit B (KC IdP cutover): `overrides/values-keycloak.yaml`
+## G4 — dex-direct smoke (LIVE, no cluster commits)
 
-- IdP alias keeps `github`; providerId `github` → `oidc`; `authorizationUrl/tokenUrl/userInfoUrl` (or discoveryUrl) → dex issuer; KC client creds for dex RP injected via existing `realmPlaceholders` pattern (`KC_CLIENT_SECRET` → vault `openshell-dex.kc-client-secret`).
-- Push → `rh-keycloak`/`openshell-keycloak-config`/`openshell` reconciled Synced+Healthy (≤15 min).
-- LIVE member proof (contract C1): fresh `OPENSHELL_NO_BROWSER=1 openshell gateway login k8s` → expect full chain (GitHub → dex org check → KC) → `openshell status`/`sandbox list` success. Record timestamps + output.
-- Note: if KC presents an "account already exists / link" prompt for butler54 (federated-id mismatch contingency), complete it once, then — only if the KC user lost role mapping — KC admin console re-grant `openshell-admin` (recorded).
+Browser login via TEST staticClient from laptop (gateway untouched): confirm GitHub consent incl. **org authorization prompt** (one-time callback consent — record occurrence), dex token with groups claim `tempest-concorde:openshell-users` (+ admins), dex log allow-line. Then gate-flip proof ✍C1: commit orgs:`tempest-concorde-x` → login DENIED (record dex deny log + failure UX) → revert commit. (This flip is the primary deny-proof, same as plan A design.)
 
-## G5 — Commit C (LIVE gate-deny proof, contract C3) then revert
+## G5 — Commit B (gateway cutover)
 
-- Commit: `orgs: [{name: "tempest-concorde-x"}]` in dex values → push → sync.
-- LIVE: new login attempt MUST be denied: device flow fails, no session, `openshell status` unauthenticated; capture dex deny log lines (`oc -n openshell logs deploy/dex ... | grep -i org`) + KC IdP error lines.
-- Revert commit C (OR set back to tempest-concorde), push, sync, login works again (contract C1 re-shown; also SC-003 timing sample).
+`overrides/values-openshell-gateway.yaml`: issuer→dex, rolesClaim→groups, userRole/adminRole→team claims, audience→`openshell-cli` (confirm V2 audience mapping). Push; sync; verify charts healthy.
 
-## G6 — observability + residual + close
+## G6 — LIVE cutover proof (LIVE, ≤1 token-window cohort)
 
-- Capture (FR-006/SC-004): from dex logs the allow-line for the G4 login and deny-line for G5; KC-side upstream-error line for the deny.
-- Assert (C5): `openshell*` + `rh-keycloak` apps all Synced+Healthy; gateway CLI works; no stale dex config drift; `make test-static` + schema gate green.
-- Evidence log: fill run/timing tables; update `docs/openshell-demo-opencode.md` (login gets one extra redirect hop; commands unchanged); commit + push; close out.
-- Deferred check (only if user adds a second GitHub identity later): true non-member round-trip (removes the last C3 caveat).
+`openshell gateway logout k8s` (clear KC session) then:
+1. `openshell gateway login k8s` (DEFAULT browser flow — **V1 checkpoint**: redirect must resolve via dex; wildcard-localhost-detect failure = STOP → revert G5, fall back to Path A residue per plan).
+2. `openshell status -g k8s` Connected/Authenticated; `openshell sandbox list`; `openshell gateway info` (admin role path).
+3. 15-min soak: no app drift/restarts; capture gateway JWT-validation logs.
+Record everything → contracts C2/C3.
+
+## G7 — decision gate + Commit C (KC decommission)
+
+Only if C1–C3 all green: commit removal of `rh-keycloak`/`openshell-keycloak-config` app blocks (and any KC realm leftovers), push, sync; verify `keycloak-system` workloads terminate; delete postgres PVC ✍ (recorded); post-removal RE-LOGIN via gateway (this is the irreversibility tripwire — run immediately); note `keycloak.tokyo-brunch.com` DNS/ingress disposition ✍ (remove or leave-stale note). If anything fails: **stop; do not force**; record; recover via history (operator reinstall) before retrying.
+
+## G8 — Commit D (hygiene+close)
+
+Retire vault record `secret/data/hub/openshell-github-oauth` references (and record itself once nothing reads it ✍); update `docs/openshell-demo-opencode.md` (new login topology, dex gates, teams-as-roles, browser flow primary; device flow gone); zero-residual sweep (C6); evidence log closure table; close spec.

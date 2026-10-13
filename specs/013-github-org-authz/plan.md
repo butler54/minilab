@@ -1,92 +1,59 @@
-# Implementation Plan: GitHub org-restricted authorization for openshell
+# Implementation Plan: GitHub org-restricted authorization for openshell (Path B — dex-first, Keycloak decommission conditional)
 
-**Branch**: (direct-to-main per Clarifications) | **Date**: 2026-10-13 | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `/specs/013-github-org-authz/spec.md`
+**Branch**: (direct-to-main per Clarifications) | **Date**: 2026-10-13 (rev B) | **Spec**: [spec.md](spec.md)
+**Input**: Feature specification from `/specs/013-github-org-authz/spec.md` + Clarifications 2026-10-13 (Path B chosen by user)
 
 ## Summary
 
-Gate openshell logins to GitHub org `tempest-concorde` members by inserting a **dex** (dexidp) OIDC-authorization hop in front of GitHub: `GitHub → dex (org-gated) → Keycloak (existing, generic OIDC IdP) → openshell gateway`. Keycloak's GitHub IdP cannot evaluate org membership natively (GitHub emits no org claims; KC's github provider never calls the orgs API; no declarative realm option exists at RHBK 26), and a custom Keycloak SPI would break the house's declarative/no-custom-code constraint. Dex's GitHub connector natively enforces `orgs[].name` (+ optional `teams`) at every login with auditable deny events — the canonical solution for exactly this shape. Everything ships as Git-only changes on `main`.
+Gate openshell logins to GitHub org `tempest-concorde` members using **dex** as the direct OIDC issuer for the openshell gateway — with Keycloak retained only until the dex path is **proven in production**, then **decommissioned by commit** (Keycloak+postgres+RHBK operator, ~3 workloads and the whole realm/secret layer removed). If the dex-primary path fails any hard gate (chief risks verified below), the feature falls back to the Path-A arrangement (Keycloak stays, dex becomes its org-gated upstream); either final state delivers the org restriction.
+
+KeyClarifications’ driver: gateway OIDC is a **generic JWT resource-server config** (`issuer`/`audience`/`rolesClaim`/`adminRole`/`userRole` — verified against helm-chart 0.1.3 values) — nothing Keycloak-specific. The daily `openshell gateway login` opens "the **edge proxy's** login flow" (fixed, gateway-hosted redirect — no wildcard problem), so dex's exact-match redirectURIs are satisfiable (verify at implementation — V-flag below).
 
 ## Technical Context
 
-**Language/Version**: YAML/Helm (GitOps), no application code. **Primary Dependencies**: `dex/dex` helm chart 0.26.0 (dex 2.46.0) via OCI/helm repo `https://charts.dexidp.io`; existing `rhbk` Keycloak chart (values shape already in use); ExternalSecrets (vault-backed) per house pattern. **Storage**: dex storage = Kubernetes CRDs-backed (`config.storage.type: kubernetes`) — stateless to us. **Testing**: `make test-static` suites + `./pattern.sh make validate-schema` + live login/gate proofs (device flow). **Target Platform**: existing SNO OCP 4.22 GitOps cluster (Argo CD in `vp-gitops`). **Project Type**: GitOps config change (values + one new app).
-
-**Constraints**: house GitOps-first (everything via Git; imperative steps recorded); minimal changes (replace one IdP, add one app); no behavior change for openshell clients (they still talk OIDC to KC realm only). GitHub-side prerequisites (OAuth App creation/consent, vault writes) are the only imperative steps, recorded with commands/outputs.
+**Language/Version**: YAML/Helm only. **New components**: `dex/dex` chart 0.26.0 (dex 2.46.0) in `openshell` ns, `dex.tokyo-brunch.com` (acme issuer), GitHub connector `orgs: [{name: tempest-concorde, teams: [...]}]` and staticClients for the CLI/console. **Removed (conditional Phase D)**: `rh-keycloak` operator, `keycloak-0`, its postgres, `openshell-keycloak-config` app, KC realm GitHub IdP, legacy `openshell-github-oauth` vault record. **Roles model**: KC realm roles REPLACED by GitHub **team** membership — emitted via dex `groups` claim (`org:team-slug`), gateway `rolesClaim: groups`.
 
 ## Constitution Check
 
 | Principle | Gate | Rationale |
 |---|---|---|
-| I. GitOps-first | **PASS** | All cluster-facing changes are values/values-prod edits converged by ArgoCD. GitHub OAuth App consent + vault writes are unavoidable non-cluster prerequisites; recorded (commands+outputs) in the feature evidence log. |
-| II. Record imperative steps | **PASS** | Every imperative action (GitHub App setup, vault writes, KC admin role re-grant if relink needed, hard-sync annotations) is pre-recorded in quickstart G-gates with exact commands. |
-| III. Helm-only, minimal | **PASS** | dex is upstream's official chart; KC unchanged except one IdP block + placeholders; no custom images/SPI/plugins. |
-
-Post-phase-1 re-evaluation: all gates remain PASS (design adds no new imperative surface beyond the recorded GitHub/vault prereqs).
-
-## Project Structure
-
-### Documentation (this feature)
-
-```text
-specs/013-github-org-authz/
-├── plan.md            # this file
-├── research.md        # mechanism decision, probes, alternatives
-├── data-model.md      # authz entities
-├── contracts/README.md# C1-C4 behavioral contracts + proofs
-└── quickstart.md      # G0-G6 validation gates
-```
-
-### Source changes (repo-relative)
-
-```text
-values-prod.yaml                       # + dex app block (chart dex/dex 0.26.0, ns openshell)
-overrides/values-dex.yaml              # NEW: dex issuer/config (connectors.github orgs, staticClient for KC, ESO env)
-overrides/values-dex-secrets?          # NOT USED — dex secrets sync via its values' enves (see notes)
-overrides/values-keycloak.yaml         # IdP github(providerId:github) -> generic oidc 'github' pointed at dex; placeholder map for KC->dex client creds
-tests/test-external-refs.sh            # + dex chart pin expectation
-docs/openshell-demo-opencode.md        # login-flow note (extra redirect hop; unchanged commands)
-```
-
-Existing ESO/vault patterns reused: `extraSecrets` + `realmPlaceholders` (values-keycloak.yaml), dex chart `env:` from Secret (same path/key). Vault record path prefix (house): `secret/data/hub/...`.
+| I. GitOps-first | **PASS** | All cluster changes via commits; imperative-only actions (GitHub team creation, OAuth App, vault writes, possible KC console cleanup) pre-recorded in quickstart. |
+| II. Record imperative steps | **PASS** | Every imperative action — GitHub-side + vault + (potential) KC-admin concessions — spelled out in quickstart G-gates. |
+| III. Helm-only, minimal | **PASS-with-tension flagged** | Decommissioning is a bigger diff than "add a gate", but the USER explicitly chose it with the parallel-first caveat; the decommit only ships after live proof. No custom images/code at any point. |
 
 ## Data Flow / Decision Chain
 
 ```text
-user (openshell WebUI or CLI device flow)
-  → Keycloak login page (realm openshell)
-    → IdP 'github' (generic OIDC) → https://dex.tokyo-brunch.com
-      → dex GitHub connector (orgs: [{name: tempest-concorde}])
-        → GitHub OAuth consent (+ org membership + user-orgs API)
-        ← MEMBER? → dex issues id_token; logs allow (or DENY + error page)
-    ← KC completes login, IdP mapper → openshell-user role
-  ← gateway session (existing token lifetimes; minilab#9 untouched)
+(END STATE)
+browser/CLI login → https://dex.tokyo-brunch.com (issuer)
+  → GitHub OAuth (org consent, read:org) → dex orgs/teams check (deny = error page + log)
+  → dex id_token: aud=openshell-cli, groups=[tempest-concorde:openshell-users(, openshell-admins)]
+  → gateway validates Bearer (issuer=dex, rolesClaim=groups, userRole=tempest-concorde:openshell-users, adminRole=tempest-concorde:openshell-admins)
+  → session/token handled by gateway side as today (lifetimes: dex defaults — watch item, may retire minilab#9)
 ```
 
-Deny UX: dex shows its error page ("user is not in the required org"), KC surfaces upstream-failure; neither KC session nor gateway token is issued (FR-003). Fail-closed by construction: if dex is down or GitHub back-channel errors, login cannot complete (Edge Case #1 satisfied structurally).
+## Phasing (commit plan — all on main, each revertable)
 
-## Sequencing (high level)
+- **Commit A — inert dex**: values-prod dex app + `overrides/values-dex.yaml` + ESO secret + GitHub side prereqs done; dex live but unreferenced.
+- **Dex-direct smoke (live, no cluster change)**: discovery doc, and a browser-flow login test via a TEST staticClient from laptop → verifies org gate + groups claims **before** pointing anything production at dex.
+- **Commit B — gateway cutover**: `gateway.oidc.issuer → dex`, `audience` → dex staticClient id (verify value mapping), `rolesClaim: groups`, `userRole/adminRole` → team-claim strings. Sync; verify login+CLI+status+sandbox ops.
+- **Decision gate (HARD)**: C1–C3 contracts pass ⇒ **Commit C — KC decommission** (remove keycloak-keyring apps: `rh-keycloak` subscription/operator apps, `openshell-keycloak-config`, keycloak ns); else **revert B**, keep dual stack (dex reachable, KC IdP rewired THROUGH dex in a follow-up feature if desired — Path A residue).
+- Commit D (hygiene): remove legacy vault record references, docs updates, zero-residual sweep.
 
-1. **G-prereqs (imperative, recorded)**: create org-owned GitHub OAuth App `openshell-authz` (callback https://dex.tokyo-brunch.com/callback); org-level OAuth approval; vault writes (`secret/data/hub/openshell-dex`).
-2. **Git commit A (inert)**: dex app + values + external-refs pin (deploys dex; nobody is routed through it yet).
-3. **Git commit B (cutover)**: KC IdP swap github→oidc(dex). Sync verified; live login proof (member path).
-4. **Git commit C (live gate proof)**: temporary `orgs: [tempest-concorde-x]` (nonexistent org) commit → operator login must be DENIED (full-chain synthetic negative per clarified SC-002) → revert commit C.
-5. Observability evidence + zero-residual sweep; docs note.
+## Watch-items / Verification flags
 
-Rollback at any point: `git revert` the relevant commit (C trivial; B restores old IdP immediately; A leaves an idle dex which can be deleted by removing its app block).
+- **V1 (must verify, Commit B implementation)**: gateway login flow's actual redirect URI — currently KC client carries `http://localhost:*/callback` wildcards (dex can't), but the CLI opens the **gateway edge proxy's** login flow (fixed URIs). If the edge flow still resolves to wildcard localhost for the CLI leg, dex staticClients can't satisfy it → learn the CLI's actual redirect via a Commit-B test login and decide Path-A fallback before further decommit.
+- **V2 (token modeling)**: dex id_token `aud` is the dex client id; ensure `audience` matches `openshell-cli` staticClient id; confirm gateway `scopesClaim` semantics don't depend on KC-specific claims (`realm_access` gone → set `rolesClaim: groups`).
+- **V3 (roles coverage)**: GitHub teams `openshell-users` + `openshell-admins` (create at G1, org `tempest-concorde`); dex connector teams list must include both; user must be in `openshell-users` to get ANY gateway access (userRole), `openshell-admins` for admin elevation. TODAY every GitHub user logged in as user — gate change intentionally shrinks access to org+team members.
+- **V4 (#9 fallout)**: dex-issued id tokens/refresh lifetimes differ (`tokenExpiry` defaults in dex config) — note CLI session-lifetime behavior post-cutover against the ~50 min KC symptom; do NOT claim minilab#9 fixed, only observe.
+- **V5 (KC removal severity)**: KC removal invalidates all KC-issued sessions (irrelevant post-cutover) and the KC admin UI paths referenced in older docs; docs updated in the same commit family. The vault `openshell-github-oauth` record + `keycloak-admin-user` secret become orphaned — removal follow-through is part of Commit C/D.
 
 ## Research
 
-See [research.md](research.md). Headline decision: **dex-in-front** (rather than KC SPI, KC-native Impossible options, or allow-list realm approaches) — only mechanism meeting FR-002/FR-004 declaratively without custom code.
+[research.md](research.md) — R1–R6 (dex mechanism, alternatives, deny-proof) + **R7 (why not Keycloak-only)** + **R8 (Path-B viability probes)**: gateway OIDC surface generic; CLI browser flow documented in CLI help ("edge proxy login flow"); KC openshell-cli wildcard-redirect constraint discovered and rerouted; device flow not implemented in dex (accepted trade-off, browser flow on laptop is the daily path).
 
-## Watch-items / Risks
+## Follow-ups deferred
 
-- **Federated-identity relink**: dex `sub` = GitHub numeric user ID by default, matching what KC's github provider linked; expected zero-arg relink to existing KC user butler54, but if KC fails to match (email-collision prompt or new user), the recorded contingency is: complete login as new federated user, then KC admin console re-grant `openshell-admin` (recorded imperative step, ~2 min).
-- **`openshell-admin` role**: currently manual KC admin-console grant (011/012); if the mapping survives relink, nothing to do; contingency listed above.
-- **Realm IdP update applies live**: KeycloakRealm diff-apply happens without KC restart in RHBK operator flows; watch `rh-keycloak`/openshell apps Synced+Healthy through cutover (FR-007).
-- **Dex availability becomes login prerequisite**: acceptable — fail-closed requirement means an auth-gate outage SHOULD block logins; dex is tiny (single replica, kubernetes storage), and this is a lab single-user platform.
-
-## Follow-ups deferred (not this feature)
-
-- minilab#9 OIDC session-life fix (`ssoSessionIdleTimeout`) — independent line fix.
-- Vault-centered team-based tightening (`teams: [openshell-access]`) — one-line dex values change if org granularities ever shift.
-- OCSF deny-evidence channel — pending upstream chart wiring (#3264/#3876).
+- minilab#9 (KC token idle) — superseded if B succeeds (KC is gone), else still open.
+- OCSF deny-evidence (#3264/#3876 upstream).
+- Real non-member GitHub-account round-trip (needs second identity).
