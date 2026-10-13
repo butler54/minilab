@@ -89,9 +89,9 @@
 
 - [X] T021 Update `docs/openshell-demo-opencode.md`: refresh "0.1.1" version references to 0.1.3 where they describe current state, note policy-at-create adoption (+ minilab#8 resolution), add the sync/force-refresh procedure pointer; commit + push `main`
 - [X] T022 [P] Append a forward-reference one-liner to `specs/011-zen-sandbox-demo/demo-log.md` FI1 note pointing at 012's live resolution (011 history stays immutable otherwise); commit + push
-- [ ] T023 [P] Comment on butler54/minilab#8 with the outcome: U2 verdict (policy-at-create live-verified with evidence lines from demo-log), 0.1.3 convergence date/times, and residual follow-up if T020 was deferred; CLOSE issue #8 if U2/U3 PASS, else keep open with findings
-- [ ] T024 Final residual + gates sweep: `openshell sandbox list -g k8s` empty, `openshell forward list` empty, `openshell sandbox list` guard for no stray fwd procs (`pgrep -fl "forward service" || true`), `oc -n vp-gitops get applications | grep -vE 'Synced.*Healthy'` only `lvms-config` OutOfSync, `make test-static` and `./pattern.sh make validate-schema` green; fill all demo-log timing tables and SC-001..SC-006 verdicts; commit + push
-- [ ] T025 Update `specs/012-openshell-013-upgrade/tasks.md` to mark every task `[X]` as completed, and record final close status in demo-log; commit + push (SC-006)
+- [X] T023 [P] Comment on butler54/minilab#8 with the outcome: U2 verdict (policy-at-create live-verified with evidence lines from demo-log), 0.1.3 convergence date/times, and residual follow-up if T020 was deferred; CLOSE issue #8 if U2/U3 PASS, else keep open with findings
+- [X] T024 Final residual + gates sweep: `openshell sandbox list -g k8s` empty, `openshell forward list` empty, `openshell sandbox list` guard for no stray fwd procs (`pgrep -fl "forward service" || true`), `oc -n vp-gitops get applications | grep -vE 'Synced.*Healthy'` only `lvms-config` OutOfSync, `make test-static` and `./pattern.sh make validate-schema` green; fill all demo-log timing tables and SC-001..SC-006 verdicts; commit + push
+- [X] T025 Update `specs/012-openshell-013-upgrade/tasks.md` to mark every task `[X]` as completed, and record final close status in demo-log; commit + push (SC-006)
 
 **Checkpoint**: feature 012 complete on `main` with zero residual; issue #8 dispositioned
 

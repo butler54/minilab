@@ -63,3 +63,10 @@ Probe matrix in zp13-1791879602 @08:20–08:23Z served 4 models; zp15 @08:27Z sh
 ## Close Record
 
 _pending_
+
+## Close Record
+
+- 2026-10-13 ~08:4xZ. **Feature complete on `main`.** All 25 tasks [X]. SC-001..SC-006: ✅ PASS (SC-001 ~59s; SC-002 pod+CLI status 0.1.3; SC-003 CLI 0.1.3 ~/.local/bin + tie-check; SC-004 ≤60s birth-with-policy; SC-005 smoke green incl. DR2 remediation within budget; SC-006 zero residual).
+- Final sweep evidence: `No sandboxes found` / `No active forwards` / no stray forward procs; unhealthy apps list = `lvms-config` OutOfSync only (pre-existing 010 incident, out of scope); `openshell-0` Running `ghcr.io/nvidia/openshell/gateway:0.1.3`; `make test-static` PASS; `./pattern.sh make validate-schema` All assertions passed.
+- Issue butler54/minilab#8 comment+CLOSED with evidence summary. Issue minilab#9 (OIDC ~50min token death) remains open for root-cause follow-up.
+- Residual follow-ups for the backlog: (a) re-enable OCSF evidence channel once helm-chart wires `gateway.ocsfLog` (upstream #3264/#3876); (b) zen free-tier model-watch: candidate chain lives in run-zen-demo.sh query; serving set may need periodic refresh; (c) `brew` formula 0.1.3 catch-up → can `brew link openshell` again after update (unlinked state documented above).
