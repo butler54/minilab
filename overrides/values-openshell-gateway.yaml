@@ -11,6 +11,13 @@ replicaCount: 1
 gateway:
   image:
     tag: "0.1.3"
+  # Gateway-native OCSF JSONL deny-evidence channel (new at 0.1.3; T020).
+  ocsfLog:
+    # Note: default path /tmp/gateway-ocsf.jsonl is writable but does NOT
+    # persist across gateway restarts (no volume mounted — fine for evidence
+    # channel validation; revisit with server.extraVolumes if retention is
+    # ever required).
+    enabled: true
 sandboxRuntime:
   image:
     tag: "0.1.3"
