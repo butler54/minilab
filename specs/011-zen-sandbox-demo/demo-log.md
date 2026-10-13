@@ -100,4 +100,4 @@ Post-US3 (05:49:52Z): sandbox `zen-1791870352` deleted; `openshell sandbox list 
 
 ## G6 Merge Record
 
-_pending_
+Merged `011-zen-sandbox-demo` → `main` at merge commit **ef6d169** (2026-10-13, --no-ff). All 29 tasks closed; evidence trail in this file; gates re-verified on main post-merge.
