@@ -152,3 +152,9 @@ description: "Task list for 011 zen sandbox demo + server mode"
 - SC-001 excludes one-time cold image pull (spec assumption); log separately if it occurs
 - If T004's keyless probe succeeds, T006 resolves with no vault changes and `opencode-zen.json` carries no `apiKey`
 - `make test-static` must stay green after every policy/script commit (T010 guard active from Phase 2)
+
+---
+
+## Phase 7: Convergence
+
+- [ ] T029 Simplify `deploy/openshell/profiles/zen.yaml` to keyless form — remove the unused `credentials`/`ZEN_API_KEY` block and key-mode comment (update description to record the T004 keyless verdict) per FR-004/demo-log G0 (partial)
