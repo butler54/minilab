@@ -47,7 +47,7 @@ chk(zt["spire"]["trustDomain"] == trust, "spire.trustDomain != openshell.trustDo
 
 # NVIDIA static pins (carried from 006 D4/D10, migrated to 0.1.x schema)
 server = gw["server"]
-OSC_VER = "0.1.1"
+OSC_VER = "0.1.3"
 chk(server.get("telemetryEnabled") is False, "telemetry must be off")
 chk(server.get("disableTls") is False, "disableTls required false for passthrough Route")
 chk((server.get("credentialStorage") or {}).get("existingSecret") == "openshell-kek", "KEK existingSecret name drifted")

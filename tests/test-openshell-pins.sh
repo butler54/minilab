@@ -39,7 +39,7 @@ for key in ("openshell", "cert-manager", "ztwim", "rh-keycloak"):
 
 # 3. Feature images use concrete tags or digests (checks known pinned entries).
 gw = yaml.safe_load(open(os.path.join(root, "overrides/values-openshell-gateway.yaml")))
-OSC_VER = "0.1.1"
+OSC_VER = "0.1.3"
 img = gw.get("gateway", {}).get("image", {}).get("tag", "")
 sup = (gw.get("supervisor", {}) or {}).get("image", {}).get("tag", "")
 rt = (gw.get("sandboxRuntime", {}) or {}).get("image", {}).get("tag", "")

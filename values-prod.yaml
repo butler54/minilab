@@ -194,7 +194,7 @@ clusterGroup:
       # src: https://github.com/NVIDIA/OpenShell (oci://ghcr.io/nvidia/openshell/helm-chart)
       repoURL: ghcr.io/nvidia/openshell
       chart: helm-chart
-      chartVersion: "0.1.1"
+      chartVersion: "0.1.3"
       extraValueFiles:
       - '/overrides/values-openshell-gateway.yaml'
       annotations:

@@ -30,9 +30,9 @@
 
 **⚠️ CRITICAL**: US1's sync, US2's CLI, and US3's validation all require this on `main` first
 
-- [ ] T004 Edit the 5-version pin surface atomically: `values-prod.yaml` (`clusterGroup.applications.openshell.chartVersion` 0.1.1→0.1.3, line ~190), `overrides/values-openshell-gateway.yaml` (three image tags lines 13/16/19 → "0.1.3"), `tests/test-external-refs.sh` (expected openshell chartVersion → "0.1.3", line ~53), `tests/test-openshell-pins.sh` (`OSC_VER = "0.1.3"`, line ~42), `tests/test-openshell-render.sh` (`OSC_VER = "0.1.3"`, line ~50). DO NOT touch `values-ztwim.yaml`, `rh-keycloak` 0.1.0, or historical attribution comments in policy files
-- [ ] T005 Run pre-push gates: `make test-static` (all suites green incl. updated pin assertions) AND `./pattern.sh make validate-schema` (`All assertions passed`); fix any render incompatibility against chart 0.1.3 values before proceeding — the values diff is additive (research.md R2) so failures indicate our override problem, not upstream
-- [ ] T006 Commit all 5 files as ONE commit on `main` with message documenting the five-value atomicity, and `git push origin main`; record commit SHA in `specs/012-openshell-013-upgrade/demo-log.md`
+- [X] T004 Edit the 5-version pin surface atomically: `values-prod.yaml` (`clusterGroup.applications.openshell.chartVersion` 0.1.1→0.1.3, line ~190), `overrides/values-openshell-gateway.yaml` (three image tags lines 13/16/19 → "0.1.3"), `tests/test-external-refs.sh` (expected openshell chartVersion → "0.1.3", line ~53), `tests/test-openshell-pins.sh` (`OSC_VER = "0.1.3"`, line ~42), `tests/test-openshell-render.sh` (`OSC_VER = "0.1.3"`, line ~50). DO NOT touch `values-ztwim.yaml`, `rh-keycloak` 0.1.0, or historical attribution comments in policy files
+- [X] T005 Run pre-push gates: `make test-static` (all suites green incl. updated pin assertions) AND `./pattern.sh make validate-schema` (`All assertions passed`); fix any render incompatibility against chart 0.1.3 values before proceeding — the values diff is additive (research.md R2) so failures indicate our override problem, not upstream
+- [X] T006 Commit all 5 files as ONE commit on `main` with message documenting the five-value atomicity, and `git push origin main`; record commit SHA in `specs/012-openshell-013-upgrade/demo-log.md`
 
 **Checkpoint**: pin commit is on `main`; no live change yet
 

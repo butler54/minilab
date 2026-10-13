@@ -50,7 +50,7 @@ for dirpath, dirnames, filenames in os.walk(os.path.join(root, "charts")):
 prod = yaml.safe_load(open(os.path.join(root, "values-prod.yaml")))["clusterGroup"]
 apps = prod.get("applications", {})
 expected = {
-    "openshell": {"chart": "helm-chart", "repoURL": "ghcr.io/nvidia/openshell", "chartVersion": "0.1.1"},
+    "openshell": {"chart": "helm-chart", "repoURL": "ghcr.io/nvidia/openshell", "chartVersion": "0.1.3"},
     "cert-manager": {"chart": "ocp-certmanager", "chartVersion": "0.2.0"},
     "ztwim": {"chart": "ztwim", "chartVersion": "0.1.1"},
     "rh-keycloak": {"chart": "rhbk", "chartVersion": "0.1.0"},
