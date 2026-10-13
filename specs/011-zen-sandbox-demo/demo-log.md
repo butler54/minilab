@@ -31,8 +31,8 @@ Evidence record per contract Z5. Each run appends; nothing is retro-written.
 
 | Run | Mode | Sandbox | Create→Ready | Fence survival | Zen query | Deny proofs | Teardown | Notes |
 |---|---|---|---|---|---|---|---|---|
+| R1 (T014 G2) | `--setup` | zen-1791866112 | 2s | **PASS** (alive +5.5min) | n/a | n/a | **PASS** (empty list asserted) | preflight+provider+inject PASS; total 6m22s (04:35:12→04:41:34Z) |
 | _pending_ | | | | | | | | |
-
 ## Policy Iterations (FR-003 trail)
 
 | Iter | Denied destination (observed) | Rule added | Commit | Result |
@@ -43,7 +43,7 @@ Evidence record per contract Z5. Each run appends; nothing is retro-written.
 
 | Segment | Budget | Actual | Verdict |
 |---|---|---|---|
-| login → sandbox Ready (G2) | ≤8 min | _pending_ | |
+| login → sandbox Ready (G2) | ≤8 min | ~2s (auth warm) / 6m22s incl. fence window | **PASS** |
 | remediation → first hi (G3) | ≤7 min | _pending_ | |
 | **G2+G3 (SC-001)** | **≤15 min** | _pending_ | |
 | sandbox-Ready → server hi (G4) | ≤5 min | _pending_ | |

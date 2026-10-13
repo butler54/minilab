@@ -24,7 +24,9 @@ MODE="interactive"
 case "${1:-}" in --setup|--query|--proofs|--smoke) MODE="${1#--}" ;; esac
 
 created=0
+keep_alive=0
 cleanup() {
+  [ "$keep_alive" = 1 ] && { echo "sandbox left running (teardown: openshell sandbox delete $SANDBOX)"; return 0; }
   [ "$created" != 1 ] && { echo "skip cleanup (nothing created)"; return 0; }
   openshell sandbox delete "$SANDBOX" >/dev/null 2>&1
   created=0
@@ -138,15 +140,15 @@ proofs() {
 setup() {
   preflight
   create_one || exit 1
+  created=1
   fence_verify || exit 1
   inject || exit 1
-  created=1
 }
 
 case "$MODE" in
-  setup)       setup ;;
+  setup)       setup; keep_alive=1 ;;
   query)       query || exit 1 ;;
   proofs)      proofs || exit 1; cleanup ;;
   smoke)       setup; query || true; proofs || exit 1; cleanup ;;
-  interactive) setup; echo "attach: openshell sandbox connect $SANDBOX (detach Ctrl-P Ctrl-Q; then: SANDBOX_NAME=$SANDBOX $0 --query)"; openshell sandbox connect "$SANDBOX" ;;
+  interactive) setup; keep_alive=1; echo "attach: openshell sandbox connect $SANDBOX (detach Ctrl-P Ctrl-Q; then: SANDBOX_NAME=$SANDBOX $0 --query)"; openshell sandbox connect "$SANDBOX" ;;
 esac
