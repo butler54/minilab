@@ -82,10 +82,10 @@ description: "Task list for 011 zen sandbox demo + server mode"
 
 **Independent Test**: From sandbox-Ready, local `opencode attach` submits "hi" through the forward and receives the free-tier response within 5 min (quickstart G4)
 
-- [ ] T021 [US3] Write `deploy/openshell/demo/zen/run-zen-server.sh`: preflight (as T011), sandbox create, zen config inject, start `opencode serve --hostname 0.0.0.0 --port 4096` detached inside the sandbox, in-sandbox health probe on port 4096
-- [ ] T022 [US3] Establish transport per the T007 verdict (contract Z4): gateway path if viable, else `oc port-forward` to the sandbox pod + print the exact local `opencode attach http://localhost:4096` command; optional `OPENCODE_SERVER_PASSWORD` conveyed one-time via console output, never committed
-- [ ] T023 [US3] Verify from the local client: attach, submit `hi`, confirm free-tier response; capture both-side evidence (local transcript + in-sandbox server log line) in demo-log
-- [ ] T024 [US3] Teardown: kill forward, delete sandbox, verify zero residual (sandbox list empty, no strayed port-forward processes); record in demo-log (G5 partial)
+- [X] T021 [US3] Write `deploy/openshell/demo/zen/run-zen-server.sh`: preflight (as T011), sandbox create, zen config inject, start `opencode serve --hostname 0.0.0.0 --port 4096` detached inside the sandbox, in-sandbox health probe on port 4096
+- [X] T022 [US3] Establish transport per the T007 verdict (contract Z4): gateway path if viable, else `oc port-forward` to the sandbox pod + print the exact local `opencode attach http://localhost:4096` command; optional `OPENCODE_SERVER_PASSWORD` conveyed one-time via console output, never committed
+- [X] T023 [US3] Verify from the local client: attach, submit `hi`, confirm free-tier response; capture both-side evidence (local transcript + in-sandbox server log line) in demo-log
+- [X] T024 [US3] Teardown: kill forward, delete sandbox, verify zero residual (sandbox list empty, no strayed port-forward processes); record in demo-log (G5 partial)
 
 **Checkpoint**: US3 demonstrable end-to-end in ≤5 min from sandbox-Ready (SC-004)
 

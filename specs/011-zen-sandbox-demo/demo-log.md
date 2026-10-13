@@ -58,6 +58,20 @@ deny count: 5/5 (SC-003 100%, PASS)
 ```
 
 T020: **N/A** — keyless mode (T004/T006 verdict); no credentials exist to leak.
+
+## US3 Server Mode (05:45–05:50Z, zen-1791870352, G4)
+
+**T021/T022 — serve + transport**: `opencode serve --hostname 0.0.0.0 --port 4096` detached in-sandbox (`setsid nohup`, log `/tmp/opencode-serve.log`: "opencode server listening on http://0.0.0.0:4096"); in-sandbox health `http://127.0.0.1:4096/config` → 200. **FR-007 verdict: gateway-native forward CONFIRMED viable** — `openshell forward service $SB --target-port 4096 --local 4096`; local `curl http://127.0.0.1:4096/global/health` → `{"healthy":true,"version":"1.18.30"}`. `oc port-forward` fallback NOT needed.
+
+**T023 — local drive (findings)**: local client 2.0.25 `run --server` → `ClientError: UnsupportedContentType: text/html` (**version skew**: v2 client expects API surface absent from server 1.18.30). Version-matched `opencode-ai@1.18.30 run --attach` connects (sees the model) but prints an empty assistant turn on this non-TTY capture. Demonstrated deterministically via the server's HTTP API through the same forward:
+
+```text
+POST /session                       → {"id":"ses_ecc31818bffebzjIZ3DJRjeitQ",...}
+POST /session/ses_ecc31818/message (model opencode/ling-3.1-flash-free, "Reply with exactly: ZEN_HI_OK")
+ASSISTANT: ZEN_HI_OK      (model ling-3.1-flash-free; local transcript above)
+```
+
+**T024 — teardown**: forward stopped & port closed (post-teardown `curl :4096` connection refused), sandbox deleted, `openshell sandbox list` empty, no stray forward processes.
 ## Policy Iterations (FR-003 trail)
 
 | Iter | Denied destination (observed) | Rule added | Commit | Result |
@@ -76,7 +90,7 @@ T020: **N/A** — keyless mode (T004/T006 verdict); no credentials exist to leak
 | login → sandbox Ready (G2) | ≤8 min | ~2s (auth warm) / 6m22s incl. fence window | **PASS** |
 | remediation → first hi (G3) | ≤7 min | ~11.5 min (05:31:07→05:42:34Z) | **EXCEEDED — deviation**: DR2 lineup rotated twice mid-loop (model-catalog + relay-availability failures required two model switches + relay probe matrix); spec assumption "chosen model remains valid" was violated *by the provider* during the run. Pure egress remediation was 2 iterations (~5 min) |
 | **G2+G3 (SC-001)** | **≤15 min** | ~16.4 min setup-inclusive | **EXCEEDED — deviation** (same root cause as G3; excludes the earlier auth-wait interruptions) |
-| sandbox-Ready → server hi (G4) | ≤5 min | _pending_ | |
+| sandbox-Ready → server hi (G4) | ≤5 min | ~3.2 min (05:45:56Z Ready → 05:49z ZEN_HI_OK via forward+API) | **PASS** |
 | per-query latency (SC-002) | ≤2 min | 39s (terminal query) | **PASS** |
 
 ## G5 Zero-Residual Proof
