@@ -4,7 +4,7 @@ Demonstrates a human-air-gapped AI coding agent inside a governed OpenShell sand
 
 ## Prerequisites (per gateway rebuild)
 
-- CLI pinned to server: `make check-openshell-cli` (0.1.1 at time of writing).
+- CLI pinned to server: `make check-openshell-cli` (0.1.3 at time of writing; upstream-tarball install path fixed in feature 012).
 - OIDC login: `OPENSHELL_NO_BROWSER=1 openshell gateway login k8s`, verify `Status: Connected` + `Authenticated`.
 - Matilda profile + provider on cluster gateway:
   - `openshell profile describe matilda` or import `deploy/openshell/profiles/matilda.yaml --global`
@@ -77,16 +77,26 @@ rules). Evidence: `specs/011-zen-sandbox-demo/demo-log.md`.
 
 ### Gotchas unique to the zen flow (all proven live 2026-10-13)
 
-- **Policy must exist AT create for custom images** (FI1): with `--from
+- **Policy must exist AT create for custom images** (FI1 — RESOLVED by
+  feature 012, minilab#8 closed 2026-10-13): with `--from
   <custom-image>` and no policy yet, gateway admission shows
   `ConfigurationInvalid: Effective configuration could not be activated`
   and a hard-coded **300s provisioning repair window** (upstream-design,
-  `REPAIR_WINDOW_MS = 300_000`). The pinned 0.1.1 CLI **does** support
+  `REPAIR_WINDOW_MS = 300_000`). The CLI supports
   `openshell sandbox create --policy <file>` and `OPENSHELL_SANDBOX_POLICY`
-  — prefer those over racing `policy set` post-create (the scripts
-  still do the create+set dance; simplification + ≥v0.1.3 upgrade:
-  minilab#8). Default-image sandboxes auto-attach the platform default
-  policy; custom ones do not.
+  and **both demo scripts now create with `--policy`** — live-verified on
+  0.1.3: a sandbox is BORN with our policy (admission accepted, policy
+  version 1, zero `policy set` calls; `specs/012-openshell-013-upgrade/demo-log.md`).
+  Old-CLI fallback (concurrent create+set race) is retained in-script for
+  CLIs that reject `--policy`. Default-image sandboxes auto-attach the
+  platform default policy; custom ones do not.
+- **Forcing a GitOps re-sync after pushing pin/version changes to `main`**:
+  `oc -n vp-gitops annotate application/openshell argocd.argoproj.io/refresh=hard`
+  then `oc -n vp-gitops patch application/openshell --type=merge -p
+  '{"operation":{"sync":{"prune":false}}}'` (converged in ~59s for the
+  0.1.3 chart bump; argocd CLI is unusable here due to stale localhost
+  config). This imperative step is constitution-§II-pre-recorded in
+  `specs/012-openshell-013-upgrade/quickstart.md` G2.
 - **Gateway CLI sessions die ~50 min after login** with
   `invalid_grant: Token is not active` (008 + 011, multiple hits);
   re-login via `OPENSHELL_NO_BROWSER=1 openshell gateway login k8s`.
@@ -113,7 +123,14 @@ rules). Evidence: `specs/011-zen-sandbox-demo/demo-log.md`.
   current runtime: denied connects return
   `Immediate connect fail for 198.18.0.x: Permission denied` (per-host
   synthetic IP); `oc -n openshell logs <os-supervisor-pod>` from the 008
-  era no longer applies.
+  era no longer applies. 0.1.3 note: the sinkhole may surface as curl
+  exit-7 `Couldn't connect to server` after ~3ms (fast refusal at the
+  synthetic IP) rather than the literal `Permission denied` string — the
+  fast-fail-unreachable is the deny signal.
+- **0.1.3 policy-set dedupe**: `openshell policy set` with byte-identical
+  content is a content-hash **no-op** (`Policy unchanged (version N)`);
+  the version only increments on changed content. Also the 0.1.3 CLI has
+  no `-w` shorthand for `policy set --wait`.
 - **Gateway-native forward for server mode** (FR-007 confirmed):
   `openshell forward service <sb> --target-port 4096 --local 4096` runs
   FOREGROUND — background it; `oc port-forward` fallback unnecessary.
