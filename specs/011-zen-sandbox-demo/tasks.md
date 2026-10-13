@@ -54,7 +54,7 @@ description: "Task list for 011 zen sandbox demo + server mode"
 - [X] T012 [US1] Add inject step using `deploy/openshell/demo/zen/opencode-zen.json` (reuse 008 `inject-config.sh` mechanics: exec mkdir + tee + verify-string grep adapted to the zen host) with PASS output per contract Z3
 - [X] T013 [US1] Add fence-window verification to `deploy/openshell/demo/zen/run-zen-demo.sh`: after create, confirm the sandbox still exists at +5.5 min before declaring G2 success; on fence-death, auto-recreate once and log the event (spec edge case; 008 mitigation)
 - [X] T014 [US1] Run G2 acceptance: execute the driver end-to-end; record preflight PASS, create time, Ready time, alive-past-fence proof in demo-log (SC-001 timer segment starts)
-- [ ] T015 [US1] Verify unconditional cleanup + residual check (`trap`-based; `openshell sandbox delete` idempotent; post-run `openshell sandbox list` empty) by re-running the driver (US1 AC3); log both runs in demo-log
+- [X] T015 [US1] Verify unconditional cleanup + residual check (`trap`-based; `openshell sandbox delete` idempotent; post-run `openshell sandbox list` empty) by re-running the driver (US1 AC3); log both runs in demo-log
 
 **Checkpoint**: US1 independently demonstrable — "CLI-deployed governed sandbox" with evidence committed
 

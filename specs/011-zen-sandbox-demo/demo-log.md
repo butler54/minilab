@@ -10,7 +10,7 @@ Evidence record per contract Z5. Each run appends; nothing is retro-written.
 |---|---|---|
 | T002 CLI pin | **PASS** (0.1.1 == chart) | `make check-openshell-cli`; *but* gateway auth stale: `invalid_grant` + missing mTLS CA → re-login required (user action) |
 | T004 zen keyless probe | **Conditional success** | curl keyless: `exo-free`→410 deprecated; `kimi/glm/trinity-*-free`→401 "not supported"; `ling-3.1-flash-free`→403 `FreeTierError: free tier only from within OpenCode` (UA/session-header spoofing also 403 — relay validates genuine client session). **Genuine opencode v2.0.20 workstation client: keyless `hi` → `ZEN_HI_OK` ✓.** Verdict: keyless works ONLY via a modern opencode client; no API key needed |
-| T005 zen endpoint + model identity | **Resolved** | catalog `https://models.opencode.ai/api.json`: provider id `opencode`, base `https://opencode.ai/zen/v1`, 15+ `*-free` models; chosen `opencode/ling-3.1-flash-free` (deprecated: exo-free; unsupported: kimi-k2.5/glm-4.7/trinity free) |
+| T005 zen endpoint + model identity | **Resolved (DR2 rotated live)** | catalog `https://models.opencode.ai/api.json`: provider id `opencode`, base `https://opencode.ai/zen/v1`, 15+ `*-free` models. **2026-10-13 re-probe (T016 iter0)**: `ling-3.1-flash-free` (T005 pick) live on the relay but ABSENT from opencode 1.18.30's bundled registry → in-sandbox `ProviderModelNotFoundError` before any egress (zero network, <2s). New pick at intersection of bundled-registry × live relay: **`opencode/ling-3.0-flash-fin-free`** (both catalogs). |
 | T006 key-mode fallback | **Not needed** | keyless confirmed; no vault seed, no `apiKey` in assets (FR-004 cleanest form) |
 | T007 gateway TCP-forward capability | **Resolved: gateway-native path exists** | openshell 0.1.1 ships `openshell forward` (`start/stop/list` + `forward service`: local TCP port → sandbox loopback over gRPC). FR-007 default path viable; `oc port-forward` stays recorded fallback |
 | T008 binary paths | **PASS** | probe `zp-1791865835` (2026-10-13 ~04:35Z): `curl`→`/usr/bin/curl`; `node`→`/usr/bin/node` v22.22.1; `opencode`→`/usr/lib/node_modules/opencode-ai/bin/opencode.exe` v1.18.30 (DR1 floor confirmed live). Probe deleted; `openshell sandbox list` empty |
@@ -32,6 +32,8 @@ Evidence record per contract Z5. Each run appends; nothing is retro-written.
 | Run | Mode | Sandbox | Create→Ready | Fence survival | Zen query | Deny proofs | Teardown | Notes |
 |---|---|---|---|---|---|---|---|---|
 | R1 (T014 G2) | `--setup` | zen-1791866112 | 2s | **PASS** (alive +5.5min) | n/a | n/a | **PASS** (empty list asserted) | preflight+provider+inject PASS; total 6m22s (04:35:12→04:41:34Z) |
+| R2 (04:43Z) | batch | zen-1791869164 | 2s | died seconds after Ready (cause unclear; next runs healthy) | FAIL unknown (UnknownError err_14a50219) | **INVALID** (guards too weak at that commit) | vanished | gateway token died mid-batch; deny probes counted a deleted sandbox → exec-liveness guard added |
+| R3 (05:31Z, T016 iter0) | `--setup`+query | zen-1791869467 | 2s | n/a (SKIP_FENCE_WAIT) | **FAIL classified: provider/model-catalog** — `ProviderModelNotFoundError: ling-3.1-flash-free` absent from opencode 1.18.30 bundled registry; zero egress attempted | n/a (deleted post-probe) | manual delete | curl zen direct under deny-all: `Immediate connect fail for 198.18.0.4: Permission denied` (sinkhole; policy deny live and fast) |
 | _pending_ | | | | | | | | |
 ## Policy Iterations (FR-003 trail)
 
