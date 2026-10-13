@@ -45,7 +45,7 @@ preflight() {
   # zen provider/profile are keyless (T004 verdict) but the gateway admission
   # requires the records to exist; recreate idempotently from Git sources.
   openshell profile list 2>/dev/null | grep -q '^zen[[:space:]]' \
-    || openshell provider profile import "$PROFILE" --global >/dev/null 2>&1 \
+    || openshell provider profile import --file "$PROFILE" --global >/dev/null 2>&1 \
     || { echo "FAIL preflight: zen profile import"; exit 1; }
   openshell provider list 2>/dev/null | grep -q '^zen[[:space:]]' \
     || openshell provider create --name zen --type zen --global-profile >/dev/null 2>&1 \
