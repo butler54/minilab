@@ -18,7 +18,7 @@
 
 **Purpose**: Tracking artifact and environment readiness
 
-- [ ] T001 Create the feature evidence log at `specs/012-openshell-013-upgrade/demo-log.md` with tables mirroring the 011 format (run table: run/mode/sandbox/create→ready/fence/query/deny-proofs/teardown/notes; timing table; merge/close record) and header referencing issue butler54/minilab#8; commit to `main`
+- [X] T001 Create the feature evidence log at `specs/012-openshell-013-upgrade/demo-log.md` with tables mirroring the 011 format (run table: run/mode/sandbox/create→ready/fence/query/deny-proofs/teardown/notes; timing table; merge/close record) and header referencing issue butler54/minilab#8; commit to `main`
 - [ ] T002 Environment readiness check: `oc whoami` = kube:admin, `oc -n vp-gitops get applications | grep openshell` shows current state, `helm version` present; record baseline (`openshell-0` pod image tag `0.1.1`, apps Synced/Healthy pre-change) in `specs/012-openshell-013-upgrade/demo-log.md`
 - [ ] T003 Pre-edit static baseline: run `make test-static` and capture PASS in demo-log (existing state is green from T027 of 011); run `openshell gateway list` and note current gateway `k8s`
 
