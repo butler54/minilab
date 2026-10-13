@@ -109,9 +109,10 @@ inject() {
 }
 
 query() {
-  # Guard: probes against a missing sandbox produce false classifications.
-  openshell sandbox get "$SANDBOX" >/dev/null 2>&1 \
-    || { echo "FAIL query (sandbox $SANDBOX not found)"; return 1; }
+  # Guard: probes against a dead/absent sandbox produce false classifications
+  # (gateway records can outlive the workload — verified 2026-10-13 R3).
+  openshell sandbox exec -n "$SANDBOX" -- true >/dev/null 2>&1 \
+    || { echo "FAIL query (sandbox $SANDBOX not exec-live)"; return 1; }
   # Classified zen-query attempt (contract Z3): never "fix" the wrong layer.
   out=$(openshell sandbox exec -n "$SANDBOX" -- sh -c "cd /sandbox && opencode run \"$PROMPT\"" 2>&1 | tail -30)
   rc=$?
@@ -130,10 +131,10 @@ query() {
 }
 
 proofs() {
-  # Guard: curl failures against a missing sandbox would falsely count as
-  # policy denies — assert the sandbox exists first.
-  openshell sandbox get "$SANDBOX" >/dev/null 2>&1 \
-    || { echo "FAIL proofs (sandbox $SANDBOX not found)"; return 1; }
+  # Guard: curl failures against a dead sandbox would falsely count as policy
+  # denies — require exec liveness (record-exists is NOT sufficient, R3).
+  openshell sandbox exec -n "$SANDBOX" -- true >/dev/null 2>&1 \
+    || { echo "FAIL proofs (sandbox $SANDBOX not exec-live)"; return 1; }
   denied=0
   for host in example.com github.com pypi.org api.openai.com registry-1.docker.io; do
     openshell sandbox exec -n "$SANDBOX" -- curl -m 6 -s -o /dev/null "https://$host" >/dev/null 2>&1 \
