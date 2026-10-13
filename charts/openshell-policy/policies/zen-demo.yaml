@@ -37,3 +37,16 @@ network_policies:
       enforcement: enforce
     binaries:
     - path: /usr/lib/node_modules/opencode-ai/bin/opencode.exe
+  allow_models_opencode_ai_443:
+    name: allow_models_opencode_ai_443
+    # justification: G3 iter2 — models.dev catalog fetch denied
+    # ("Failed to fetch models.dev: Transport error GET
+    # https://models.opencode.ai/api.json", 2026-10-13T05:37:01Z, run 58d6d900)
+    endpoints:
+    - host: models.opencode.ai
+      port: 443
+      protocol: rest
+      access: full
+      enforcement: enforce
+    binaries:
+    - path: /usr/lib/node_modules/opencode-ai/bin/opencode.exe
