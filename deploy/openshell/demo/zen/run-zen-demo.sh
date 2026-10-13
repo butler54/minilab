@@ -119,7 +119,9 @@ query() {
   if echo "$out" | grep -q "ZEN_HI_OK"; then
     echo "PASS query (zen free-tier response: ZEN_HI_OK)"; return 0
   fi
-  if echo "$out" | grep -qiE "ProviderModelNotFoundError|Model not found"; then
+  if echo "$out" | grep -qiE "Model is unavailable|Upstream request failed|ModelDeprecated"; then
+    echo "FAIL query (classification: provider/model-availability — relay-side, DR2)"
+  elif echo "$out" | grep -qiE "ProviderModelNotFoundError|Model not found"; then
     echo "FAIL query (classification: provider/model-catalog — model absent from client registry, DR1/DR2)"
   elif echo "$out" | grep -qiE "FreeTierError|401|invalid_api_key"; then
     echo "FAIL query (classification: auth/free-tier gating)"
