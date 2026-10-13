@@ -1,6 +1,6 @@
 # Feature Specification: Upgrade OpenShell Stack to 0.1.3
 
-**Feature Branch**: `012-openshell-013-upgrade`
+**Feature Branch**: none — direct commits on `main` (Clarifications 2026-10-13)
 
 **Created**: 2026-10-13
 
@@ -9,6 +9,12 @@
 **Input**: "Based on issue butler54/minilab#8, minilab must be updated to openshell 0.1.3: update the GitOps deployment code, commit and push; force an Argo CD sync; validate that policy set at sandbox-create time is accepted, and fix if not."
 
 **Tracking**: butler54/minilab#8 (policy-at-create + stack upgrade), feeds the simplification planned alongside it.
+
+## Clarifications
+
+### Session 2026-10-13
+
+- Q: How should the 012 work land on `main` so Argo CD convergence and live validation can happen mid-feature? → A: Commit directly on `main` (no feature branch, no merge record); every staged change pushes to `main` as it becomes operative (GitOps: only `main` is converged by Argo CD).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -72,7 +78,7 @@ As the operator validating issue #8's central claim, I want to prove that creati
 ### Functional Requirements
 
 - **FR-001**: All openshell version pins declared in Git — helm chart version in the pattern values and each component image tag in the gateway values override — MUST target exactly 0.1.3, from the same trusted, version-pinned upstream source (`oci://ghcr.io/nvidia/openshell/helm-chart` and `ghcr.io/nvidia/openshell/*` images). Unrelated charts that happen to share the 0.1.1 version string (e.g., `ztwim`, `rhbk`) MUST NOT be touched.
-- **FR-002**: The change MUST be delivered as commits to `main` (or merged into `main` per repo convention) and pushed; cluster convergence MUST be driven by Argo CD only (constitution I — no imperative platform mutations).
+- **FR-002**: The change MUST be delivered as **commits made directly on `main`** and pushed (per Clarifications 2026-10-13: no feature branch, no merge record for this feature; Argo CD only converges `main`, so every change pushes to `main` as it becomes operative). Cluster convergence MUST be driven by Argo CD only (constitution I — no imperative platform mutations).
 - **FR-003**: One explicit force-refresh/sync of the affected Argo CD applications MUST be performed and recorded (command/output in the feature's tracking artifact) so convergence timing is observable rather than waiting on poll default (constitution II record of an imperatively-triggered action).
 - **FR-004**: After the sync, ALL openshell-related applications MUST be Synced+Healthy, and one of the gates (`make argo-healthcheck` or equivalent app listing) MUST show no degraded openshell apps.
 - **FR-005**: The workstation openshell CLI MUST be updated to 0.1.3 and `make check-openshell-cli` MUST pass unmodified (no weakening of the version tie).
@@ -103,5 +109,6 @@ As the operator validating issue #8's central claim, I want to prove that creati
 - Upstream release 0.1.3 (2026-10-09) publishes a `helm-chart` 0.1.3 at the pinned OCI repo and matching component images; availability is verified as the first task — if false, the change is not merged and the issue records the hold.
 - The 0.1.x value schema migration note in `overrides/values-openshell-gateway.yaml` remains sufficient for 0.1.3; any new required values surface during pre-push render validation.
 - Interactive/demo validation uses the existing gateway auth workflow; long-token behavior is out of scope (tracked in minilab#9).
-- Rollback plan, if upgrade destabilizes the platform: revert the pin commit and re-sync (declarative); no bespoke backup step is warranted for a homelab whose state is Git-defined.
+- Rollback plan, if upgrade destabilizes the platform: revert the pin commit directly on `main` and re-sync (declarative); no bespoke backup step is warranted for a homelab whose state is Git-defined.
+- Delivery mechanics (decided 2026-10-13): direct commits on `main`, no feature branch and no G6-style merge record — a deliberate simplification for this work order since every change must hit `main` to become operative (GitOps convergence); any intermediate branch would be dead code from the cluster's perspective.
 - Component version upgrades do not require CRD drift handling beyond what the chart performs.
