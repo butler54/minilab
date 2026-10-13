@@ -66,11 +66,11 @@ description: "Task list for 011 zen sandbox demo + server mode"
 
 **Independent Test**: Exec-query returns a real model response while ≥5 non-allowlisted egress attempts all show denial (quickstart G3)
 
-- [ ] T016 [US2] Run the first `hi` attempt under the T009 deny-all policy; capture the failing classification (policy-deny vs provider-error vs auth) and the supervisor `OCSF NET:OPEN DENIED` excerpt into demo-log (FR-003 iteration 0)
-- [ ] T017 [US2] Remediation loop on `charts/openshell-policy/policies/zen-demo.yaml`: for each observed denied destination add exactly one justified rule (host/port/`protocol: rest`/binaries + `# justification: <probe>` comment), commit, keep `tests/test-zen-policy.sh` green, `openshell policy set --wait`, retry — repeat until `hi` returns a genuine model response (≤2 min per query, SC-002)
-- [ ] T018 [US2] Record the terminal iteration: full prompt/response transcript and provider-success classification in demo-log (contract Z3)
-- [ ] T019 [US2] Deny proofs: attempt ≥5 distinct non-allowlisted hosts from inside the sandbox (e.g. example.com, github.com, pypi.org, api.openai.com, registry-1.docker.io); assert all denied; log results (SC-003)
-- [ ] T020 [US2] No-secrets proof (only if T006 key mode engaged): grep sandbox env and `/sandbox` for real key bytes; assert only `openshell:resolve:env:*` placeholders; log result (008 proof pattern, contract Z6)
+- [X] T016 [US2] Run the first `hi` attempt under the T009 deny-all policy; capture the failing classification (policy-deny vs provider-error vs auth) and the supervisor `OCSF NET:OPEN DENIED` excerpt into demo-log (FR-003 iteration 0)
+- [X] T017 [US2] Remediation loop on `charts/openshell-policy/policies/zen-demo.yaml`: for each observed denied destination add exactly one justified rule (host/port/`protocol: rest`/binaries + `# justification: <probe>` comment), commit, keep `tests/test-zen-policy.sh` green, `openshell policy set --wait`, retry — repeat until `hi` returns a genuine model response (≤2 min per query, SC-002)
+- [X] T018 [US2] Record the terminal iteration: full prompt/response transcript and provider-success classification in demo-log (contract Z3)
+- [X] T019 [US2] Deny proofs: attempt ≥5 distinct non-allowlisted hosts from inside the sandbox (e.g. example.com, github.com, pypi.org, api.openai.com, registry-1.docker.io); assert all denied; log results (SC-003)
+- [X] T020 [US2] No-secrets proof (only if T006 key mode engaged) — **N/A: keyless** (T004/T006): grep sandbox env and `/sandbox` for real key bytes; assert only `openshell:resolve:env:*` placeholders; log result (008 proof pattern, contract Z6)
 
 **Checkpoint**: SC-001 (≤15 min login→hi) measured and logged; US2 complete with the remediation trail in Git (FR-003, FR-004)
 

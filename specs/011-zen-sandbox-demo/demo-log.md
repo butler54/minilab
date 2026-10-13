@@ -34,22 +34,50 @@ Evidence record per contract Z5. Each run appends; nothing is retro-written.
 | R1 (T014 G2) | `--setup` | zen-1791866112 | 2s | **PASS** (alive +5.5min) | n/a | n/a | **PASS** (empty list asserted) | preflight+provider+inject PASS; total 6m22s (04:35:12→04:41:34Z) |
 | R2 (04:43Z) | batch | zen-1791869164 | 2s | died seconds after Ready (cause unclear; next runs healthy) | FAIL unknown (UnknownError err_14a50219) | **INVALID** (guards too weak at that commit) | vanished | gateway token died mid-batch; deny probes counted a deleted sandbox → exec-liveness guard added |
 | R3 (05:31Z, T016 iter0) | `--setup`+query | zen-1791869467 | 2s | n/a (SKIP_FENCE_WAIT) | **FAIL classified: provider/model-catalog** — `ProviderModelNotFoundError: ling-3.1-flash-free` absent from opencode 1.18.30 bundled registry; zero egress attempted | n/a (deleted post-probe) | manual delete | curl zen direct under deny-all: `Immediate connect fail for 198.18.0.4: Permission denied` (sinkhole; policy deny live and fast) |
+| R4 (05:32–05:43Z, T016–T019) | `--setup`+iter loop | zen-1791869553 | 2s | n/a | **PASS iter5** — `> build · ling-3.1-flash-free` → `ZEN_HI_OK` (single turn, transcript /tmp evidence below; wall 39s ≤ 2min ✓) | **PASS 5/5** (each `Immediate connect fail for 198.18.0.x: Permission denied`) | deleted; list empty | iterations 0–5 below; policy **effective** at close |
 | _pending_ | | | | | | | | |
+
+### T018 terminal transcript (05:43:0xZ, zen-1791869553, policy v3)
+
+```text
+$ openshell sandbox exec -n zen-1791869553 -- sh -c 'cd /sandbox && opencode run "Reply with exactly: ZEN_HI_OK"'
+> build · ling-3.1-flash-free
+ZEN_HI_OK
+```
+Query wall time 39s (SC-002 ≤2 min, PASS). Provider-success classification: model response text, no ERROR-level lines, rc=0.
+
+### T019 deny proofs (05:43:4xZ, same sandbox, exec-live guard passed)
+
+```text
+deny: example.com          (Immediate connect fail for 198.18.0.7: Permission denied)
+deny: github.com           (Immediate connect fail for 198.18.0.8: Permission denied)
+deny: pypi.org             (Immediate connect fail for 198.18.0.9: Permission denied)
+deny: api.openai.com       (Immediate connect fail for 198.18.0.10: Permission denied)
+deny: registry-1.docker.io (Immediate connect fail for 198.18.0.11: Permission denied)
+deny count: 5/5 (SC-003 100%, PASS)
+```
+
+T020: **N/A** — keyless mode (T004/T006 verdict); no credentials exist to leak.
 ## Policy Iterations (FR-003 trail)
 
 | Iter | Denied destination (observed) | Rule added | Commit | Result |
 |---|---|---|---|---|
-| _pending_ | | | | |
+| 0 | none — opencode failed locally (`ProviderModelNotFoundError`, 05:31Z) | n/a — model name fix (DR2), `opencode-zen.json` → ling-3.0-flash-fin-free | 4157cd1 | reclassified model-catalog |
+| 1 | opencode.ai:443 (chat stream, AI_APICallError Cannot connect, 05:35:09Z) | `allow_opencode_ai_443` | 8ee04dc | policy v2 |
+| 2 | models.opencode.ai:443 (models.dev transport error, 05:37:01Z) | `allow_models_opencode_ai_443` | f4a6ed6 | policy v3, model endpoits open |
+| 3 | none — relay now answers: `Model is unavailable` (05:39:58Z). Relay probe matrix (workstation, keyless): FreeTierError=servable {ling-3.1-flash-free, muse-spark-1.2-contributor-free, cat-jam-free}; unavailable {ling-3.0-flash-fin-free, glm-5, qwen3.6, minimax-m3}; deprecated {mimo-v2.5→mimo-v2.6} | n/a — DR2 model switch → `muse-spark-1.2-contributor-free` (in bundled registry AND relay-servable) | fefe7d9 | rejected client-side (see iter4) |
+| 4 | none — `muse-spark-1.2` rejected by client registry **but with a NEW list** (05:42:23Z: suggests muse-spark-1.3/cat-jam/exo) — discovery: with models.dev reachable, opencode refreshes its registry from the LIVE catalog (registry ≠ static bundle since iter2) | n/a — model → `ling-3.1-flash-free` (T005 pick, live on relay and now live in-client) | fefe7d9 | config switched |
+| 5 (terminal) | — | n/a | current commit | **PASS `ZEN_HI_OK`** (transcript below, 39s) |
 
 ## Timing Budget vs Actuals
 
 | Segment | Budget | Actual | Verdict |
 |---|---|---|---|
 | login → sandbox Ready (G2) | ≤8 min | ~2s (auth warm) / 6m22s incl. fence window | **PASS** |
-| remediation → first hi (G3) | ≤7 min | _pending_ | |
-| **G2+G3 (SC-001)** | **≤15 min** | _pending_ | |
+| remediation → first hi (G3) | ≤7 min | ~11.5 min (05:31:07→05:42:34Z) | **EXCEEDED — deviation**: DR2 lineup rotated twice mid-loop (model-catalog + relay-availability failures required two model switches + relay probe matrix); spec assumption "chosen model remains valid" was violated *by the provider* during the run. Pure egress remediation was 2 iterations (~5 min) |
+| **G2+G3 (SC-001)** | **≤15 min** | ~16.4 min setup-inclusive | **EXCEEDED — deviation** (same root cause as G3; excludes the earlier auth-wait interruptions) |
 | sandbox-Ready → server hi (G4) | ≤5 min | _pending_ | |
-| per-query latency (SC-002) | ≤2 min | _pending_ | |
+| per-query latency (SC-002) | ≤2 min | 39s (terminal query) | **PASS** |
 
 ## G5 Zero-Residual Proof
 
