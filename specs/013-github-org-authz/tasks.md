@@ -15,8 +15,8 @@ Organization: US1 (P1) = org gate live at the gateway · US2 (P2) = per-login fr
 
 ## Phase 1: Setup
 
-- [ ] T001 Create `specs/013-github-org-authz/demo-log.md` (evidence log; tables like 012: run table per Commit-phase A/B/smoke/C/D, timing table, prereq record, close record); commit to `main`
-- [ ] T002 G0 baseline: `make test-static` + `./pattern.sh make validate-schema`; capture `oc -n vp-gitops get applications` and `oc -n keycloak-system get pods` snapshots into demo-log
+- [X] T001 Create `specs/013-github-org-authz/demo-log.md` (evidence log; tables like 012: run table per Commit-phase A/B/smoke/C/D, timing table, prereq record, close record); commit to `main`
+- [X] T002 G0 baseline: `make test-static` + `./pattern.sh make validate-schema`; capture `oc -n vp-gitops get applications` and `oc -n keycloak-system get pods` snapshots into demo-log
 - [ ] T003 **[USER]** ✍ GitHub-side prereqs (quickstart G1): create teams **openshell-users** and **openshell-admins** in org `tempest-concorde`, add butler54 to both; create org-owned OAuth App **openshell-authz** (homepage `https://dex.tokyo-brunch.com`, callback `https://dex.tokyo-brunch.com/callback`); record Client ID (secret NEVER into git/logs)
 - [ ] T004 **[USER]** ✍ vault write (quickstart G2): record `secret/data/hub/openshell-dex` with `github-client-id` + `github-client-secret`; confirm ESO can sync (no new ClusterStore wiring); record completion (not values) in demo-log
 
