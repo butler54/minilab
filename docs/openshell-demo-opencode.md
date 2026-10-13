@@ -61,3 +61,59 @@ Sandbox deletion is idempotent (`openshell sandbox delete <name>`; exit-0 when a
 ### Tracked sandboxctl gaps blocking this path (as of 1.25.0)
 
 - butler54/sandboxctl#178: custom OpenAI-compatible LLM providers unsupported (matilda flow is the repro). The emulation in this repo stands in until its fix lands.
+
+## Zen free-tier demo (feature 011)
+
+Keyless OpenCode Zen `*-free` models inside a governed sandbox — no vendor
+key, no vault seed. Driver: `deploy/openshell/demo/zen/run-zen-demo.sh`
+(modes: default interactive | `--setup` | `--query` | `--proofs` | `--smoke`;
+`SKIP_FENCE_WAIT=1` skips the +5.5 min fence proof for re-runs). Server mode:
+`deploy/openshell/demo/zen/run-zen-server.sh` (serve :4096 in-sandbox +
+`openshell forward service` + local attach hint + teardown). Assets:
+`deploy/openshell/profiles/zen.yaml` (keyless provider profile),
+`deploy/openshell/demo/zen/opencode-zen.json` (model pin),
+`charts/openshell-policy/policies/zen-demo.yaml` (deny-all seed + justified
+rules). Evidence: `specs/011-zen-sandbox-demo/demo-log.md`.
+
+### Gotchas unique to the zen flow (all proven live 2026-10-13)
+
+- **Custom-image creates are BORN admission-rejected** (FI1): with `--from
+  <custom-image>` and no policy yet, gateway admission shows
+  `ConfigurationInvalid: Effective configuration could not be activated`.
+  Run `openshell policy set` within ~20 s of create (script does a
+  concurrent retry loop). Default-image sandboxes auto-attach the platform
+  default policy; custom ones do not.
+- **Free-tier requires a genuine opencode client** but NOT any key: the
+  relay answers direct curl with `403 FreeTierError`; the in-sandbox
+  client session is accepted (even 1.18.30 — the DR1 auth fear was moot).
+- **opencode's model registry is live-hydrated from models.dev**: under
+  deny-all the client uses its BUILT-IN catalog (models.dev unreachable);
+  once `models.opencode.ai:443` is allowed, the registry matches the live
+  catalog. A model can be: valid-name-but-not-in-bundle (deny-all era),
+  valid-everywhere, or relay-`Model is unavailable` — classify before
+  touching the policy (`run-zen-demo.sh --query` does this).
+- **Free-tier lineup rots within days**: on 2026-10-13 the relay listed but
+  refused `ling-3.0-flash-fin-free`, `glm-5-free`, `qwen3.6-plus-free`
+  (`Model is unavailable`) and deprecated `mimo-v2.5-free` same-day; the
+  models that DO serve can differ daily (relay probe matrix in demo-log).
+  If `hi` fails with `ProviderModelNotFoundError` or `Model is
+  unavailable`, re-probe `https://models.opencode.ai/api.json` and the
+  relay per-model with curl; fix is a `opencode-zen.json` model change,
+  not a policy change.
+- **Deny evidence is the supervisor sinkhole**, no supervisor pods in the
+  current runtime: denied connects return
+  `Immediate connect fail for 198.18.0.x: Permission denied` (per-host
+  synthetic IP); `oc -n openshell logs <os-supervisor-pod>` from the 008
+  era no longer applies.
+- **Gateway-native forward for server mode** (FR-007 confirmed):
+  `openshell forward service <sb> --target-port 4096 --local 4096` runs
+  FOREGROUND — background it; `oc port-forward` fallback unnecessary.
+  Client/version skew: opencode 2.x `run --server` against the 1.18.30
+  in-sandbox server dies with `UnsupportedContentType: text/html`; use the
+  version-matched 1.18 client (`npx opencode-ai@1.18.30 run --attach`)
+  or the plain HTTP API (`POST /session`, `POST /session/<id>/message`).
+- **exec syntax**: `openshell sandbox exec -n <name> -- <cmd>` (positional
+  name is mis-parsed as the command).
+- **Trust-but-verify deny proofs**: curl failures against a DEAD sandbox
+  also count as "denied" — proofs require an exec-liveness probe
+  (`exec true`) first; gateway records briefly outlive dead workloads.

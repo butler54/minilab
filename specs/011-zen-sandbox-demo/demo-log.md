@@ -35,6 +35,7 @@ Evidence record per contract Z5. Each run appends; nothing is retro-written.
 | R2 (04:43Z) | batch | zen-1791869164 | 2s | died seconds after Ready (cause unclear; next runs healthy) | FAIL unknown (UnknownError err_14a50219) | **INVALID** (guards too weak at that commit) | vanished | gateway token died mid-batch; deny probes counted a deleted sandbox → exec-liveness guard added |
 | R3 (05:31Z, T016 iter0) | `--setup`+query | zen-1791869467 | 2s | n/a (SKIP_FENCE_WAIT) | **FAIL classified: provider/model-catalog** — `ProviderModelNotFoundError: ling-3.1-flash-free` absent from opencode 1.18.30 bundled registry; zero egress attempted | n/a (deleted post-probe) | manual delete | curl zen direct under deny-all: `Immediate connect fail for 198.18.0.4: Permission denied` (sinkhole; policy deny live and fast) |
 | R4 (05:32–05:43Z, T016–T019) | `--setup`+iter loop | zen-1791869553 | 2s | n/a | **PASS iter5** — `> build · ling-3.1-flash-free` → `ZEN_HI_OK` (single turn, transcript /tmp evidence below; wall 39s ≤ 2min ✓) | **PASS 5/5** (each `Immediate connect fail for 198.18.0.x: Permission denied`) | deleted; list empty | iterations 0–5 below; policy **effective** at close |
+| R5 (05:45–05:50Z, T021–T024) | server mode | zen-1791870352 | 2s | n/a | **PASS** via local→forward→server (`ZEN_HI_OK`, ling-3.1-flash-free) | n/a (lifecycle reused) | forward stopped+port closed; sandbox deleted; list empty; zero stray procs | FR-007 gateway path confirmed; version-skew findings recorded |
 | _pending_ | | | | | | | | |
 
 ### T018 terminal transcript (05:43:0xZ, zen-1791869553, policy v3)
@@ -95,7 +96,7 @@ ASSISTANT: ZEN_HI_OK      (model ling-3.1-flash-free; local transcript above)
 
 ## G5 Zero-Residual Proof
 
-_pending_
+Post-US3 (05:49:52Z): sandbox `zen-1791870352` deleted; `openshell sandbox list -g k8s` → "No sandboxes found"; `openshell forward list` → "No active forwards"; `pgrep -fl "forward service"` → none; `curl http://127.0.0.1:4096/config` → connection refused. Earlier runs R1–R4 each ended with an empty-list assertion. No demo pods (`oc get pods -n openshell` shows only `openshell-0` + completed probes), no policy residue beyond Git, no secrets anywhere (keyless design).
 
 ## G6 Merge Record
 
