@@ -45,7 +45,7 @@ Sandbox deletion is idempotent (`openshell sandbox delete <name>`; exit-0 when a
 
 ## Troubleshooting
 
-- **`Token is not active`** (refresh-token race): re-login. Token lifespan is realm-level `3600s` since 2026-09-27 (values-keycloak.yaml).
+- **`Token is not active`** (refresh-token race): re-login. Token lifespan is realm-level `3600s` since 2026-09-27 (values-keycloak.yaml). Session death ~50 min observed 2026-10-13; root-cause + config knobs tracked in minilab#9.
 - **slow API/API-lag or watcher errors on gateway**: gateway pod restart (`oc -n openshift get pod -o name | grep kube`, then `oc -n openshell delete pod openshell-0`) — API server CPU recovers (watch-loop pattern, restart clears it).
 - **`sandbox not found` at policy set**: create RPC slow at first image pull; run-demo retries internally.
 - **Image pull latency**: first `ghcr.io/butler54/openshell-sandbox:latest` pull is multi-GB heavyweight (gcloud/Go/torch) — expect minutes on cold node; cached after.
@@ -77,12 +77,21 @@ rules). Evidence: `specs/011-zen-sandbox-demo/demo-log.md`.
 
 ### Gotchas unique to the zen flow (all proven live 2026-10-13)
 
-- **Custom-image creates are BORN admission-rejected** (FI1): with `--from
+- **Policy must exist AT create for custom images** (FI1): with `--from
   <custom-image>` and no policy yet, gateway admission shows
-  `ConfigurationInvalid: Effective configuration could not be activated`.
-  Run `openshell policy set` within ~20 s of create (script does a
-  concurrent retry loop). Default-image sandboxes auto-attach the platform
-  default policy; custom ones do not.
+  `ConfigurationInvalid: Effective configuration could not be activated`
+  and a hard-coded **300s provisioning repair window** (upstream-design,
+  `REPAIR_WINDOW_MS = 300_000`). The pinned 0.1.1 CLI **does** support
+  `openshell sandbox create --policy <file>` and `OPENSHELL_SANDBOX_POLICY`
+  — prefer those over racing `policy set` post-create (the scripts
+  still do the create+set dance; simplification + ≥v0.1.3 upgrade:
+  minilab#8). Default-image sandboxes auto-attach the platform default
+  policy; custom ones do not.
+- **Gateway CLI sessions die ~50 min after login** with
+  `invalid_grant: Token is not active` (008 + 011, multiple hits);
+  re-login via `OPENSHELL_NO_BROWSER=1 openshell gateway login k8s`.
+  Config/root-cause investigation: minilab#9. Plan live work in
+  post-login batches; the scripts' preflight fails fast with the hint.
 - **Free-tier requires a genuine opencode client** but NOT any key: the
   relay answers direct curl with `403 FreeTierError`; the in-sandbox
   client session is accepted (even 1.18.30 — the DR1 auth fear was moot).

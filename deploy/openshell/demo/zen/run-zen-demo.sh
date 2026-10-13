@@ -59,6 +59,10 @@ create_one() {
   # FI1 (2026-10-13): custom --from sandboxes are born admission-rejected until
   # a policy lands; the policy-set retry loop below must run CONCURRENTLY with
   # the create RPC (which can hang ~300s during gateway<->apiserver flaps).
+  # NOTE (minilab#8): openshell 0.1.1 actually supports `create --policy` /
+  # `OPENSHELL_SANDBOX_POLICY` — once live-verified, replace this concurrent
+  # create+set dance with a single policy-at-create invocation. The post-create
+  # `policy set` loop remains needed for the iterative US2 remediation flow.
   CREATE_EPOCH=$(date +%s)
   openshell sandbox create --name "$SANDBOX" --from "$IMAGE" --detach >/dev/null 2>&1 &
   create_pid=$!
