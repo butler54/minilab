@@ -59,8 +59,8 @@
 
 **Independent Test**: `openshell --version` prints 0.1.3; `make check-openshell-cli` PASS (SC-003)
 
-- [ ] T011 [US2] `brew unlink openshell` (recorded, reversible via `brew link`; reason: brew formula lags at 0.1.1 and `/opt/homebrew/bin` shadows `~/.local/bin` per research.md R3) — record in demo-log
-- [ ] T012 [US2] Run `make install-openshell-cli` (Makefile upstream-installer fallback: `OPENSHELL_VERSION=v0.1.3` into `~/.local/bin`; auto-verifies via `tests/check-openshell-cli.sh`); assert `openshell --version` = 0.1.3 and `make check-openshell-cli` green; record SC-003 in demo-log (FAIL-safe: if the installer payload mismatches the expectation, restore `brew link openshell`, record hold, escalate issue #8)
+- [X] T011 [US2] `brew unlink openshell` (recorded, reversible via `brew link`; reason: brew formula lags at 0.1.1 and `/opt/homebrew/bin` shadows `~/.local/bin` per research.md R3) — record in demo-log
+- [X] T012 [US2] Run `make install-openshell-cli` (Makefile upstream-installer fallback: `OPENSHELL_VERSION=v0.1.3` into `~/.local/bin`; auto-verifies via `tests/check-openshell-cli.sh`); assert `openshell --version` = 0.1.3 and `make check-openshell-cli` green; record SC-003 in demo-log (FAIL-safe: if the installer payload mismatches the expectation, restore `brew link openshell`, record hold, escalate issue #8)
 
 ---
 

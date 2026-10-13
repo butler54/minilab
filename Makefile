@@ -56,8 +56,20 @@ install-openshell-cli: ## Installs the openshell CLI at the chart-pinned version
 	if command -v brew >/dev/null 2>&1 && [ "$$(brew info openshell --json=v2 2>/dev/null | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d["casks"][0]["versions"]["stable"] if d.get("casks") else d["formulae"][0]["versions"]["stable"])' 2>/dev/null)" = "$$ver" ]; then \
 	  brew install openshell; \
 	else \
-	  echo "brew formula does not carry $$ver; using upstream installer into ~/.local/bin"; \
-	  OPENSHELL_VERSION=v$$ver OPENSHELL_INSTALL_DIR="$$HOME/.local/bin" curl -fsSL https://github.com/NVIDIA/OpenShell/releases/download/v$$ver/install.sh | sh; \
+	  echo "brew formula does not carry $$ver; fetching upstream release tarball into ~/.local/bin"; \
+	  case "$$(uname -sm)" in \
+	    "Darwin arm64") asset="openshell-aarch64-apple-darwin.tar.gz" ;; \
+	    "Linux x86_64") asset="openshell-x86_64-unknown-linux-musl.tar.gz" ;; \
+	    "Linux aarch64") asset="openshell-aarch64-unknown-linux-musl.tar.gz" ;; \
+	    *) echo "no upstream openshell CLI asset for $$(uname -sm) — install manually"; exit 1 ;; \
+	  esac; \
+	  w=$$(mktemp -d); trap 'rm -rf "$$w"' EXIT; \
+	  base="https://github.com/NVIDIA/OpenShell/releases/download/v$$ver"; \
+	  curl -fsSL -o "$$w/$$asset" "$$base/$$asset"; \
+	  curl -fsSL -o "$$w/cksum.txt" "$$base/openshell-checksums-sha256.txt"; \
+	  (cd "$$w" && grep "  $$asset$$" cksum.txt | shasum -a 256 -c -); \
+	  mkdir -p "$$HOME/.local/bin"; \
+	  tar -xzf "$$w/$$asset" -C "$$HOME/.local/bin" openshell; \
 	fi; \
 	tests/check-openshell-cli.sh
 

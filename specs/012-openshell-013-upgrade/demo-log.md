@@ -32,6 +32,13 @@ Delivery: direct commits on `main` (no feature branch, per Clarifications 2026-1
 
 `655f432` on `main` (pushed) — 5-value atomic pin set 0.1.1→0.1.3. Gates: `make test-static` PASS, `./pattern.sh make validate-schema` "All assertions passed".
 
+## CLI Parity (US2, T011/T012)
+
+- `brew unlink openshell` (reversible: `brew link openshell`): brew formula lags at 0.1.1 and `/opt/homebrew/bin` would shadow `~/.local/bin`.
+- **Findings (R3 corrected live)**: the Makefile's upstream fallback URLed a nonexistent `install.sh` release asset — latent defect, never exercised while brew carried the pin. Fixed in-repo to download the arch-appropriate release tarball, verify `openshell-checksums-sha256.txt` (`2eda3676…` for `openshell-aarch64-apple-darwin.tar.gz`, OK), extract `openshell` into `~/.local/bin`.
+- `openshell --version` = `openshell 0.1.3`; `make check-openshell-cli` PASS (SC-003 ✅). Note: `~/.local/bin` must be on PATH (brew now unlinked).
+- Gateway auth note: token expired pre-US3 (`invalid_grant: Token is not active`, minilab#9 symptom); fresh `OPENSHELL_NO_BROWSER=1 openshell gateway login k8s` required before T013. `openshell status` evidence for T009 collected post-login.
+
 ## Forced-Sync Record (constitution II — imperative step pre-recorded in quickstart G2)
 
 - Trigger: 2026-10-13T07:41:31Z
