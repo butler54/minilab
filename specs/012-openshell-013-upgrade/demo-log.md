@@ -23,7 +23,10 @@ Delivery: direct commits on `main` (no feature branch, per Clarifications 2026-1
 
 ## Baseline (pre-change, T002/T003)
 
-_pending_
+- 2026-10-13 ~16:10 JST. `oc whoami` = kube:admin. openshell apps all `Synced/Healthy` (openshell, -demo, -keycloak-config, -platform, -policy).
+- Gateway pod image: `ghcr.io/nvidia/openshell/gateway:0.1.1`. CLI: `openshell 0.1.1` (brew). helm v3.22.0.
+- Gateways: `k8s` (https://openshell.tokyo-brunch.com, oidc) active; `openshell` local stale entry present (cosmetic).
+- `make test-static` PASS (all suites incl. zen policy + pattern config).
 
 ## Version-Bump Commit
 
