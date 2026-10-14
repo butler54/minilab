@@ -179,11 +179,36 @@ clusterGroup:
       - '/overrides/values-keycloak.yaml'
       annotations:
         argocd.argoproj.io/sync-wave: "-2"
+    dex:
+      name: dex
+      namespace: openshell
+      project: default
+      # External chart (specs/013 contract): org-gated OIDC issuer for the
+      # openshell gateway (GitHub org tempest-concorde). Inert at Commit A —
+      # nothing references dex until the gateway cutover.
+      # src: https://github.com/dexidp/helm-charts
+      repoURL: https://charts.dexidp.io
+      chart: dex
+      chartVersion: "0.26.0"
+      extraValueFiles:
+      - '/overrides/values-dex.yaml'
+      annotations:
+        argocd.argoproj.io/sync-wave: "-2"
     openshell-keycloak-config:
       name: openshell-keycloak-config
       namespace: keycloak-system
       project: default
       path: charts/openshell-keycloak-config
+      annotations:
+        argocd.argoproj.io/sync-wave: "-3"
+    dex-config:
+      name: dex-config
+      namespace: openshell
+      project: default
+      # Feature 013 (Path B): dex platform config — ACME Certificate +
+      # passthrough Route + GitHub OAuth ExternalSecret (openshell-keycloak-config
+      # house pattern; the upstream dex chart renders none of these).
+      path: charts/dex-config
       annotations:
         argocd.argoproj.io/sync-wave: "-3"
     openshell:

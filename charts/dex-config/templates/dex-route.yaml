@@ -1,0 +1,23 @@
+{{- if .Values.global.openshell.enabled }}
+# Passthrough Route: the dex pod terminates TLS with the ACME cert in
+# {{ .Values.cert.secretName }} (see web.tlsCert/tlsKey in overrides/values-dex.yaml).
+# Backend is the dex/dex chart Service `dex` (chart fullname for release
+# `dex`) on its named https port (container 5554, https.enabled: true).
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: dex
+  namespace: openshell
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  host: {{ .Values.global.openshell.dex.hostname | required "openshell.dex.hostname must be set" }}
+  to:
+    kind: Service
+    name: dex
+  port:
+    targetPort: https
+  tls:
+    termination: passthrough
+  wildcardPolicy: None
+{{- end }}

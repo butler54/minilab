@@ -21,7 +21,7 @@ for entry in seed.get("secrets", []):
     prefixes = entry.get("vaultPrefixes", [])
     if prefixes and name.startswith("openshell"):
         expected_key[name] = prefixes[0]
-assert len(expected_key) == 6, f"expected 6 openshell vault entries, got {len(expected_key)}"
+assert len(expected_key) == 7, f"expected 7 openshell vault entries, got {len(expected_key)}"
 
 # (ExternalSecret template -> its openshell-<name> secret)
 expected = {
@@ -51,6 +51,15 @@ expected = {
         "namespace": "openshell",
         "chart": "openshell-demo",
         "extra_sets": ["global.openshell.demo.enabled=true"],
+    },
+    "dex-config/templates/dex-github-oauth-es.yaml": {
+        "vault_name": "openshell-dex",
+        "property": "github-client-id",
+        "secretKey": "github-client-id",
+        "target": "dex-github-oauth",
+        "namespace": "openshell",
+        "chart": "dex-config",
+        "extra_sets": [],
     },
 }
 
@@ -123,6 +132,23 @@ for es in (kcv.get("extraSecrets") or []):
     secret_names = {d.get("secretKey") for d in es.get("data", [])}
     if "github_client_id" not in secret_names or "github_client_secret" not in secret_names:
         fail.append("keycloak.github oauth ExternalSecret must sync client-id AND client-secret")
+
+# dex (013): the chart must sync BOTH github keys (id + secret) — the dex
+# deployment env wiring fails closed if either is missing.
+dex_docs = render("dex-config")
+dex_keys = set()
+for d in dex_docs:
+    if not (d and d.get("kind") == "ExternalSecret"):
+        continue
+    if d.get("spec", {}).get("target", {}).get("name") != "dex-github-oauth":
+        continue
+    for entry in d.get("spec", {}).get("data", []):
+        rr = entry.get("remoteRef", {})
+        if rr.get("key") == f"secret/data/{expected_key.get('openshell-dex')}/openshell-dex":
+            dex_keys.add(entry.get("secretKey"))
+if not {"github-client-id", "github-client-secret"} <= dex_keys:
+    fail.append(f"dex ExternalSecret must sync github-client-id AND github-client-secret "
+                f"from secret/data/hub/openshell-dex, got {sorted(dex_keys)}")
 
 # No secret material in Git: block stringData and obvious literals outside the
 # seed template (values-secret.yaml.template, which documents vault inputs).

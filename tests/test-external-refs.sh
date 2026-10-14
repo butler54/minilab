@@ -54,6 +54,8 @@ expected = {
     "cert-manager": {"chart": "ocp-certmanager", "chartVersion": "0.2.0"},
     "ztwim": {"chart": "ztwim", "chartVersion": "0.1.1"},
     "rh-keycloak": {"chart": "rhbk", "chartVersion": "0.1.0"},
+    # Feature 013 (Path B): org-gated OIDC issuer, exact pin (C6 coverage).
+    "dex": {"chart": "dex", "repoURL": "https://charts.dexidp.io", "chartVersion": "0.26.0"},
 }
 for key, want in expected.items():
     app = apps.get(key)

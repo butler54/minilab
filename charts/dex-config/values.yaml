@@ -1,0 +1,19 @@
+global:
+  openshell:
+    enabled: false
+    dex:
+      hostname: dex.tokyo-brunch.com
+
+cert:
+  secretName: dex-external-tls
+
+secretStore:
+  name: vault-backend
+  kind: ClusterSecretStore
+
+githubOauth:
+  # Vault path for the GitHub OAuth App credentials (aligns to the `hub`
+  # vaultPrefix of the values-secret template — see
+  # specs/006-openshell-gitops-install/contracts/secrets-contract.md).
+  remoteKey: secret/data/hub/openshell-dex
+  refreshInterval: 5m0s

@@ -3,8 +3,8 @@ set -euo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # Asserts the sync-wave ordering from specs/006-openshell-gitops-install/plan.md
-# plus the rh-keycloak chain added for OIDC:
-#   cert-manager-config -7 < cert-manager -6 < ztwim -4 < openshell-platform -3 < openshell-keycloak-config -3 < rh-keycloak -2 < openshell 0 < openshell-policy +1 < openshell-demo +2
+# plus the rh-keycloak chain added for OIDC and the dex chain (013, Path B):
+#   cert-manager-config -7 < cert-manager -6 < ztwim -4 < openshell-platform -3 < dex-config -3 < openshell-keycloak-config -3 < rh-keycloak -2 < dex -2 < openshell 0 < openshell-policy +1 < openshell-demo +2
 # agent-sandbox was removed from the wave chain when it switched from the
 # upstream helm application to the downstream OLM subscription (OLM owns the
 # CRD lifecycle; Subscriptions are applied by the clustergroup before app
@@ -28,8 +28,10 @@ expected_order = [
     "cert-manager",
     "ztwim",
     "openshell-platform",
+    "dex-config",
     "openshell-keycloak-config",
     "rh-keycloak",
+    "dex",
     "openshell",
     "openshell-policy",
     "openshell-demo",
@@ -46,6 +48,8 @@ required_pairs = [
     ("openshell-keycloak-config", "rh-keycloak"),  # IdP TLS cert before Keycloak
     ("rh-keycloak", "openshell"),         # IdP must exist before OIDC gateway
     ("cert-manager", "openshell"),        # external cert issuer before gateway
+    ("dex-config", "dex"),                # IdP TLS cert + OAuth Secret before dex (013)
+    ("dex", "openshell"),                 # issuer before the Commit B gateway cutover (013)
 ]
 for a, b in required_pairs:
     if a in waves and b in waves and not waves[a] < waves[b]:

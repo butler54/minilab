@@ -1,0 +1,27 @@
+{{- if .Values.global.openshell.enabled }}
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: dex-github-oauth-es
+  namespace: openshell
+  annotations:
+    # Secret must exist before the dex deployment's env refs resolve
+    # (openshell-keycloak-config wave pattern).
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  refreshInterval: {{ .Values.githubOauth.refreshInterval }}
+  secretStoreRef:
+    name: {{ .Values.secretStore.name }}
+    kind: {{ .Values.secretStore.kind }}
+  target:
+    name: dex-github-oauth
+  data:
+  - secretKey: github-client-id
+    remoteRef:
+      key: {{ .Values.githubOauth.remoteKey }}
+      property: github-client-id
+  - secretKey: github-client-secret
+    remoteRef:
+      key: {{ .Values.githubOauth.remoteKey }}
+      property: github-client-secret
+{{- end }}

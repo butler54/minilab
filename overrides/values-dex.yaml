@@ -1,0 +1,91 @@
+# Dex org-gated OIDC issuer (feature 013, Path B) — upstream chart ROOT values.
+# Consumed ONLY by the `dex` application (extraValueFiles); keys here are the
+# dex/dex chart's own value paths, not a wrapper alias.
+# Chart: https://charts.dexidp.io (repoURL + pin live in values-prod.yaml).
+# Inert at Commit A: nothing references dex until the Commit B cutover flips
+# gateway server.oidc.issuer (overrides/values-openshell-gateway.yaml).
+
+https:
+  # Pod serves the ACME cert itself (passthrough Route + Certificate in
+  # charts/dex-config — keycloak house pattern) so the issuer endpoint is
+  # publicly trusted; gateway and CLI need no private-CA plumbing.
+  enabled: true
+
+config:
+  # Keep == https://<global.openshell.dex.hostname> (drift-asserted).
+  issuer: https://dex.tokyo-brunch.com
+  storage:
+    # CRS-backed (dex.coreos.com CRs; chart RBAC) — no PVC/configmaps.
+    type: kubernetes
+  web:
+    # TLS assets mounted at /etc/dex/tls (volumes below); secret created by
+    # the Certificate in charts/dex-config (secretName dex-external-tls).
+    tlsCert: /etc/dex/tls/tls.crt
+    tlsKey: /etc/dex/tls/tls.key
+  connectors:
+  - type: github
+    id: github
+    name: GitHub
+    config:
+      # Env-substituted at dex startup (upstream docs: credentials can be
+      # pulled from the environment); values come from the ESO-synced
+      # dex-github-oauth Secret (vault secret/data/hub/openshell-dex).
+      clientID: $GITHUB_CLIENT_ID
+      clientSecret: $GITHUB_CLIENT_SECRET
+      # Keep == https://<global.openshell.dex.hostname>/callback and the
+      # openshell-authz OAuth App callback (drift-asserted).
+      redirectURI: https://dex.tokyo-brunch.com/callback
+      # Org+team gate (FR-001..FR-004): dex denies non-members before any
+      # token issuance and re-queries GitHub at every login (freshness).
+      # Groups claim carries "tempest-concorde:<team-slug>"
+      # (teamNameField: slug) → gateway rolesClaim mapping at Commit B.
+      orgs:
+      - name: tempest-concorde
+        teams:
+        - openshell-users
+        - openshell-admins
+      teamNameField: slug
+  staticClients:
+  - id: openshell-cli
+    name: OpenShell CLI
+    # Public client (no secret); the CLI browser flow goes through the
+    # gateway edge proxy. Redirect list is the V1 checkpoint: exact-match
+    # URIs are learned at the Commit B cutover login — placeholder until
+    # then (dex staticClients cannot express wildcard localhost redirects).
+    public: true
+    redirectURIs:
+    - https://openshell.tokyo-brunch.com/callback
+  - id: dex-substrate-test
+    name: Dex smoke TEST client (laptop browser flow)
+    # Throwaway client for the C1 dex-direct smoke (quickstart G4) — the
+    # gateway is untouched at that stage; remove at Commit D hygiene if
+    # still present.
+    public: true
+    redirectURIs:
+    - http://127.0.0.1:5555/callback
+  # No local passwords: org-gated GitHub is the sole login path (FR-002).
+  enablePasswordDB: false
+
+envVars:
+# GitHub OAuth App `openshell-authz` credentials — ESO-synced Secret from
+# vault secret/data/hub/openshell-dex (ExternalSecret in charts/dex-config).
+- name: GITHUB_CLIENT_ID
+  valueFrom:
+    secretKeyRef:
+      name: dex-github-oauth
+      key: github-client-id
+- name: GITHUB_CLIENT_SECRET
+  valueFrom:
+    secretKeyRef:
+      name: dex-github-oauth
+      key: github-client-secret
+
+volumes:
+- name: external-tls
+  secret:
+    # Created by Certificate dex-external in charts/dex-config.
+    secretName: dex-external-tls
+volumeMounts:
+- name: external-tls
+  mountPath: /etc/dex/tls
+  readOnly: true

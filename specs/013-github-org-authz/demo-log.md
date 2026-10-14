@@ -21,9 +21,10 @@ Static gates re-run before each push. All imperative actions recorded (constitut
 
 | Item | Action | Recorded value (non-secret) | Status |
 |---|---|---|---|
-| GitHub teams | Create `openshell-users` + `openshell-admins` in org `tempest-concorde`; add butler54 to both | team slugs | pending |
-| GitHub OAuth App | Create org-owned `openshell-authz`, callback `https://dex.tokyo-brunch.com/callback` | Client ID (secret never logged) | pending |
-| Vault | `secret/data/hub/openshell-dex` ← `github-client-id`, `github-client-secret` | write confirmation | pending |
+| GitHub teams | Create `openshell-users` + `openshell-admins` in org `tempest-concorde`; add butler54 to both | team slugs | done 2026-10-14 (operator confirm) |
+| GitHub OAuth App | Create org-owned `openshell-authz`, callback `https://dex.tokyo-brunch.com/callback` | Client ID (secret never logged) | done 2026-10-14 — Client ID collected by operator; expiring user tokens ON, device flow OFF |
+| Vault | `secret/data/hub/openshell-dex` ← `github-client-id`, `github-client-secret` | write confirmation | done 2026-10-14 — seeded via `~/values-secret-minilab.yaml` + `./pattern.sh make install` (operator confirm; ESO sync proof with T005) |
+| Cloudflare DNS | `dex` A-record → cluster ingress `192.168.5.162` (DNS-only) | record added | done 2026-10-14 (operator confirm; same target as keycloak/openshell records) |
 
 ## Run table
 
@@ -59,4 +60,12 @@ Static gates re-run before each push. All imperative actions recorded (constitut
 
 ## Field notes
 
+- 2026-10-14 (T003): OAuth App configured with **expiring user authorization tokens ON**
+  (8h upstream GitHub→dex token + 6m refresh token; dex 2.46 connector is refresh-capable —
+  gateway token lifetimes unaffected, V4 observes those separately) and **device flow OFF**
+  (dex does not implement RFC 8628; accepted trade per spec clarification 2026-10-13).
+- 2026-10-14 (T004 mechanism): vault seeding switched from manual `vault kv put` to the house
+  values-secret flow — `openshell-dex` block added to `values-secret.yaml.template` (+7th-entry
+  pin bump in `tests/test-openshell-secrets.sh`) and to operator-local `~/values-secret-minilab.yaml`
+  (values filled by operator, file never in git). Seeding runs via `./pattern.sh make install`.
 - (appended per run)

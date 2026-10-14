@@ -1,0 +1,20 @@
+{{- if .Values.global.openshell.enabled }}
+# Publicly-trusted Let's Encrypt cert for the dex issuer endpoint (feature 013).
+# Dex serves this cert directly (passthrough Route), so the gateway and CLI
+# trust OIDC discovery/JWKS with system roots — no private-CA plumbing.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: dex-external
+  namespace: openshell
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  secretName: {{ .Values.cert.secretName }}
+  dnsNames:
+  - {{ .Values.global.openshell.dex.hostname | required "openshell.dex.hostname must be set" }}
+  issuerRef:
+    # Single VP ClusterIssuer (research 007 D5) — must match overrides/values-certmanager.yaml.
+    name: acme
+    kind: ClusterIssuer
+{{- end }}
