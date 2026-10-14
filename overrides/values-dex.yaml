@@ -17,6 +17,8 @@ config:
   storage:
     # CRS-backed (dex.coreos.com CRs; chart RBAC) — no PVC/configmaps.
     type: kubernetes
+    config:
+      inCluster: true
   web:
     # TLS assets mounted at /etc/dex/tls (volumes below); secret created by
     # the Certificate in charts/dex-config (secretName dex-external-tls).

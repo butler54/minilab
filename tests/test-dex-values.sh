@@ -42,6 +42,8 @@ chk(teams == ["openshell-users", "openshell-admins"],
     f"github connector teams must be [openshell-users, openshell-admins], got {teams!r}")
 chk(conn.get("teamNameField") == "slug", "teamNameField must be slug (groups claim = org:team-slug)")
 chk(cfg.get("storage", {}).get("type") == "kubernetes", "dex storage must be kubernetes (CRS-backed)")
+chk((cfg.get("storage", {}).get("config") or {}).get("inCluster") is True,
+    "dex storage.config.inCluster must be true (pod crashloops without it: 'must specify either inCluster or kubeConfigFile')")
 chk(cfg.get("enablePasswordDB") is False, "enablePasswordDB must be false (org-gated GitHub is the sole login path, FR-002)")
 chk(dv.get("https", {}).get("enabled") is True, "https.enabled must be true (pod serves the ACME cert, passthrough Route)")
 
