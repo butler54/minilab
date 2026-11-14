@@ -9,11 +9,11 @@ wave() { yq -r ".clusterGroup.applications.$1.annotations.\"argocd.argoproj.io/s
   printf 'LVMS OperatorGroup must be OwnNamespace (openshift-storage), not AllNamespaces\n' >&2; exit 1;
 }
 [[ $(yq -r '.clusterGroup.subscriptions.lvms-operator.installPlanApproval' "$prod") == Automatic ]]
-[[ $(yq -r '.clusterGroup.subscriptions.lvms-operator.channel' "$prod") == stable-4.22 ]]
-[[ $(yq -r '.clusterGroup.subscriptions.lvms-operator.csv' "$prod") == lvms-operator.v4.22.0 ]]
+[[ $(yq -r '.clusterGroup.subscriptions.lvms-operator.channel' "$prod") == stable-5.0 ]]
+[[ $(yq -r '.clusterGroup.subscriptions.lvms-operator.csv' "$prod") == lvms-operator.v5.0.0 ]]
 [[ $(yq -r '.clusterGroup.subscriptions.lvms-operator.channel' "$prod") == $(yq -r '.global.lvmsCompatibility.channel' "$root/values-global.yaml") ]]
 [[ $(yq -r '.clusterGroup.subscriptions.lvms-operator.csv' "$prod") == $(yq -r '.global.lvmsCompatibility.startingCSV' "$root/values-global.yaml") ]]
 config=$(helm template lvms-config "$root/charts/lvms-config" -f "$root/values-global.yaml")
-[[ $(yq -r '.global.lvmsCompatibility.ocpRelease' "$root/values-global.yaml") == 4.22 ]]
-[[ $config == *'kind: LVMCluster'* && $config == *'name: loopback'* && $config == *'argocd.argoproj.io/hook: Sync'* && $config == *'sync-wave: "-2"'* && $config == *'sync-wave: "-1"'* && $config == *'sync-wave: "0"'* && $config == *'lvms-operator.v4.22.0'* && $config == *'ocp-v4.0-art-dev@sha256:84b0aa6c19cdedba485212a5b599bdb9fd6975d5c808aaf4f115500b782ee600'* && $config == *'volumeBindingMode: WaitForFirstConsumer'* && $config == *'overprovisionRatio: 1'* && $config == *'node-role.kubernetes.io/control-plane'* ]]
+[[ $(yq -r '.global.lvmsCompatibility.ocpRelease' "$root/values-global.yaml") == 5.0 ]]
+[[ $config == *'kind: LVMCluster'* && $config == *'name: loopback'* && $config == *'argocd.argoproj.io/hook: Sync'* && $config == *'sync-wave: "-2"'* && $config == *'sync-wave: "-1"'* && $config == *'sync-wave: "0"'* && $config == *'lvms-operator.v5.0.0'* && $config == *'ocp-v5.0-art-dev@sha256:74e57568b3a1bcf36a85f5cef0861bc979fb86fd457710d31edc8e61d86ee02f'* && $config == *'volumeBindingMode: WaitForFirstConsumer'* && $config == *'overprovisionRatio: 1'* && $config == *'node-role.kubernetes.io/control-plane'* ]]
 printf 'LVMS rendering and sync ordering passed\n'

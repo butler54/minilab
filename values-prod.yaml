@@ -47,8 +47,8 @@ clusterGroup:
       namespace: openshift-storage
       # The clustergroup chart does not template Subscription fields; these
       # values are asserted against global.lvmsCompatibility by local tests.
-      channel: stable-4.22
-      csv: lvms-operator.v4.22.0
+      channel: stable-5.0
+      csv: lvms-operator.v5.0.0
       installPlanApproval: Automatic
     eso:
       name: openshift-external-secrets-operator
@@ -58,9 +58,10 @@ clusterGroup:
       name: cluster-observability-operator
       namespace: openshift-cluster-observability-operator
       channel: stable
-      # Feature 010 (stabilization): manual approval prevents operator-upgrade
-      # CSV churn waves mid-stabilization; revisit after steady state.
-      installPlanApproval: Manual
+      # Feature 014 (OCP 5.0.1 alignment): the 010-era Manual approval blocked
+      # the platform-aligned CSV upgrade (v1.5.4+ pending unapproved); switched
+      # to Automatic per spec FR-011 / Clarifications 2026-11-14.
+      installPlanApproval: Automatic
     cert-manager-operator:
       name: openshift-cert-manager-operator
       namespace: cert-manager-operator
