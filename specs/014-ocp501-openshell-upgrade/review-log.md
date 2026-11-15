@@ -153,6 +153,36 @@ patterns-operator: fast (v0.0.82)
 
 **Conclusion**: Red Hat has not published the RHBK operator to the OCP 5.0 operator index (v5.0). No channel change can fix the subscription resolution; migrating to `rhsso-operator` would be a product downgrade and an unverified substitution (violates the review's own rules). **HOLD** recorded in the rhbk review record. The `ResolutionFailed` condition is expected to persist until upstream publication and is documented as upstream-gap evidence, not local drift. Follow-up trigger: re-check `oc get packagemanifest rhbk-operator` after Red Hat publishes RHBK for 5.0; then update `clusterGroup.subscriptions.rhbk.channel` in a follow-up feature.
 
+## US1 Convergence Evidence (T010–T012)
+
+**Static gates (T010)**: `make test-static` — all shell tests passed (incl. updated lvms assertions); `./pattern.sh make validate-schema` — all assertions passed. Recorded 2026-11-14.
+
+**Commit (T011)**: `89e8865` "feat(014): US1 — operator alignment to OCP 5.0.1..." pushed to `main` 2026-11-14; follow-up chart fixes `d14b9f2`, `bcaf87d`, `7f3fd8f`, `26e68f9` pushed 2026-11-15 (see remediation below).
+
+**Convergence (T012)**, verified 2026-11-15:
+
+| Check | Result |
+|---|---|
+| lvms subscription | `channel=stable-5.0`, `state=AtLatestKnown`, `installed=lvms-operator.v5.0.0` |
+| lvms CSV | `lvms-operator.v5.0.0` **Succeeded** (replaced v4.22.0); operator pod Running |
+| LVMCluster | `minilab-lvmcluster` **Ready** (condition met) |
+| StorageClass | `lvms-loopback` (default): `WaitForFirstConsumer` / `Retain` — unchanged |
+| cluster-observability | `state=AtLatestKnown`, `installed=v1.5.5` **Succeeded** (replaced v1.5.3 via Automatic installplan `install-w9dnc`) |
+| eso / cert-manager / ztwim / agent-sandbox / patterns-operator | all `AtLatestKnown`, CSVs Succeeded (unchanged, as decided) |
+| rhbk | documented HOLD — subscription `ResolutionFailed` (upstream catalog gap, see T009); installed CSV v26.6.9-opr.1 Succeeded, Keycloak serving |
+| lvms-config app | **Synced + Healthy**; readiness hook job **Succeeded** ("Reached expected number of succeeded pods") and self-deleted per HookSucceeded policy |
+| All other applications | 17/18 apps Synced+Healthy |
+
+**Known display artifacts (documented, not drift)**:
+- Root app `minilab-prod` shows **Degraded** solely from `Subscription/rhbk-operator` health (ResolutionFailed, upstream hold — FR-004 documented hold applies). Expected to persist until Red Hat publishes RHBK for OCP 5.0.
+- Root app shows **OutOfSync** on four child Application CRs (observability-config, openshell-demo, openshell-policy, vault) — verified empty diff via `argocd app diff`; all four children are Synced+Healthy. An app-of-apps status artifact following the interrupted operations; no functional difference exists. Self-resolves on Argo's next full reconciliation or next Git change.
+- The root app's sync operations end "unsuccessfully" (retry loop) because of the rhbk Failed health; applies complete regardless. Root operations were terminated manually once the applies were done (see imperative steps).
+
+**Convergence remediation (chart fixes, all in Git)**:
+1. `d14b9f2` — readiness job checked `deployment/topolvm-controller` + `daemonset/topolvm-node`, which never existed on this cluster (stack runs `vg-manager`); replaced with parameterized `daemonset/vg-manager` (`global.lvmsCompatibility.daemonSet`). Pre-existing defect surfaced by the re-sync.
+2. `bcaf87d`/`7f3fd8f`/`26e68f9` — LVMS v5.0.0 ships a default-deny NetworkPolicy in `openshift-storage` allowing only its own pods; the readiness job was blocked from the API (i/o timeout to 172.30.0.1:443). Added `charts/lvms-config/templates/readiness-netpol.yaml` mirroring the operator's own allow rule (egress TCP 6443 — OVN-K evaluates post-DNAT, so the API service's 443 presents as the host-networked endpoint on 6443; DNS 5353 to openshift-dns). Final job run: Succeeded.
+
+
 ## Upgrade Evidence (US2)
 
 (pending)
@@ -165,4 +195,12 @@ patterns-operator: fast (v0.0.82)
 
 | # | Action | Rationale | Result | Reconcile-back |
 |---|---|---|---|---|
-| 1 | (pending) | | | |
+| 1 | Hard-refresh annotations on `minilab-prod` + `lvms-config` apps (`oc patch ... argocd.argoproj.io/refresh`) | Argo poll cadence too slow for interactive convergence (FR-003 permits recorded forced syncs) | Refresh triggered; root sync started | No state change — comparison only |
+| 2 | `oc port-forward svc/vp-gitops-server -n vp-gitops 18443:443` + `argocd login` (admin) | argocd CLI needed to force syncs; CLI context expects local forward | Session established (re-established 2026-11-15 after oc token expiry) | No cluster state change |
+| 3 | `argocd app sync lvms-config` (twice, 2026-11-14) | lvms-config manual/auto sync needed nudge post-push | Resources applied; readiness hook job created | All applied state matches Git (app Synced) |
+| 4 | Deleted orphaned `minilab-lvmcluster-default-storage` SA/ClusterRole/ClusterRoleBinding (openshift-storage) | Argo flagged as prune-orphans; no chart/repo reference exists (pre-v5.0.0 operator artifact); blocked root sync via lvms-config OutOfSync | lvms-config → Synced+Healthy; root sync unblocked | Drift removal per constitution I; verified storageclass still default, LVMCluster Ready |
+| 5 | `argocd app terminate-op minilab-prod` (2026-11-14 and 2026-11-15) | Operation pinned to pre-push manifest retried endlessly on rhbk Failed health; blocked manifest refresh | New sync picked up 89e8865; subscriptions applied | Applies match Git; terminating an operation changes no state |
+| 6 | Deleted stale COO installplan `install-8zr4s` (v1.5.4, Manual, unapproved) | Created under the old Manual policy; OLM does not retro-approve Manual plans after the Git switch to Automatic | OLM generated Automatic `install-w9dnc` (v1.5.5), approved and installed | Installplan is OLM-owned transient state; subscription spec remains Git-declared |
+| 7 | Deleted failing `lvms-config-readiness` job + removed Argo hook finalizer (`oc patch ... /metadata/finalizers`) — several times | Job blocked by missing netpol (see chart fixes); stuck Terminating on Argo hook finalizer, blocking sync operations | Job recreated fresh after each fix; final run Succeeded | Hook job is Argo-managed transient state, recreated from Git on each sync |
+| 8 | `oc adm release info --image-for=cli` | Discover the OCP 5.0 CLI image digest for `global.lvmsCompatibility.cliImage` (B2 remediation) | `ocp-v5.0-art-dev@sha256:74e575...` recorded in values-global.yaml | Value now Git-declared |
+| 9 | `argocd app diff minilab-prod` (verification only) | Confirm the root's OutOfSync display on 4 child Application CRs is cosmetic | Empty diff — no functional difference | Read-only |
