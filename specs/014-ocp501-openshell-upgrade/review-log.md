@@ -185,7 +185,21 @@ patterns-operator: fast (v0.0.82)
 
 ## Upgrade Evidence (US2)
 
-(pending)
+**0.1.8 delta audit (T013, FR-012)**, 2026-11-15:
+- Policies (`charts/openshell-policy/policies/*.yaml`): clean — all endpoint hosts are plain hostnames (opencode.ai, models.opencode.ai, matilda.maincode.com, api.openai.com; no `::ffff:` mapped IPv6); filesystem paths are system paths outside the writable workspace (0.1.8's symlink rule targets paths *inside* a writable workspace); binary paths already kernel-resolved per the 011 contract; all credentialed endpoints use `protocol: rest` (no WebSocket flows — the 403-on-upgrade change is not triggered).
+- Demo drivers (`deploy/openshell/demo/run-demo.sh`): `openshell status -g "$GATEWAY"` preflight at line 31 already treats non-zero exit as failure — the 0.1.8 semantics (non-zero for unregistered gateway) strengthen the check; no change needed.
+- `gateway.ocsfLog.enabled` **re-tested at 0.1.8**: `helm template` of chart 0.1.8 with `ocsfLog.enabled=true` renders zero OCSF wiring (same as 0.1.3) — upstream #3264/#3876 still open. Override comment updated; value stays unset.
+
+**Pin change (T014–T016)**: commit `acdc5e3` — `values-prod.yaml` chartVersion `0.1.3`→`0.1.8`; `overrides/values-openshell-gateway.yaml` gateway/sandboxRuntime/supervisor tags → `0.1.8`; tests updated (`test-openshell-pins.sh`, `test-openshell-render.sh`, `test-external-refs.sh` — the latter two also carried 0.1.3 pins, caught by T019 gates).
+
+**Teardown (T017)**: idempotent delete loop cleared 7 leftover sandboxes (fw, coco, sandboxctl, analysis, network, cliptest, docs — Nov 4–13 leftovers); final `openshell sandbox list` → "No sandboxes found."
+
+**CLI (T018)**: `make install-openshell-cli` — brew stable (0.1.7) lags; installed 0.1.8 via the GitHub-release fallback (checksum verified); `make check-openshell-cli` passed. Gateway device login pending user authorization (see below).
+
+**Gates (T019)**: `make validate-openshell` ✓, `make test-static` ✓ (after the two additional test pins updated), `./pattern.sh make validate-schema` ✓.
+
+**Convergence (T020)**, verified 2026-11-15: commit `acdc5e3` pushed; openshell app sync initially raced the push and the argocd JWT expired mid-flight (re-issued); after refresh+sync: **openshell app Synced+Healthy, "successfully synced (all tasks run)"**, gateway StatefulSet image `ghcr.io/nvidia/openshell/gateway:0.1.8`, fresh pod `openshell-0` Running with 0 restarts; all 5 openshell apps (openshell, -demo, -keycloak-config, -platform, -policy) Synced+Healthy. CLI `openshell status -g k8s` verification pending gateway login.
+
 
 ## Acceptance Evidence (US3)
 
