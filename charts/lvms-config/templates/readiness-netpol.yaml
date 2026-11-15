@@ -1,9 +1,9 @@
 # LVMS v5.0.0 ships a default-deny NetworkPolicy in openshift-storage with
 # allow rules only for its own pods (lvms-operator, vg-manager). The readiness
-# job needs egress to the API server and DNS. OVN-K evaluates service traffic
-# post-DNAT (the API endpoint is host-networked on the node IP), so the rule
-# targets any destination but only ports 443/53 — proportionate for a
-# short-lived readiness job with read-only RBAC.
+# job needs the same egress the operator grants itself: OVN-K evaluates
+# policy post-DNAT, so the API service (172.30.0.1:443) presents as the
+# host-networked endpoint on port 6443, and OpenShift DNS listens on 5353.
+# Mirrors lvms-operator-allow exactly.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -16,13 +16,18 @@ spec:
   policyTypes:
   - Egress
   egress:
-  - to:
-    - ipBlock:
-        cidr: 0.0.0.0/0
-    ports:
+  - ports:
     - protocol: TCP
-      port: 443
+      port: 6443
+  - ports:
+    - protocol: TCP
+      port: 5353
     - protocol: UDP
-      port: 53
-    - protocol: TCP
-      port: 53
+      port: 5353
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: openshift-dns
+      podSelector:
+        matchLabels:
+          dns.operator.openshift.io/daemonset-dns: default
