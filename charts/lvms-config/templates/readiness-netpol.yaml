@@ -1,0 +1,26 @@
+# LVMS v5.0.0 ships a default-deny NetworkPolicy in openshift-storage with
+# allow rules only for its own pods (lvms-operator, vg-manager). The readiness
+# job needs egress to the API server and DNS (both via the service network)
+# or its oc waits time out with i/o timeout against 172.30.0.1:443.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: lvms-config-readiness-allow
+  namespace: openshift-storage
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: lvms-config-readiness
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - ipBlock:
+        cidr: 172.30.0.0/16
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
