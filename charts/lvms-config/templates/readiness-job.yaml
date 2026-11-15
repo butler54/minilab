@@ -34,8 +34,7 @@ spec:
           oc -n openshift-storage wait --for=jsonpath='{.status.state}'=Ready lvmcluster/{{ .Values.lvmCluster.name }} --timeout=10m
           oc get storageclass/{{ .Values.global.localStorage.storageClassName }} -o jsonpath='{.volumeBindingMode}' | grep -qx WaitForFirstConsumer
           oc get storageclass/{{ .Values.global.localStorage.storageClassName }} -o jsonpath='{.reclaimPolicy}' | grep -qx Retain
-          oc -n openshift-storage rollout status deployment/topolvm-controller --timeout=10m
-          oc -n openshift-storage rollout status daemonset/topolvm-node --timeout=10m
+          oc -n openshift-storage rollout status daemonset/{{ required "global.lvmsCompatibility.daemonSet is required" .Values.global.lvmsCompatibility.daemonSet }} --timeout=10m
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:

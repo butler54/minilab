@@ -20,6 +20,7 @@ global:
     startingCSV: lvms-operator.v5.0.0
     cliImage: quay.io/openshift-release-dev/ocp-v5.0-art-dev@sha256:74e57568b3a1bcf36a85f5cef0861bc979fb86fd457710d31edc8e61d86ee02f
     deployment: lvms-operator
+    daemonSet: vg-manager
     lvmClusterCRD: lvmclusters.lvm.topolvm.io
   secretsStore:
     backend: vault
