@@ -1,7 +1,9 @@
 # LVMS v5.0.0 ships a default-deny NetworkPolicy in openshift-storage with
 # allow rules only for its own pods (lvms-operator, vg-manager). The readiness
-# job needs egress to the API server and DNS (both via the service network)
-# or its oc waits time out with i/o timeout against 172.30.0.1:443.
+# job needs egress to the API server and DNS. OVN-K evaluates service traffic
+# post-DNAT (the API endpoint is host-networked on the node IP), so the rule
+# targets any destination but only ports 443/53 — proportionate for a
+# short-lived readiness job with read-only RBAC.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -16,7 +18,7 @@ spec:
   egress:
   - to:
     - ipBlock:
-        cidr: 172.30.0.0/16
+        cidr: 0.0.0.0/0
     ports:
     - protocol: TCP
       port: 443
