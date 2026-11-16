@@ -4,12 +4,17 @@
 # Channels: self-hosted qwen inference (donnager-linux, direct LAN IP — no
 # tailscale from the cluster), Slack (socket mode), Signal (signal-cli).
 #
-# Binary paths are the kernel-resolved executables inside the hermes layer
-# image (ghcr.io/butler54/openshell-sandbox-hermes): the hermes venv python
-# opens the qwen + Slack connections; the Temurin JRE runs signal-cli.
-# VERIFY at deploy time (S1 measure step, docs/hermes-agent.md):
-#   openshell sandbox exec -n hermes -- sh -c 'readlink -f "$(command -v hermes)"'
-# and adjust if the installer's layout differs.
+# Binary paths are the kernel-resolved executables that open the connections
+# (verified live in S1, docs/hermes-agent.md). NOTE: the hermes launcher is a
+# `#!/usr/bin/env python3` script that RE-EXECS itself with its bundled tools
+# python (verified live: the launcher's runpy re-launch runs under
+# /opt/hermes/tools/python-<ver>/bin/python3.14, and THAT interpreter opens
+# the model/Slack sockets); the sandbox runtime also injects its own venv
+# (/sandbox/.venv -> /sandbox/.uv/python/<ver>/...). Globs keep the rules
+# valid across version bumps (paths must be kernel-resolved; globs are
+# allowed by the schema). The Temurin JRE runs signal-cli (Signal egress).
+# Verified S1: hermes --version works; connections hang (fail-closed) if the
+# tools-python glob is missing from the binaries list.
 #
 # Loopback (hermes -> signal-cli daemon on 127.0.0.1:8080) is not mediated by
 # policy: OpenShell policy never authorizes loopback (schema: sandbox-local
@@ -32,6 +37,10 @@ filesystem_policy:
   - /var/log
   - /proc
   - /dev/urandom
+  # Hermes layer layout (containers 007): the hermes checkout, venv, tools,
+  # signal-cli and the Temurin JRE all live under /opt — image-owned,
+  # read-only at runtime.
+  - /opt
   read_write:
   - /tmp
   - /dev/null
@@ -50,7 +59,8 @@ network_policies:
       access: read-write
       enforcement: enforce
     binaries:
-    - path: /opt/hermes/hermes-agent/.venv/bin/python
+    - path: /opt/hermes/tools/python-*/bin/python3*
+    - path: /sandbox/.uv/python/*/bin/python3*
   # justification: Slack socket mode — wss-primary/wss-backup are the hosts
   # Slack's apps.connections.open hands back for the long-lived gateway
   # WebSocket; slack.com/api.slack.com carry the Web API; hooks.slack.com
@@ -84,7 +94,8 @@ network_policies:
       access: full
       enforcement: enforce
     binaries:
-    - path: /opt/hermes/hermes-agent/.venv/bin/python
+    - path: /opt/hermes/tools/python-*/bin/python3*
+    - path: /sandbox/.uv/python/*/bin/python3*
   # justification: Signal via signal-cli — service endpoints from signal-cli's
   # LiveConfig (chat/CDN/storage/CDSI/SVR2). Raw TLS passthrough (tls: skip,
   # no request protocol): libsignal pins its own trust store, so the L7 proxy

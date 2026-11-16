@@ -1,6 +1,6 @@
 # Hermes Agent on minilab — deployment doc & evidence log
 
-**Status**: in progress (Gate 0 + GitOps surface complete; image PR #64 green, awaiting merge) · **Started**: 2026-11-16
+**Status**: S1 complete (hermes + qwen working end-to-end); image seed-layout fix PR pending; S2 (Slack) awaiting workspace provisioning · **Started**: 2026-11-16
 **Plan**: Option A — Hermes in an OpenShell sandbox on the minilab cluster via the
 existing `k8s` gateway, GitOps-configured. NemoClaw dropped: its platform-support
 matrix marks native Kubernetes/OpenShift deployments **Unsupported** (sandboxes are
@@ -65,3 +65,44 @@ working (feature 014 acceptance, 2026-11-16).
 | 2 | Gate 0 stop/start marker test | Verify /sandbox persistence semantics (plan Gate 0.2) | Marker survived; podman named volume identified | No state change; semantics documented above |
 | 3 | containers PR #64 opened (branch 007-hermes-sandbox-layer) | Image build must follow the containers project process (GH Actions, PR-reviewed) | hermes-validate CI green on both arches after one fix (BASE_IMAGE ARG moved to global scope — stage-scoped ARGs are invisible to later FROM lines) | Awaiting operator merge; merge publishes ghcr.io/butler54/openshell-sandbox-hermes |
 | 4 | minilab GitOps surface: charts/hermes-agent + policy + deploy driver (commits cb2ef8e, 2d56d0b); root-app selective sync of the new child Application (T030 playbook — the rhbk-stall pattern again) | All hermes config in Git per constitution I | hermes-agent app Synced+Healthy; hermes-agent-sandbox ConfigMap + hermes policy key live on cluster; ExternalSecret inert until hermes.slack.enabled | Desired state Git-declared; Argo-converged |
+
+## S1 — sandbox deployed + qwen smoke (2026-11-16)
+
+**Deployed**: sandbox `hermes` from `ghcr.io/butler54/openshell-sandbox-hermes@sha256:a8c6f65e…`
+(PR #64 first publish; amd64/arm64 manifest, node is arm64). Config + .env
+injected (Signal disabled — account blank; Slack absent — tokens unseeded).
+
+**Measure-loop findings (each fixed in Git and re-measured)**:
+
+1. **`/opt` filesystem access**: the hermes layout lives under `/opt`
+   (checkout, tools, signal-cli, JRE); the default-deny filesystem policy
+   blocked it. Fix: `/opt` added to `read_only`. NOTE: the **filesystem
+   policy is fixed at sandbox creation** — network rules hot-reload, but an
+   `openshell policy set` after creation does NOT re-open filesystem paths;
+   the sandbox was recreated with the corrected policy.
+2. **Policy L7 fields**: `protocol: tcp` endpoints reject `access`/`enforcement`
+   (gateway validation, fail-closed at create). Fix: Signal endpoints carry
+   only host/port/protocol/tls:skip.
+3. **`sandbox create` trailing command** needs the `--` separator.
+4. **The socket-opening binary is hermes' bundled tools python**: the
+   `/usr/local/bin/hermes` launcher (`#!/usr/bin/env python3`) re-execs
+   itself under `/opt/hermes/tools/python-3.14.9+…/bin/python3.14` — verified
+   via a live traceback. The policy binaries now glob BOTH
+   `/opt/hermes/tools/python-*/bin/python3*` and the runtime-injected
+   `/sandbox/.uv/python/*/bin/python3*` (the sandbox runtime overrides PATH
+   with its own venv). Symptom when wrong: hermes reports
+   "Transient APIConnectionError" and retries — fail-closed egress, not a
+   model problem.
+5. **Hermes home is monolithic and records absolute paths**: install.sh with
+   `HERMES_HOME=/opt/hermes` bakes /opt-absolute paths into the install
+   state; a copied home at `/sandbox/.hermes` fails its environment check.
+   Validated the fix shape live: path-rewritten copy at `/sandbox/.hermes`
+   runs correctly (after clearing stale `__pycache__` from the build-python —
+   "bad marshal data"). **Image fix required** (PR pending): build with
+   `HERMES_HOME=/sandbox/.hermes`, keep a pristine copy at
+   `/opt/hermes-pristine`, seed-on-first-boot in `hermes-gateway-start`.
+
+**S1 result**: `hermes chat -q "Reply with exactly: HERMES_S1_OK" --oneshot
+--provider custom -m qwen-coder:latest` → `☤ Hermes: HERMES_S1_OK` (2s,
+e2e through policy v3). Raw-path verification: python urllib GET/POST +
+SSE streaming to the qwen endpoint all 200/OK.

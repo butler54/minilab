@@ -77,7 +77,9 @@ case "$stage" in
     # S1 measure: binary paths (policy binaries must be kernel-resolved real
     # paths), model reachability through the policy, hermes self-report.
     echo "--- binary path resolution (policy binaries) ---"
-    openshell sandbox exec -n "$NAME" -- sh -c 'readlink -f "$(command -v hermes)"; readlink -f "$(command -v java)"'
+    openshell sandbox exec -n "$NAME" -- sh -c 'readlink -f "$(command -v hermes)"; readlink -f "$JAVA_HOME/bin/java"; readlink -f "$(command -v signal-cli)"'
+    echo "--- what is the hermes launcher (venv python?) ---"
+    openshell sandbox exec -n "$NAME" -- sh -c 'head -1 "$(readlink -f "$(command -v hermes)")" 2>/dev/null || file "$(readlink -f "$(command -v hermes)")"; ls /opt/hermes/hermes-agent/.venv/bin/python* 2>/dev/null'
     echo "--- model via policy (expect qwen-coder:latest) ---"
     openshell sandbox exec -n "$NAME" -- curl -s -m 15 http://192.168.4.190:11434/v1/models | grep -o 'qwen-coder:latest'
     echo "--- hermes self-report ---"
