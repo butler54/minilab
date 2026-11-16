@@ -1,0 +1,51 @@
+{{- if and .Values.global.openshell.enabled .Values.global.openshell.hermes.enabled }}
+{{- if .Values.global.openshell.hermes.slack.enabled }}
+# Slack socket-mode tokens from vault. Consumed by deploy-hermes.sh (recorded
+# imperative step) to assemble the sandbox .env — never rendered into any
+# sandbox-visible template (constitution: no secret material in Git).
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: hermes-slack-tokens-es
+  namespace: openshell
+spec:
+  refreshInterval: {{ .Values.hermes.slack.refreshInterval }}
+  secretStoreRef:
+    name: {{ .Values.secretStore.name }}
+    kind: {{ .Values.secretStore.kind }}
+  target:
+    name: {{ .Values.hermes.slack.secretName }}
+  data:
+  - secretKey: bot-token
+    remoteRef:
+      key: {{ .Values.hermes.slack.remoteKey }}
+      property: bot-token
+  - secretKey: app-token
+    remoteRef:
+      key: {{ .Values.hermes.slack.remoteKey }}
+      property: app-token
+---
+{{- end }}
+# Hermes sandbox DEFINITION as data for the documented imperative creation
+# step (docs/hermes-agent.md runbook). Consumed by deploy-hermes.sh:
+#   oc -n openshell get cm hermes-agent-sandbox -o jsonpath='{.data.sandbox\.yaml}'
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-agent-sandbox
+  namespace: openshell
+data:
+  sandbox.yaml: |
+    name: {{ .Values.hermes.sandboxName }}
+{{- if .Values.hermes.image }}
+    image: {{ .Values.hermes.image }}
+{{- end }}
+    # Main process: hermes-gateway-start (binds HERMES_HOME=/sandbox/.hermes,
+    # supervises the signal-cli loopback daemon, execs `hermes gateway`).
+    command: hermes-gateway-start
+    # Egress policy: charts/openshell-policy/policies/hermes.yaml
+    #   (applied at creation: --policy <file>; openshell-policy ConfigMap is
+    #    the on-cluster copy)
+    # Config: deploy/openshell/hermes/hermes-config.yaml + hermes-env.template
+    #   (injected post-create by deploy-hermes.sh)
+{{- end }}

@@ -1,0 +1,17 @@
+# Hermes Agent .env template — assembled by deploy-openshell/hermes/deploy-hermes.sh
+# (recorded imperative step) into /sandbox/.hermes/.env inside the sandbox.
+#
+# PLACEHOLDERS ONLY — real values are sourced at deploy time:
+#   {{SLACK_BOT_TOKEN}} / {{SLACK_APP_TOKEN}}  from the vault-backed k8s
+#     secret hermes-slack-tokens (external-secrets; secret/data/hub/openshell-slack)
+#   {{SIGNAL_ACCOUNT}}                          from global.openshell.hermes.signal.account
+#     (overrides/values-openshell.yaml)
+# Wide-open Slack posture (fresh private workspace, membership is the control)
+# is intentional for v1 — tighten with SLACK_ALLOWED_USERS/SLACK_ALLOWED_CHANNELS
+# when real users join.
+SLACK_BOT_TOKEN={{SLACK_BOT_TOKEN}}
+SLACK_APP_TOKEN={{SLACK_APP_TOKEN}}
+# Signal: allowlist is restrictive by default (hermes-agent.md security posture).
+SIGNAL_ACCOUNT={{SIGNAL_ACCOUNT}}
+SIGNAL_ALLOWED_USERS=+61408390624
+SIGNAL_HTTP_URL=http://127.0.0.1:8080

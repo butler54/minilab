@@ -239,6 +239,16 @@ clusterGroup:
       path: charts/openshell-demo
       annotations:
         argocd.argoproj.io/sync-wave: "+2"
+    hermes-agent:
+      name: hermes-agent
+      namespace: openshell
+      project: default
+      # Hermes messaging agent (docs/hermes-agent.md). Inert (empty render)
+      # until global.openshell.hermes.enabled; Slack ExternalSecret further
+      # gated on hermes.slack.enabled.
+      path: charts/hermes-agent
+      annotations:
+        argocd.argoproj.io/sync-wave: "+3"
   projects:
   - default
   - external-secrets

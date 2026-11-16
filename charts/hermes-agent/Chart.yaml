@@ -1,0 +1,10 @@
+apiVersion: v2
+name: hermes-agent
+description: >
+  Hermes messaging-agent sandbox assets (docs/hermes-agent.md): sandbox
+  definition ConfigMap for the documented imperative creation step, and
+  Slack token sync from vault. Image: ghcr.io/butler54/openshell-sandbox-hermes
+  (containers repo, hermes layer).
+type: application
+version: 0.1.0
+appVersion: "0.23.1"

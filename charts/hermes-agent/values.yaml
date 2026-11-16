@@ -1,0 +1,33 @@
+# Defaults mirror overrides/values-openshell.yaml (global.openshell.hermes);
+# the override file is the operator-facing dial surface.
+global:
+  openshell:
+    enabled: false
+    hermes:
+      enabled: false
+      slack:
+        # Flip when the Slack workspace + app exist and the tokens are seeded
+        # in vault at secret/data/hub/openshell-slack (bot-token, app-token).
+        enabled: false
+      signal:
+        # E.164 number of the linked Signal device (SIGNAL_ACCOUNT; blank =
+        # Signal disabled until the QR-linking spike runs).
+        account: ""
+        allowedUsers: "+61408390624"
+
+secretStore:
+  name: vault-backend
+  kind: ClusterSecretStore
+
+hermes:
+  sandboxName: hermes
+  # Own registry (containers repo, hermes layer). EMPTY until first publish —
+  # the S1 deploy step pins the published manifest digest here (recorded in
+  # docs/hermes-agent.md); test-openshell-pins forbids floating tags in YAML.
+  # deploy-hermes.sh falls back to the :latest tag (script-side reference,
+  # demo-image convention) when this is unset.
+  image: ""
+  slack:
+    remoteKey: secret/data/hub/openshell-slack
+    secretName: hermes-slack-tokens
+    refreshInterval: 5m0s

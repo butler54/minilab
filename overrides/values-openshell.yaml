@@ -41,6 +41,19 @@ global:
     # Demonstration coding agent (FR-014). Requires OpenAI key seeded in vault.
     demo:
       enabled: false
+    # Hermes messaging agent (docs/hermes-agent.md; image from the containers
+    # repo hermes layer, ghcr.io/butler54/openshell-sandbox-hermes).
+    hermes:
+      enabled: true
+      slack:
+        # Flip when the Slack workspace + app exist and the tokens are seeded
+        # in vault at secret/data/hub/openshell-slack (bot-token, app-token).
+        enabled: false
+      signal:
+        # E.164 number of the linked Signal device (SIGNAL_ACCOUNT; blank =
+        # Signal disabled until the QR-linking spike runs).
+        account: ""
+        allowedUsers: "+61408390624"
 
 # NOTE (refactor 007): upstream chart values moved to per-app override files —
 # overrides/values-openshell-gateway.yaml (NVIDIA chart) plus values-ztwim.yaml,
