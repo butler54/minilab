@@ -1,0 +1,16 @@
+# Hermes Agent config.yaml — source of truth for the hermes sandbox
+# (docs/hermes-agent.md). Injected at sandbox creation by
+# deploy/openshell/hermes/deploy-hermes.sh (recorded imperative step):
+#   openshell sandbox exec -n hermes -- tee /sandbox/.hermes/config.yaml < this file
+#
+# Model: self-hosted qwen on donnager-linux, reached by direct LAN IP
+# (no tailscale route from the cluster). Model id and endpoint verified live
+# in Gate 0 (docs/hermes-agent.md): Ollama 0.34.2 reports qwen-coder:latest.
+# The apiKey is Ollama's conventional dummy ("ollama") — not a secret; real
+# secrets (Slack tokens, Signal account) live in Vault and are injected via
+# the .env template, never in this file.
+model:
+  default: qwen-coder:latest
+  provider: custom
+  base_url: http://192.168.4.190:11434/v1
+  api_key: ollama

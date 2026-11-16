@@ -1,0 +1,140 @@
+# HERMES AGENT POLICY — least-privilege egress for the Hermes messaging
+# agent sandbox (docs/hermes-agent.md; containers repo 007-hermes-sandbox-layer).
+#
+# Channels: self-hosted qwen inference (donnager-linux, direct LAN IP — no
+# tailscale from the cluster), Slack (socket mode), Signal (signal-cli).
+#
+# Binary paths are the kernel-resolved executables inside the hermes layer
+# image (ghcr.io/butler54/openshell-sandbox-hermes): the hermes venv python
+# opens the qwen + Slack connections; the Temurin JRE runs signal-cli.
+# VERIFY at deploy time (S1 measure step, docs/hermes-agent.md):
+#   openshell sandbox exec -n hermes -- sh -c 'readlink -f "$(command -v hermes)"'
+# and adjust if the installer's layout differs.
+#
+# Loopback (hermes -> signal-cli daemon on 127.0.0.1:8080) is not mediated by
+# policy: OpenShell policy never authorizes loopback (schema: sandbox-local
+# traffic stays inside the sandbox).
+#
+# Justification trail: measured live in Gate 0 (docs/hermes-agent.md) —
+# GET/POST to the qwen endpoint verified from a probe sandbox under exactly
+# this endpoint shape; Slack hosts mirror NemoClaw's maintained slack preset
+# (src/lib/messaging/channels/slack/policy/hermes.yaml); Signal hosts are the
+# signal-cli LiveConfig service set, raw-TLS passthrough because libsignal
+# validates against its own pinned trust store (whisper.store) and cannot
+# tolerate L7 TLS re-origination (same class as NemoClaw's WhatsApp preset).
+version: 1
+filesystem_policy:
+  include_workdir: true
+  read_only:
+  - /usr
+  - /lib
+  - /etc
+  - /var/log
+  - /proc
+  - /dev/urandom
+  read_write:
+  - /tmp
+  - /dev/null
+network_policies:
+  # justification: GATE0-1 — hermes inference via donnager-linux Ollama
+  # (OpenAI-compatible /v1; GET /v1/models + POST /v1/chat/completions
+  # verified from a probe sandbox 2026-11-16). Direct IP: the cluster has no
+  # tailscale route to donnager-linux. Plain IPv4 — OpenShell 0.1.8 evaluates
+  # IPv4-mapped IPv6 as plain IPv4 (upstream PR #5101).
+  allow_donnager_qwen:
+    name: allow_donnager_qwen
+    endpoints:
+    - host: 192.168.4.190
+      port: 11434
+      protocol: rest
+      access: read-write
+      enforcement: enforce
+    binaries:
+    - path: /opt/hermes/hermes-agent/.venv/bin/python
+  # justification: Slack socket mode — wss-primary/wss-backup are the hosts
+  # Slack's apps.connections.open hands back for the long-lived gateway
+  # WebSocket; slack.com/api.slack.com carry the Web API; hooks.slack.com
+  # covers webhook delivery. Mirrors NemoClaw's maintained preset.
+  allow_slack:
+    name: allow_slack
+    endpoints:
+    - host: slack.com
+      port: 443
+      protocol: rest
+      access: full
+      enforcement: enforce
+    - host: api.slack.com
+      port: 443
+      protocol: rest
+      access: full
+      enforcement: enforce
+    - host: hooks.slack.com
+      port: 443
+      protocol: rest
+      access: full
+      enforcement: enforce
+    - host: wss-primary.slack.com
+      port: 443
+      protocol: websocket
+      access: full
+      enforcement: enforce
+    - host: wss-backup.slack.com
+      port: 443
+      protocol: websocket
+      access: full
+      enforcement: enforce
+    binaries:
+    - path: /opt/hermes/hermes-agent/.venv/bin/python
+  # justification: Signal via signal-cli — service endpoints from signal-cli's
+  # LiveConfig (chat/CDN/storage/CDSI/SVR2). Raw TLS passthrough (tls: skip,
+  # no request protocol): libsignal pins its own trust store, so the L7 proxy
+  # cannot re-originate TLS. Scoped to the JRE binary only. NOTE: this
+  # forfeits L7 inspection of Signal traffic — accepted tradeoff recorded in
+  # docs/hermes-agent.md (security posture).
+  allow_signal:
+    name: allow_signal
+    endpoints:
+    - host: chat.signal.org
+      port: 443
+      protocol: tcp
+      tls: skip
+      access: full
+      enforcement: enforce
+    - host: cdn.signal.org
+      port: 443
+      protocol: tcp
+      tls: skip
+      access: full
+      enforcement: enforce
+    - host: cdn2.signal.org
+      port: 443
+      protocol: tcp
+      tls: skip
+      access: full
+      enforcement: enforce
+    - host: cdn3.signal.org
+      port: 443
+      protocol: tcp
+      tls: skip
+      access: full
+      enforcement: enforce
+    - host: storage.signal.org
+      port: 443
+      protocol: tcp
+      tls: skip
+      access: full
+      enforcement: enforce
+    - host: cdsi.signal.org
+      port: 443
+      protocol: tcp
+      tls: skip
+      access: full
+      enforcement: enforce
+    - host: svr2.signal.org
+      port: 443
+      protocol: tcp
+      tls: skip
+      access: full
+      enforcement: enforce
+    binaries:
+    - path: /opt/java/jre25/bin/java
