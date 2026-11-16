@@ -22,8 +22,8 @@ secretStore:
 hermes:
   sandboxName: hermes
   # Own registry (containers repo, hermes layer). Digest-pinned from the
-  # first publish (PR #64 merge, 2026-11-16; recorded in docs/hermes-agent.md).
-  image: ghcr.io/butler54/openshell-sandbox-hermes@sha256:a8c6f65ecda8f81063a71872b2bf2e026bd7021438d3971096cf29b6b99daa2c
+  # seed-layout publish (PR #67, 2026-11-16; recorded in docs/hermes-agent.md).
+  image: ghcr.io/butler54/openshell-sandbox-hermes@sha256:ba3908eb23e128e5b2eaf38390d792ed7c5db4773fea22dc09fc205de5fdde10
   slack:
     remoteKey: secret/data/hub/openshell-slack
     secretName: hermes-slack-tokens
