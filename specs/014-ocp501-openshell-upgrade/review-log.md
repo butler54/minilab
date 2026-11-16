@@ -214,7 +214,13 @@ patterns-operator: fast (v0.0.82)
 - Drift found and removed during the check: stale duplicate `Application/minilab-prod` in `openshift-gitops` namespace (created 2026-10-26, never reconciled — no status; feature-013-era leftover in the wrong Argo namespace). Finalizer removed first to prevent cascade, then deleted. Healthcheck failure count dropped from 2 to 1 (the documented root-app hold only).
 - Orphaned Completed sandbox pods `api-watch2`/`cache-quorum-diag` (48d old) deleted from `openshell` namespace (zero-residual, FR-010).
 
-**Stages 5–7 (T023–T025)**: pending gateway device-login authorization (CLI OIDC token expired; fresh code issued).
+**Stage 5 — auth smoke (T023)**, 2026-11-16: `make validate-openshell-live` ✓ — "openshell live-auth smoke validation passed". Keycloak OIDC login + gateway status end-to-end; the XFAIL line is an expected-failure assertion for a known RHBK 26.6 bug (authorize endpoint rejects redirect_uri — unrelated to this upgrade). Note: the expired-CLI-token mTLS error cleared after `openshell gateway login` (device flow, authorized 2026-11-16); `openshell status -g k8s` → Connected / Authenticated (OIDC) as butler54.
+
+**Stage 6 — demo smoke (T024)**, 2026-11-16: `DEMO_PROMPT="Reply with exactly: OPENSHELL_VDEMO_OK" make validate-openshell-demo` ✓ — **full pass, no skip message emitted**: preflight ✓, create+policy (sandbox created with policy at create) ✓, inject ✓, agent (matilda response) ✓, deny (5/5 varied probes refused) ✓, no-secrets ✓, policy (effective) ✓, cleanup ✓.
+
+**Stage 7 — sandbox lifecycle (T025)**, 2026-11-16: explicit check with `sample-openai-only` policy supplied at create: sandbox `osc-accept` reached **Ready** with no admission-rejection/`ConfigurationInvalid` and no post-create policy race; policy effective from the first executable action — allowlisted egress (`api.openai.com`) returned HTTP 401 (reached the server), non-allowlisted (`example.com`) returned HTTP 000 (blocked); deleted via the idempotent teardown; `openshell sandbox list` → "No sandboxes found."
+
+**Failure handling (T026)**: no behavioral regressions found in stages 1–7; the only non-green result is stage 4's `argo-healthcheck`, root-caused and documented above (rhbk upstream hold — revert/rollback policy not triggered; the platform is fully usable).
 
 
 ## Imperative Steps (constitution II)

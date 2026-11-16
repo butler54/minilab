@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-14
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "The cluster has been upgraded to OpenShift 5.0.1. 1. Do a review of the available operators in the operator hub, and update as appropriate. 2. Openshell is rapidly moving; upgrade to the latest 0.1.* release. 3. Run acceptance testing against openshell to check whether behaviour is as expected."
 

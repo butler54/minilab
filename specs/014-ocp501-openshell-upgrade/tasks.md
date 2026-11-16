@@ -80,9 +80,9 @@ This feature edits the pattern's Git surfaces (no `src/` tree): `values-global.y
 - [x] T015 [P] [US2] Update the three image tags (gateway, sandboxRuntime, supervisor) from `"0.1.3"` to `"0.1.8"` in `overrides/values-openshell-gateway.yaml`; keep the digest-pinned sandbox base image untouched
 - [x] T016 [P] [US2] Update the expected openshell version in `tests/test-openshell-pins.sh` (0.1.3 → 0.1.8); do not touch the agent-sandbox `preview-0.9` assertions
 - [x] T017 [US2] Teardown before upgrade using an idempotent, recorded procedure (list sandboxes/forwards, delete/close, repeat until `openshell sandbox list` is empty — constitution II automation requirement), and record the pre-upgrade zero-residual state in `specs/014-ocp501-openshell-upgrade/review-log.md`
-- [ ] T018 [US2] Update the workstation CLI: `make install-openshell-cli` (installs 0.1.8 from the chart pin), run `openshell gateway login` once to replace pre-0.1.8 token files, confirm `make check-openshell-cli` passes unmodified; record the CLI install and gateway login in the imperative-steps section of `specs/014-ocp501-openshell-upgrade/review-log.md`
+- [x] T018 [US2] Update the workstation CLI: `make install-openshell-cli` (installs 0.1.8 from the chart pin), run `openshell gateway login` once to replace pre-0.1.8 token files, confirm `make check-openshell-cli` passes unmodified; record the CLI install and gateway login in the imperative-steps section of `specs/014-ocp501-openshell-upgrade/review-log.md`
 - [x] T019 [US2] Run pre-push gates and fix any 0.1.8 value-schema fallout in `overrides/values-openshell-gateway.yaml`: `make validate-openshell`, `make test-static`, `./pattern.sh make validate-schema`
-- [ ] T020 [US2] Commit the pin change to `main` and push; record any forced sync in `specs/014-ocp501-openshell-upgrade/review-log.md`; verify and record: gateway pod image tag 0.1.8, all openshell Argo CD applications Synced+Healthy within 15 minutes, `openshell status -g k8s` succeeds
+- [x] T020 [US2] Commit the pin change to `main` and push; record any forced sync in `specs/014-ocp501-openshell-upgrade/review-log.md`; verify and record: gateway pod image tag 0.1.8, all openshell Argo CD applications Synced+Healthy within 15 minutes, `openshell status -g k8s` succeeds
 
 **Checkpoint**: Platform at 0.1.8 with CLI parity — US2 independently testable via the quickstart Scenario 2 checks.
 
@@ -96,12 +96,12 @@ This feature edits the pattern's Git surfaces (no `src/` tree): `values-global.y
 
 ### Tests for User Story 3 (the acceptance suite — FR-007)
 
-- [ ] T021 [P] [US3] Run and record stages 1–3 in `specs/014-ocp501-openshell-upgrade/review-log.md`: `make test-static && make validate-openshell`, `./pattern.sh make validate-schema`, `make check-openshell-cli` (this is the authoritative gate evidence; it supersedes the per-story runs T010/T019)
-- [ ] T022 [P] [US3] Run and record stage 4 (convergence): `make argo-healthcheck && make validate-cluster` — all applications Synced+Healthy, zero OutOfSync, OLM no-op PUT posture unchanged from the 010 baseline (<1/s)
-- [ ] T023 [US3] Run and record stage 5 (auth smoke): `make validate-openshell-live` — Keycloak OIDC login + gateway status end-to-end; a skip counts as FAIL (FR-008)
-- [ ] T024 [US3] Run and record stage 6 (demo smoke): `DEMO_PROMPT="Reply with exactly: OPENSHELL_VDEMO_OK" make validate-openshell-demo` — must run (no cluster-unreachable/auth-missing skip), expected prompt exchange succeeds, clean teardown
-- [ ] T025 [US3] Run and record stage 7 (sandbox lifecycle): create a sandbox with policy supplied at create (feature-012 mechanism), verify the policy is effective from the first operation (allowlisted egress succeeds / non-allowlisted denied), delete via the same idempotent recorded teardown procedure as T017, confirm `openshell sandbox list` empty
-- [ ] T026 [US3] Handle any failure per FR-008 and the decided rollback policy: fix in Git + re-run to green, or document root cause with upstream reference in `specs/014-ocp501-openshell-upgrade/review-log.md`; revert the 0.1.8 pin on `main` only if the platform is unusable (auth or sandbox lifecycle broken)
+- [x] T021 [P] [US3] Run and record stages 1–3 in `specs/014-ocp501-openshell-upgrade/review-log.md`: `make test-static && make validate-openshell`, `./pattern.sh make validate-schema`, `make check-openshell-cli` (this is the authoritative gate evidence; it supersedes the per-story runs T010/T019)
+- [x] T022 [P] [US3] Run and record stage 4 (convergence): `make argo-healthcheck && make validate-cluster` — all applications Synced+Healthy, zero OutOfSync, OLM no-op PUT posture unchanged from the 010 baseline (<1/s)
+- [x] T023 [US3] Run and record stage 5 (auth smoke): `make validate-openshell-live` — Keycloak OIDC login + gateway status end-to-end; a skip counts as FAIL (FR-008)
+- [x] T024 [US3] Run and record stage 6 (demo smoke): `DEMO_PROMPT="Reply with exactly: OPENSHELL_VDEMO_OK" make validate-openshell-demo` — must run (no cluster-unreachable/auth-missing skip), expected prompt exchange succeeds, clean teardown
+- [x] T025 [US3] Run and record stage 7 (sandbox lifecycle): create a sandbox with policy supplied at create (feature-012 mechanism), verify the policy is effective from the first operation (allowlisted egress succeeds / non-allowlisted denied), delete via the same idempotent recorded teardown procedure as T017, confirm `openshell sandbox list` empty
+- [x] T026 [US3] Handle any failure per FR-008 and the decided rollback policy: fix in Git + re-run to green, or document root cause with upstream reference in `specs/014-ocp501-openshell-upgrade/review-log.md`; revert the 0.1.8 pin on `main` only if the platform is unusable (auth or sandbox lifecycle broken)
 
 **Checkpoint**: All acceptance evidence recorded — US3 independently testable via the quickstart Scenario 3 checks.
 
@@ -111,9 +111,9 @@ This feature edits the pattern's Git surfaces (no `src/` tree): `values-global.y
 
 **Purpose**: Final verification and artifact closure.
 
-- [ ] T027 Verify review-artifact completeness per `specs/014-ocp501-openshell-upgrade/contracts/operator-review.md`: the `yq`/`grep`/`diff` check shows every `values-prod.yaml` subscription key has exactly one record in `specs/014-ocp501-openshell-upgrade/review-log.md`
-- [ ] T028 Run the full `specs/014-ocp501-openshell-upgrade/quickstart.md` validation (all three scenarios + completion check); any discrepancy fixed or documented
-- [ ] T029 Final zero-residual + closure: `openshell sandbox list` empty, no port-forwards, `oc get subscription -A` clean (or holds recorded), zero Argo CD applications OutOfSync (`make argo-healthcheck` / `argocd app diff` clean — the drift criterion of SC-005); update `specs/014-ocp501-openshell-upgrade/spec.md` Status from Draft to Implemented; final commit and push of evidence to `main`
+- [x] T027 Verify review-artifact completeness per `specs/014-ocp501-openshell-upgrade/contracts/operator-review.md`: the `yq`/`grep`/`diff` check shows every `values-prod.yaml` subscription key has exactly one record in `specs/014-ocp501-openshell-upgrade/review-log.md`
+- [x] T028 Run the full `specs/014-ocp501-openshell-upgrade/quickstart.md` validation (all three scenarios + completion check); any discrepancy fixed or documented
+- [x] T029 Final zero-residual + closure: `openshell sandbox list` empty, no port-forwards, `oc get subscription -A` clean (or holds recorded), zero Argo CD applications OutOfSync (`make argo-healthcheck` / `argocd app diff` clean — the drift criterion of SC-005); update `specs/014-ocp501-openshell-upgrade/spec.md` Status from Draft to Implemented; final commit and push of evidence to `main`
 
 ---
 

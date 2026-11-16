@@ -33,7 +33,10 @@ The framework-managed `patterns-operator` subscription (on-cluster, not declared
 
 ```bash
 # every subscription key in values-prod.yaml has a record
+# (scope to the Operator Review section; exclude the framework-managed
+#  observational record, which the contract allows but does not require)
 yq -r '.clusterGroup.subscriptions | keys[]' values-prod.yaml | sort > /tmp/expected
-grep -E '^### ' specs/014-ocp501-openshell-upgrade/review-log.md | sed 's/### //; s/ — .*//' | sort > /tmp/recorded
+sed -n '/^## Operator Review/,/^## Catalog Snapshot/p' specs/014-ocp501-openshell-upgrade/review-log.md \
+  | grep -E '^### ' | sed 's/### //; s/ — .*//' | grep -v '^patterns-operator$' | sort > /tmp/recorded
 diff /tmp/expected /tmp/recorded   # must be empty
 ```

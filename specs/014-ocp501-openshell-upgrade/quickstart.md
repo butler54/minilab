@@ -14,7 +14,7 @@
 ```bash
 # 1. Review artifact covers every subscription (contract: operator-review.md)
 yq -r '.clusterGroup.subscriptions | keys[]' values-prod.yaml | sort > /tmp/expected
-grep -E '^### ' specs/014-ocp501-openshell-upgrade/review-log.md | sed 's/### //; s/ — .*//' | sort > /tmp/recorded
+sed -n '/^## Operator Review/,/^## Catalog Snapshot/p' specs/014-ocp501-openshell-upgrade/review-log.md | grep -E '^### ' | sed 's/### //; s/ — .*//' | grep -v '^patterns-operator$' | sort > /tmp/recorded
 diff /tmp/expected /tmp/recorded && echo "review complete"
 
 # 2. Git pins updated (lvms on stable-5.0; coo approval Automatic)
