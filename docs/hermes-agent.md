@@ -1,6 +1,6 @@
 # Hermes Agent on minilab — deployment doc & evidence log
 
-**Status**: in progress (Gate 0 complete; image PR pending) · **Started**: 2026-11-16
+**Status**: in progress (Gate 0 + GitOps surface complete; image PR #64 green, awaiting merge) · **Started**: 2026-11-16
 **Plan**: Option A — Hermes in an OpenShell sandbox on the minilab cluster via the
 existing `k8s` gateway, GitOps-configured. NemoClaw dropped: its platform-support
 matrix marks native Kubernetes/OpenShift deployments **Unsupported** (sandboxes are
@@ -63,3 +63,5 @@ working (feature 014 acceptance, 2026-11-16).
 |---|---|---|---|---|
 | 1 | Gate 0 probe: `openshell sandbox create hermes-gate0 --from ghcr.io/butler54/openshell-sandbox:latest --policy /tmp/hermes-gate0-policy.yaml` + curl probes | Measure the SSRF/private-IP policy question and node routing before building anything (plan Gate 0.1) | GET + POST verified; policy shape proven (now in Git) | Probe sandbox deleted; policy promoted to `charts/openshell-policy/policies/hermes.yaml` |
 | 2 | Gate 0 stop/start marker test | Verify /sandbox persistence semantics (plan Gate 0.2) | Marker survived; podman named volume identified | No state change; semantics documented above |
+| 3 | containers PR #64 opened (branch 007-hermes-sandbox-layer) | Image build must follow the containers project process (GH Actions, PR-reviewed) | hermes-validate CI green on both arches after one fix (BASE_IMAGE ARG moved to global scope — stage-scoped ARGs are invisible to later FROM lines) | Awaiting operator merge; merge publishes ghcr.io/butler54/openshell-sandbox-hermes |
+| 4 | minilab GitOps surface: charts/hermes-agent + policy + deploy driver (commits cb2ef8e, 2d56d0b); root-app selective sync of the new child Application (T030 playbook — the rhbk-stall pattern again) | All hermes config in Git per constitution I | hermes-agent app Synced+Healthy; hermes-agent-sandbox ConfigMap + hermes policy key live on cluster; ExternalSecret inert until hermes.slack.enabled | Desired state Git-declared; Argo-converged |
