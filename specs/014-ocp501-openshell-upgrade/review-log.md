@@ -203,7 +203,19 @@ patterns-operator: fast (v0.0.82)
 
 ## Acceptance Evidence (US3)
 
-(pending)
+**Stage 1 — static suite (T021)**, 2026-11-16: `make test-static` ✓, `make validate-openshell` ✓ — all shell tests pass (lvms + openshell pin assertions at 0.1.8/stable-5.0).
+**Stage 2 — schema (T021)**: `./pattern.sh make validate-schema` ✓ — all assertions passed.
+**Stage 3 — CLI tie (T021)**: `make check-openshell-cli` ✓ — "openshell CLI version check passed (0.1.8)".
+**Stage 4 — convergence (T022)**, 2026-11-16:
+- `make validate-cluster` ✓ — connectivity, auth, StorageClass, OCP version compatibility all pass.
+- `make argo-healthcheck` ✗ → **fail→documented**: fails on `vp-gitops/minilab-prod` only. Root cause (verified, not drift): (a) health **Degraded** from `Subscription/rhbk-operator` `ResolutionFailed` — the documented upstream hold (RHBK absent from the OCP 5.0 operator index; see T009); (b) sync **OutOfSync** display on 4 child Application CRs (observability-config, openshell-demo, openshell-policy, vault) — `argocd app diff` shows an empty diff and all four children are Synced+Healthy; a status artifact of the interrupted sync operations. All other 17 applications Synced+Healthy. Remediation of (a) requires upstream publication (follow-up trigger recorded); (b) is cosmetic and self-resolves on the next completed root sync.
+- Environment note: `make argo-healthcheck`/`validate-cluster` initially failed with "playbook rhvp.cluster_utils.* could not be found" — the collection is not on Galaxy; installed `rhvp.cluster_utils:1.1.0` from `git+https://github.com/validatedpatterns/rhvp.cluster_utils.git` into `~/.ansible/collections` and ran make with `ANSIBLE_COLLECTIONS_PATH` exported (environment fix; the gates themselves unmodified).
+- 010 CPU posture: `olmconfig.cluster.spec.features.disableCopiedCSVs=true` — the no-op CSV copy-status PUT mechanism is intact (olm-config app Synced+Healthy).
+- Drift found and removed during the check: stale duplicate `Application/minilab-prod` in `openshift-gitops` namespace (created 2026-10-26, never reconciled — no status; feature-013-era leftover in the wrong Argo namespace). Finalizer removed first to prevent cascade, then deleted. Healthcheck failure count dropped from 2 to 1 (the documented root-app hold only).
+- Orphaned Completed sandbox pods `api-watch2`/`cache-quorum-diag` (48d old) deleted from `openshell` namespace (zero-residual, FR-010).
+
+**Stages 5–7 (T023–T025)**: pending gateway device-login authorization (CLI OIDC token expired; fresh code issued).
+
 
 ## Imperative Steps (constitution II)
 
