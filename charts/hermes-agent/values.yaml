@@ -21,12 +21,9 @@ secretStore:
 
 hermes:
   sandboxName: hermes
-  # Own registry (containers repo, hermes layer). EMPTY until first publish —
-  # the S1 deploy step pins the published manifest digest here (recorded in
-  # docs/hermes-agent.md); test-openshell-pins forbids floating tags in YAML.
-  # deploy-hermes.sh falls back to the :latest tag (script-side reference,
-  # demo-image convention) when this is unset.
-  image: ""
+  # Own registry (containers repo, hermes layer). Digest-pinned from the
+  # first publish (PR #64 merge, 2026-11-16; recorded in docs/hermes-agent.md).
+  image: ghcr.io/butler54/openshell-sandbox-hermes@sha256:a8c6f65ecda8f81063a71872b2bf2e026bd7021438d3971096cf29b6b99daa2c
   slack:
     remoteKey: secret/data/hub/openshell-slack
     secretName: hermes-slack-tokens
