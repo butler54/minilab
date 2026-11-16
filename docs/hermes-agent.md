@@ -1,6 +1,6 @@
 # Hermes Agent on minilab — deployment doc & evidence log
 
-**Status**: S1 complete (hermes + qwen working end-to-end); image seed-layout fix PR pending; S2 (Slack) awaiting workspace provisioning · **Started**: 2026-11-16
+**Status**: S1 + S4 complete (always-on gateway with persistent state); S2 (Slack) awaiting workspace provisioning; S3 (Signal) awaiting account decision · **Started**: 2026-11-16
 **Plan**: Option A — Hermes in an OpenShell sandbox on the minilab cluster via the
 existing `k8s` gateway, GitOps-configured. NemoClaw dropped: its platform-support
 matrix marks native Kubernetes/OpenShift deployments **Unsupported** (sandboxes are
@@ -106,3 +106,27 @@ injected (Signal disabled — account blank; Slack absent — tokens unseeded).
 --provider custom -m qwen-coder:latest` → `☤ Hermes: HERMES_S1_OK` (2s,
 e2e through policy v3). Raw-path verification: python urllib GET/POST +
 SSE streaming to the qwen endpoint all 200/OK.
+
+## S4 — always-on gateway + persistence (2026-11-16)
+
+**Image**: seed-layout publish (PR #67) digest-pinned:
+`ghcr.io/butler54/openshell-sandbox-hermes@sha256:ba3908eb…`.
+
+**Deployed** (`deploy-hermes.sh gateway`): main process =
+`hermes-gateway-start` → hermes-seed (first boot: pristine →
+`/sandbox/.hermes`, `.seeded` marker, stale bytecode cleared) → signal-cli
+daemon skipped (account blank) → `hermes gateway` exec'd under the seeded
+home's tools python (PID tree verified: openshell-sandbox → hermes gateway).
+
+**Measured**:
+- Gateway boots cleanly (agent.log: checkout detection, home maintenance,
+  plugin registration, kanban dispatcher embedded).
+- **Persistence**: sandbox stop → start → `/sandbox/S4_MARKER` intact,
+  `.seeded` intact (no re-seed), gateway auto-restarted (fresh agent.log
+  boot entries). State on the podman named volume; only sandbox deletion
+  resets (documented lifecycle).
+- **Least-privilege note**: hermes' live model-catalog fetch
+  (hermes-agent.nousresearch.com, raw.githubusercontent.com) is DENIED by
+  policy — INFO-level, non-fatal, falls back to the shipped catalog.
+  Deliberate: not required for the custom-pinned qwen model; add the hosts
+  to the policy if live catalog/plugin listing is wanted later.
