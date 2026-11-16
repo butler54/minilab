@@ -98,43 +98,29 @@ network_policies:
       port: 443
       protocol: tcp
       tls: skip
-      access: full
-      enforcement: enforce
     - host: cdn.signal.org
       port: 443
       protocol: tcp
       tls: skip
-      access: full
-      enforcement: enforce
     - host: cdn2.signal.org
       port: 443
       protocol: tcp
       tls: skip
-      access: full
-      enforcement: enforce
     - host: cdn3.signal.org
       port: 443
       protocol: tcp
       tls: skip
-      access: full
-      enforcement: enforce
     - host: storage.signal.org
       port: 443
       protocol: tcp
       tls: skip
-      access: full
-      enforcement: enforce
     - host: cdsi.signal.org
       port: 443
       protocol: tcp
       tls: skip
-      access: full
-      enforcement: enforce
     - host: svr2.signal.org
       port: 443
       protocol: tcp
       tls: skip
-      access: full
-      enforcement: enforce
     binaries:
     - path: /opt/java/jre25/bin/java

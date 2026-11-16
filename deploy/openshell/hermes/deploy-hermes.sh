@@ -63,7 +63,7 @@ case "$stage" in
     openshell status -g k8s >/dev/null 2>&1 \
       || { echo "FAIL preflight (run: OPENSHELL_NO_BROWSER=1 openshell gateway login k8s)" >&2; exit 1; }
     # S1: bash main process (measure loop); `gateway` stage recreates always-on.
-    openshell sandbox create --name "$NAME" --from "$IMAGE" --policy "$POLICY" --detach bash -c 'sleep infinity'
+    openshell sandbox create --name "$NAME" --from "$IMAGE" --policy "$POLICY" --detach -- bash -c 'sleep infinity'
     for _ in $(seq 1 60); do
       phase=$(openshell sandbox list 2>/dev/null | awk -v n="$NAME" '$1==n {print $NF}')
       [ "$phase" = Ready ] && break
@@ -89,7 +89,7 @@ case "$stage" in
     # process. NOTE: delete drops the state volume (re-pair Signal if linked).
     openshell sandbox delete "$NAME" >/dev/null 2>&1 || true
     sleep 5
-    openshell sandbox create --name "$NAME" --from "$IMAGE" --policy "$POLICY" --detach hermes-gateway-start
+    openshell sandbox create --name "$NAME" --from "$IMAGE" --policy "$POLICY" --detach -- hermes-gateway-start
     for _ in $(seq 1 60); do
       phase=$(openshell sandbox list 2>/dev/null | awk -v n="$NAME" '$1==n {print $NF}')
       [ "$phase" = Ready ] && break
