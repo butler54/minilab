@@ -7,8 +7,10 @@ global:
       lvmClusterDefaultDeviceClass: true
   lvmsCompatibility:
     cliImage: ""
+    channel: ""
     startingCSV: ""
     deployment: ""
+    daemonSet: ""
     lvmClusterCRD: ""
 lvmCluster:
   name: minilab-lvmcluster
