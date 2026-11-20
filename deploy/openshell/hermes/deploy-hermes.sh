@@ -13,6 +13,13 @@
 #
 # Env: HERMES_IMAGE (default from the hermes-agent ConfigMap)
 #      GATEWAY     (default: minilab — the cluster gateway; see below)
+#      HERMES_CPU  (default: 500m — sandbox workload CPU limit/request)
+#      HERMES_MEM  (default: 2Gi  — sandbox workload memory limit/request)
+#
+# Resource sizing: the minilab sno node runs ~90% CPU-requested (~684m free),
+# so the chart-default (unset) workload requests fail scheduling with
+# `Insufficient cpu`. hermes idles near-zero CPU at ~200MB RSS, hence the
+# deliberately small limits below; both are env-overridable per deploy.
 set -euo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 NAME="hermes"
@@ -31,6 +38,10 @@ IMAGE="${HERMES_IMAGE:-$(oc -n openshell get cm hermes-agent-sandbox -o jsonpath
 # Chart value is empty until the S1 digest pin; fall back to the family tag
 # (script-side reference only — YAML references must be digest-pinned).
 [ -n "$IMAGE" ] || IMAGE="ghcr.io/butler54/openshell-sandbox-hermes:latest"
+# Sandbox workload sizing (see header): fits the sno node's free CPU and the
+# lightweight hermes profile. Overridable for other clusters.
+HERMES_CPU="${HERMES_CPU:-500m}"
+HERMES_MEM="${HERMES_MEM:-2Gi}"
 
 stage="${1:-create}"
 
@@ -71,7 +82,8 @@ case "$stage" in
     openshell status -g "$GATEWAY" >/dev/null 2>&1 \
       || { echo "FAIL preflight (run: OPENSHELL_NO_BROWSER=1 openshell gateway login \"$GATEWAY\")" >&2; exit 1; }
     # S1: bash main process (measure loop); `gateway` stage recreates always-on.
-    openshell sandbox create -g "$GATEWAY" --name "$NAME" --from "$IMAGE" --policy "$POLICY" --detach -- bash -c 'sleep infinity'
+    openshell sandbox create -g "$GATEWAY" --name "$NAME" --from "$IMAGE" --policy "$POLICY" --detach \
+      --cpu "$HERMES_CPU" --memory "$HERMES_MEM" -- bash -c 'sleep infinity'
     for _ in $(seq 1 60); do
       phase=$(openshell sandbox list 2>/dev/null | awk -v n="$NAME" '$1==n {print $NF}')
       [ "$phase" = Ready ] && break
@@ -99,7 +111,8 @@ case "$stage" in
     # process. NOTE: delete drops the state volume (re-pair Signal if linked).
     openshell sandbox delete -g "$GATEWAY" "$NAME" >/dev/null 2>&1 || true
     sleep 5
-    openshell sandbox create -g "$GATEWAY" --name "$NAME" --from "$IMAGE" --policy "$POLICY" --detach -- hermes-gateway-start
+    openshell sandbox create -g "$GATEWAY" --name "$NAME" --from "$IMAGE" --policy "$POLICY" --detach \
+      --cpu "$HERMES_CPU" --memory "$HERMES_MEM" -- hermes-gateway-start
     for _ in $(seq 1 60); do
       phase=$(openshell sandbox list 2>/dev/null | awk -v n="$NAME" '$1==n {print $NF}')
       [ "$phase" = Ready ] && break
