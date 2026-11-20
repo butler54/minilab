@@ -66,10 +66,14 @@ keycloak:
           directAccessGrantsEnabled: false
           serviceAccountsEnabled: false
           redirectUris:
-          # CLI binds an ephemeral loopback port; Keycloak allows port wildcards
-          # on loopback authorities (RFC 8252 semantics).
-          - http://127.0.0.1:*/callback
-          - http://localhost:*/callback
+          # CLI binds an ephemeral loopback port (RFC 8252). RHBK 26.6 does NOT
+          # support a port wildcard mid-URI: `http://127.0.0.1:*/callback` is
+          # rejected as invalid_redirect_uri (observed 2026-09-27, previously
+          # mis-filed as an upstream bug; root-caused 2026-11-20 — a wildcard
+          # only matches as a trailing suffix). Trailing form accepts any
+          # port + path and is what the CLI's browser flow needs.
+          - http://127.0.0.1:*
+          - http://localhost:*
           attributes:
             pkce.code.challenge.method: S256
             oauth2.device.authorization.grant.enabled: "true"

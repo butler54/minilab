@@ -5,10 +5,9 @@
 #
 #   make validate-openshell-live        (requires oc access + DNS to cluster)
 #
-# Contains one XFAIL probe: Keycloak's authorize endpoint currently rejects
-# all redirect URIs (RHBK 26.6, observed 2026-09-27). When upstream is fixed
-# this probe XPASSes and the script FAILS with instructions to flip it — that
-# is intentional: it is the tripwire that says browser login works again.
+# Contains one redirect_uri acceptance probe (flipped from XFAIL 2026-11-20:
+# the "RHBK 26.6 bug" was a config-shape issue — mid-URI port wildcards are
+# not supported; trailing ':*' wildcards are. Fixed in values-keycloak.yaml).
 set -uo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 GATEWAY_NAME="${OPENSHELL_GATEWAY_NAME:-k8s}"
@@ -64,17 +63,17 @@ for k in ("device_code", "user_code", "verification_uri"):
 EOF
 fi
 
-# --- 4. XFAIL: redirect_uri acceptance (known RHBK 26.6 bug — flips loud when fixed)
+# --- 4. redirect_uri acceptance (browser-flow gate; flipped from XFAIL 2026-11-20)
 CODE=$(curl -s -o /dev/null -w "%{http_code}" --get "https://${KC_HOST}/realms/${KC_REALM}/protocol/openid-connect/auth" \
   --data-urlencode response_type=code --data-urlencode client_id=openshell-cli \
   --data-urlencode "redirect_uri=http://localhost:54321/callback" \
   --data-urlencode scope=openid -d "code_challenge=$CC" -d "code_challenge_method=S256")
-if [ "$CODE" = "400" ]; then
-  echo "XFAIL: authorize endpoint still rejects redirect_uri (400) — known RHBK 26.6 bug"
+if [ "$CODE" = "200" ]; then
+  echo "PASS: authorize endpoint accepts loopback redirect_uri (browser flow live)"
 else
-  echo "XPASS: authorize endpoint no longer rejects redirect_uri (HTTP $CODE)."
-  echo "       The bug is fixed — flip this probe to expect success in $0"
-  fail+=("redirect_uri probe XPASS (test needs updating)")
+  echo "FAIL: authorize endpoint rejects redirect_uri (HTTP $CODE) — browser login broken again?"
+  echo "      check live client redirectUris vs overrides/values-keycloak.yaml (trailing ':*' form)"
+  fail+=("redirect_uri probe rejected (HTTP $CODE)")
 fi
 
 # --- 5. TLS: publicly-trusted chain on both hosts, h2 on the gateway

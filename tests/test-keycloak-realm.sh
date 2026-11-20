@@ -39,6 +39,12 @@ chk(client is not None, "client openshell-cli missing")
 if client:
     chk(client.get("publicClient") is True, "openshell-cli must be a public client")
     chk(client.get("standardFlowEnabled") is True, "openshell-cli standardFlowEnabled must be true")
+    uris = client.get("redirectUris", [])
+    chk(len(uris) >= 2, "openshell-cli redirectUris missing")
+    for u in uris:
+        chk(u.count("*") == 1 and u.endswith(":*"),
+            f"openshell-cli redirectUri {u!r} must use exactly one trailing ':*' wildcard — "
+            "RHBK 26.6 rejects mid-URI port wildcards (invalid_redirect_uri; root-caused 2026-11-20)")
     chk(client.get("implicitFlowEnabled") is False, "openshell-cli implicitFlowEnabled must be false")
     chk(client.get("directAccessGrantsEnabled") is False,
         "openshell-cli directAccessGrantsEnabled must be false")
@@ -46,7 +52,7 @@ if client:
     chk(cattrs.get("pkce.code.challenge.method") == "S256",
         "openshell-cli pkce.code.challenge.method must be S256")
     chk(cattrs.get("oauth2.device.authorization.grant.enabled") == "true",
-        "openshell-cli oauth2.device.authorization.grant.enabled must be 'true' (device flow is the only working login path)")
+        "openshell-cli oauth2.device.authorization.grant.enabled must be 'true' (device flow is the headless login path)")
     mappers = client.get("protocolMappers", [])
     aud = next((m for m in mappers if m.get("protocolMapper") == "oidc-audience-mapper"), None)
     chk(aud is not None, "openshell-cli audience protocol mapper missing")
