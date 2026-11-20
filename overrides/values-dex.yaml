@@ -5,6 +5,9 @@
 # Inert at Commit A: nothing references dex until the Commit B cutover flips
 # gateway server.oidc.issuer (overrides/values-openshell-gateway.yaml).
 
+# scaled to 0 2026-11-20 to free ~500m CPU on sno (90% requested) for the hermes cluster deployment; dex is inert until the spec 013 gateway cutover (R3) — restore replicaCount at cutover
+replicaCount: 0
+
 https:
   # Pod serves the ACME cert itself (passthrough Route + Certificate in
   # charts/dex-config — keycloak house pattern) so the issuer endpoint is
