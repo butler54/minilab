@@ -37,11 +37,10 @@ server:
   disableTls: false
   credentialStorage:
     existingSecret: openshell-kek
-  # hermes seeded home (/opt/hermes-pristine -> /sandbox/.hermes) is 2.2G —
-  # measured 2026-11-20; default 2Gi would fail first boot.
+  # hermes seeded home (/opt/hermes-pristine -> /sandbox/.hermes) is 2.2G — measured 2026-11-20; 10Gi per operator sizing decision for stability (default 2Gi would fail first boot)
   # Renders to gateway config `kubernetes.workspace_default_storage_size`
   # (chart 0.1.8 _helpers.tpl); per-sandbox PVC workspace-default-<name>.
-  workspaceDefaultStorageSize: "4Gi"
+  workspaceDefaultStorageSize: "10Gi"
   # SPIFFE provider-token grants — tracks global.openshell.ztwim.enabled (drift-asserted).
   providerTokenGrants:
     spiffe:
