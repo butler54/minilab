@@ -5,7 +5,7 @@ Demonstrates a human-air-gapped AI coding agent inside a governed OpenShell sand
 ## Prerequisites (per gateway rebuild)
 
 - CLI pinned to server: `make check-openshell-cli` (0.1.3 at time of writing; upstream-tarball install path fixed in feature 012).
-- OIDC login: `OPENSHELL_NO_BROWSER=1 openshell gateway login k8s`, verify `Status: Connected` + `Authenticated`.
+- OIDC login: `OPENSHELL_NO_BROWSER=1 openshell gateway login minilab`, verify `Status: Connected` + `Authenticated`.
 - Matilda profile + provider on cluster gateway:
   - `openshell profile describe matilda` or import `deploy/openshell/profiles/matilda.yaml --global`
   - `openshell provider list | grep matilda` or `MATILDA_API_KEY=$(...) openshell provider create --name matilda --type matilda --global-profile --credential MATILDA_API_KEY` (source the key from `secret/data/hub/openshell-matilda`)
@@ -99,7 +99,7 @@ rules). Evidence: `specs/011-zen-sandbox-demo/demo-log.md`.
   `specs/012-openshell-013-upgrade/quickstart.md` G2.
 - **Gateway CLI sessions die ~50 min after login** with
   `invalid_grant: Token is not active` (008 + 011, multiple hits);
-  re-login via `OPENSHELL_NO_BROWSER=1 openshell gateway login k8s`.
+  re-login via `OPENSHELL_NO_BROWSER=1 openshell gateway login minilab`.
   Config/root-cause investigation: minilab#9. Plan live work in
   post-login batches; the scripts' preflight fails fast with the hint.
 - **Free-tier requires a genuine opencode client** but NOT any key: the

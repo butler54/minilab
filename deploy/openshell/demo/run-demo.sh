@@ -4,10 +4,10 @@
 #   run-demo.sh --smoke     fully automatic: one-shot agent + proofs + cleanup
 #   run-demo.sh --proofs    proofs + cleanup on an already-running sandbox
 # Env: DEMO_SANDBOX_IMAGE (default ghcr.io/butler54/openshell-sandbox:latest)
-#      SANDBOX_NAME, DEMO_PROMPT, GATEWAY (default k8s)
+#      SANDBOX_NAME, DEMO_PROMPT, GATEWAY (default minilab)
 set -uo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
-GATEWAY="${GATEWAY:-k8s}"
+GATEWAY="${GATEWAY:-minilab}"
 SANDBOX="${SANDBOX_NAME:-demo-$(date +%s)}"
 IMAGE="${DEMO_SANDBOX_IMAGE:-ghcr.io/butler54/openshell-sandbox:latest}"
 PROMPT="${DEMO_PROMPT:-Reply with exactly: OPENSHELL_VDEMO_OK}"

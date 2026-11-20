@@ -7,12 +7,12 @@
 #   run-zen-demo.sh --query     one classified zen-query attempt on the running sandbox
 #   run-zen-demo.sh --proofs    deny probes + cleanup on an already-running sandbox
 #   run-zen-demo.sh --smoke     fully automatic: setup + query + proofs + cleanup
-# Env: SANDBOX_NAME, DEMO_SANDBOX_IMAGE, GATEWAY (default k8s),
+# Env: SANDBOX_NAME, DEMO_SANDBOX_IMAGE, GATEWAY (default minilab),
 #      SKIP_FENCE_WAIT=1 (skip the +5.5min alive check; CI/dev only),
 #      DEMO_MODEL (default from opencode-zen.json)
 set -uo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)
-GATEWAY="${GATEWAY:-k8s}"
+GATEWAY="${GATEWAY:-minilab}"
 SANDBOX="${SANDBOX_NAME:-zen-$(date +%s)}"
 IMAGE="${DEMO_SANDBOX_IMAGE:-ghcr.io/butler54/openshell-sandbox:latest}"
 POLICY="$root/charts/openshell-policy/policies/zen-demo.yaml"

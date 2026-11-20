@@ -10,7 +10,7 @@
 # not supported; trailing ':*' wildcards are. Fixed in values-keycloak.yaml).
 set -uo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-GATEWAY_NAME="${OPENSHELL_GATEWAY_NAME:-k8s}"
+GATEWAY_NAME="${OPENSHELL_GATEWAY_NAME:-minilab}"
 
 read -r KC_HOST KC_REALM GW_HOST ISSUER AUDIENCE USER_ROLE < <(python3 - "$root" <<'EOF'
 import sys, yaml

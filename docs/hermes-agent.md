@@ -2,7 +2,7 @@
 
 **Status**: S1 + S4 complete (always-on gateway with persistent state); S2 (Slack) awaiting workspace provisioning; S3 (Signal) awaiting account decision · **Started**: 2026-11-16
 **Plan**: Option A — Hermes in an OpenShell sandbox on the minilab cluster via the
-existing `k8s` gateway, GitOps-configured. NemoClaw dropped: its platform-support
+existing `minilab` gateway, GitOps-configured. NemoClaw dropped: its platform-support
 matrix marks native Kubernetes/OpenShift deployments **Unsupported** (sandboxes are
 host-local Docker containers; the lifecycle-authority contract is loopback-only;
 source-level guard rejects gateway-endpoint overrides). NVIDIA's ecosystem guidance

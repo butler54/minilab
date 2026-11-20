@@ -43,7 +43,7 @@ validate-openshell-live: check-openshell-cli ## Live-cluster auth smoke test (Ke
 .PHONY: validate-openshell-demo
 validate-openshell-demo: ## Scripted V-DEMO smoke (opencode-in-sandbox vs matilda); skips when cluster unreachable
 	@if ! oc get --raw /healthz >/dev/null 2>&1; then echo "skip: cluster unreachable (validate-openshell-demo)"; exit 0; fi; \
-	if ! openshell status -g k8s >/dev/null 2>&1; then echo "skip: gateway auth missing (login: OPENSHELL_NO_BROWSER=1 openshell gateway login k8s)"; exit 0; fi; \
+	if ! openshell status -g minilab >/dev/null 2>&1; then echo "skip: gateway auth missing (login: OPENSHELL_NO_BROWSER=1 openshell gateway login minilab)"; exit 0; fi; \
 	DEMO_PROMPT="Reply with exactly: OPENSHELL_VDEMO_OK" deploy/openshell/demo/run-demo.sh --smoke
 
 .PHONY: check-openshell-cli

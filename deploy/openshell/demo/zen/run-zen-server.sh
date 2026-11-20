@@ -6,11 +6,11 @@
 #   run-zen-server.sh           setup + serve + forward + attach instructions + Enter-to-teardown
 #   run-zen-server.sh --teardown  kill forward, delete sandbox, assert zero residual
 #
-# Env: SANDBOX_NAME, GATEWAY (default k8s), SERVE_PORT (default 4096),
+# Env: SANDBOX_NAME, GATEWAY (default minilab), SERVE_PORT (default 4096),
 #      OPENCODE_SERVER_PASSWORD (optional; never persisted — console only, Z4)
 set -uo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)
-GATEWAY="${GATEWAY:-k8s}"
+GATEWAY="${GATEWAY:-minilab}"
 SANDBOX="${SANDBOX_NAME:-zen-$(date +%s)}"
 IMAGE="${DEMO_SANDBOX_IMAGE:-ghcr.io/butler54/openshell-sandbox:latest}"
 POLICY="$root/charts/openshell-policy/policies/zen-demo.yaml"
