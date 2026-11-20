@@ -12,9 +12,17 @@
 #   deploy-hermes.sh teardown # remove the sandbox (state volume is deleted!)
 #
 # Env: HERMES_IMAGE (default from the hermes-agent ConfigMap)
+#      GATEWAY     (default: minilab — the cluster gateway; see below)
 set -euo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 NAME="hermes"
+# Target gateway: the minilab cluster gateway. ALWAYS explicit — never rely
+# on the CLI's active-gateway default (the workstation's local podman
+# gateway), which is how every prior hermes measurement ran locally by
+# accident (docs/hermes-agent.md topology correction, 2026-11-20).
+# OPENSHELL_GATEWAY covers every invocation incl. exec/policy calls.
+GATEWAY="${GATEWAY:-minilab}"
+export OPENSHELL_GATEWAY="$GATEWAY"
 POLICY="$root/charts/openshell-policy/policies/hermes.yaml"
 CFG="$root/deploy/openshell/hermes/hermes-config.yaml"
 ENV_TEMPLATE="$root/deploy/openshell/hermes/hermes-env.template"
@@ -60,10 +68,10 @@ inject_config() {
 
 case "$stage" in
   create)
-    openshell status -g k8s >/dev/null 2>&1 \
-      || { echo "FAIL preflight (run: OPENSHELL_NO_BROWSER=1 openshell gateway login k8s)" >&2; exit 1; }
+    openshell status -g "$GATEWAY" >/dev/null 2>&1 \
+      || { echo "FAIL preflight (run: OPENSHELL_NO_BROWSER=1 openshell gateway login \"$GATEWAY\")" >&2; exit 1; }
     # S1: bash main process (measure loop); `gateway` stage recreates always-on.
-    openshell sandbox create --name "$NAME" --from "$IMAGE" --policy "$POLICY" --detach -- bash -c 'sleep infinity'
+    openshell sandbox create -g "$GATEWAY" --name "$NAME" --from "$IMAGE" --policy "$POLICY" --detach -- bash -c 'sleep infinity'
     for _ in $(seq 1 60); do
       phase=$(openshell sandbox list 2>/dev/null | awk -v n="$NAME" '$1==n {print $NF}')
       [ "$phase" = Ready ] && break
@@ -89,9 +97,9 @@ case "$stage" in
   gateway)
     # S4: always-on posture — recreate with hermes-gateway-start as the main
     # process. NOTE: delete drops the state volume (re-pair Signal if linked).
-    openshell sandbox delete "$NAME" >/dev/null 2>&1 || true
+    openshell sandbox delete -g "$GATEWAY" "$NAME" >/dev/null 2>&1 || true
     sleep 5
-    openshell sandbox create --name "$NAME" --from "$IMAGE" --policy "$POLICY" --detach -- hermes-gateway-start
+    openshell sandbox create -g "$GATEWAY" --name "$NAME" --from "$IMAGE" --policy "$POLICY" --detach -- hermes-gateway-start
     for _ in $(seq 1 60); do
       phase=$(openshell sandbox list 2>/dev/null | awk -v n="$NAME" '$1==n {print $NF}')
       [ "$phase" = Ready ] && break
@@ -102,7 +110,7 @@ case "$stage" in
     echo "PASS gateway ($NAME, main process hermes-gateway-start)"
     ;;
   teardown)
-    openshell sandbox delete "$NAME"
+    openshell sandbox delete -g "$GATEWAY" "$NAME"
     ;;
   *) echo "usage: $0 {create|smoke|gateway|teardown}" >&2; exit 2 ;;
 esac

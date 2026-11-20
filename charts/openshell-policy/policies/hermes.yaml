@@ -96,6 +96,28 @@ network_policies:
     binaries:
     - path: /opt/hermes/tools/python-*/bin/python3*
     - path: /sandbox/.uv/python/*/bin/python3*
+  # justification: hermes live model-catalog + plugin-catalog fetch. These
+  # hosts were deliberately DENIED through S4 (INFO-level, non-fatal — hermes
+  # falls back to the shipped catalog; recorded in docs/hermes-agent.md);
+  # allowed per operator decision 2026-11-20. Plain HTTPS from the tools
+  # python against the system trust store — no pinned-CA passthrough needed
+  # (unlike Signal), so protocol: rest with L7 enforcement; no tls:skip.
+  allow_hermes_catalog:
+    name: allow_hermes_catalog
+    endpoints:
+    - host: hermes-agent.nousresearch.com
+      port: 443
+      protocol: rest
+      access: read-only
+      enforcement: enforce
+    - host: raw.githubusercontent.com
+      port: 443
+      protocol: rest
+      access: read-only
+      enforcement: enforce
+    binaries:
+    - path: /opt/hermes/tools/python-*/bin/python3*
+    - path: /sandbox/.uv/python/*/bin/python3*
   # justification: Signal via signal-cli — service endpoints from signal-cli's
   # LiveConfig (chat/CDN/storage/CDSI/SVR2). Raw TLS passthrough (tls: skip,
   # no request protocol): libsignal pins its own trust store, so the L7 proxy

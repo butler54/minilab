@@ -40,12 +40,17 @@ expected = {
     ("192.168.4.190", 11434),
     ("slack.com", 443), ("api.slack.com", 443), ("hooks.slack.com", 443),
     ("wss-primary.slack.com", 443), ("wss-backup.slack.com", 443),
+    ("hermes-agent.nousresearch.com", 443), ("raw.githubusercontent.com", 443),
     ("chat.signal.org", 443), ("cdn.signal.org", 443), ("cdn2.signal.org", 443),
     ("cdn3.signal.org", 443), ("storage.signal.org", 443),
     ("cdsi.signal.org", 443), ("svr2.signal.org", 443),
 }
 missing = expected - seen
 assert not missing, f"missing expected endpoints: {sorted(missing)}"
+# Catalog endpoints must be L7-inspected rest (NOT tcp/tls:skip passthrough)
+for e in p["network_policies"]["allow_hermes_catalog"]["endpoints"]:
+    assert e["protocol"] == "rest" and "tls" not in e, f"catalog endpoint {e['host']} must be rest without tls:skip"
+    assert e.get("enforcement") == "enforce", f"catalog endpoint {e['host']} must be enforced"
 # Qwen endpoint must be plain IPv4 (0.1.8: IPv4-mapped IPv6 is evaluated as IPv4)
 assert "192.168.4.190" in str(p), "qwen endpoint must use the direct LAN IP"
 PY

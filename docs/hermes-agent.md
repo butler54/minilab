@@ -1,6 +1,6 @@
 # Hermes Agent on minilab — deployment doc & evidence log
 
-**Status**: S1 + S4 complete (always-on gateway with persistent state); S2 (Slack) awaiting workspace provisioning; S3 (Signal) awaiting account decision · **Started**: 2026-11-16
+**Status**: S1 + S4 evidence retracted as local-gateway runs (topology correction 2026-11-20); cluster redeploy in progress; S2 (Slack) awaiting workspace provisioning; S3 (Signal) awaiting account decision · **Started**: 2026-11-16
 **Plan**: Option A — Hermes in an OpenShell sandbox on the minilab cluster via the
 existing `minilab` gateway, GitOps-configured. NemoClaw dropped: its platform-support
 matrix marks native Kubernetes/OpenShift deployments **Unsupported** (sandboxes are
@@ -21,9 +21,34 @@ loopback daemon, execs `hermes gateway`).
 spike; allowlist +61408390624). **Out of scope (subsequent phase)**:
 workstation `sandbox connect`/forward access.
 
+## Topology correction (2026-11-20)
+
+**Every hermes measurement and deployment to date (Gate 0, S1, S4) ran on the
+WORKSTATION's local podman gateway — the CLI's active gateway — not the
+minilab cluster gateway.** Root cause: deploy-hermes.sh preflighted
+`openshell status -g k8s` but every subsequent openshell command omitted
+`-g`, so all mutations targeted the active (local) gateway. Corroboration:
+the cluster gateway lists zero sandboxes; the cluster node's podman store is
+empty; the local gateway listed sandbox `hermes` (created 2026-11-16 10:09).
+Fixes: gateway registration renamed k8s → minilab (d5976fe) and
+deploy-hermes.sh now pins the gateway on every invocation
+(GATEWAY=minilab + OPENSHELL_GATEWAY export).
+
+Evidence status:
+- RETRACTED: "Node routing 192.168.5.0/24 → 192.168.4.0/24 and OVN egress
+  confirmed working" (GATE0-1) — OVN was never in the measured path; the
+  probe ran workstation→LAN.
+- INVALID (local-only): GATE0-2 node-level-podman topology, named-volume and
+  marker-persistence evidence; S1/S4 deployment, smoke and persistence
+  narratives. Cluster-node sandbox topology and /sandbox persistence:
+  re-measured below.
+- STANDING (cluster-side, unaffected): GATE0-3 platform evidence; GitOps
+  surface (imperative row 4); KC redirect-URI fix (row 5).
+
 ## Gate 0 — preconditions (measured 2026-11-16)
 
 **GATE0-1 — qwen endpoint reachability + policy shape (the plan's #1 risk)**:
+(measured on the LOCAL gateway — see topology correction above; re-measured on cluster 2026-11-20)
 probe sandbox `hermes-gate0` (standard image, throwaway) with exactly the
 policy rule now in `charts/openshell-policy/policies/hermes.yaml`:
 
@@ -38,6 +63,7 @@ admits exact-host endpoints. Node routing 192.168.5.0/24 → 192.168.4.0/24 and
 OVN egress confirmed working. Read-write `protocol: rest` verified.
 
 **GATE0-2 — state persistence (topology discovery)**: sandboxes on this
+(measured on the LOCAL gateway — see topology correction above; re-measured on cluster 2026-11-20)
 cluster are **node-level podman containers** (not k8s pods — verified: no
 sandbox pods exist cluster-wide; sandbox root is an overlay under
 `/var/home/core/.local/share/containers/storage`, user `core`), with
@@ -131,3 +157,4 @@ home's tools python (PID tree verified: openshell-sandbox → hermes gateway).
   policy — INFO-level, non-fatal, falls back to the shipped catalog.
   Deliberate: not required for the custom-pinned qwen model; add the hosts
   to the policy if live catalog/plugin listing is wanted later.
+  2026-11-20: these hosts are now allowed (allow_hermes_catalog policy rule) per operator decision — see cluster redeploy evidence.
