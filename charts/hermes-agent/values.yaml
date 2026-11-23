@@ -22,11 +22,11 @@ secretStore:
 hermes:
   sandboxName: hermes
   # Own registry (containers repo, hermes layer). Digest-pinned from the
-  # seed-permission fix publish (PR #69, merged 460192c, 2026-11-23;
-  # recorded in docs/hermes-agent.md). PR #69 adds chmod -R a+rX
-  # /opt/hermes-pristine at build time so hermes-seed's cp -a works for
-  # arbitrary uids (OpenShift SCC); supersedes the seed-fixup Job workaround.
-  image: ghcr.io/butler54/openshell-sandbox-hermes@sha256:0ee630ffb4e3a7e42cad662ea9047d716f277d3c46be38cce86b0e4863201e9c
+  # Slack-SDK publish (PR #70, 2026-11-23; recorded in docs/hermes-agent.md).
+  # slack-bolt 1.30.0 + slack-sdk 3.45.0 baked into the home venv at build
+  # time, so no runtime pypi fetch (egress-denied). Retains PR #69's a+rX
+  # seed fix. Includes the dependabot pip bump (#71).
+  image: ghcr.io/butler54/openshell-sandbox-hermes@sha256:d6d67bff9cb6624d40094cc30ce45ab20f1802e8ad6012696de699b0c7f7694e
   slack:
     remoteKey: secret/data/hub/openshell-slack
     secretName: hermes-slack-tokens
