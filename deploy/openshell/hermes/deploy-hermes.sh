@@ -99,9 +99,14 @@ case "$stage" in
     echo "--- binary path resolution (policy binaries) ---"
     openshell sandbox exec -n "$NAME" -- sh -c 'readlink -f "$(command -v hermes)"; readlink -f "$JAVA_HOME/bin/java"; readlink -f "$(command -v signal-cli)"'
     echo "--- what is the hermes launcher (venv python?) ---"
-    openshell sandbox exec -n "$NAME" -- sh -c 'head -1 "$(readlink -f "$(command -v hermes)")" 2>/dev/null || file "$(readlink -f "$(command -v hermes)")"; ls /opt/hermes/hermes-agent/.venv/bin/python* 2>/dev/null'
+    openshell sandbox exec -n "$NAME" -- sh -c 'head -1 "$(readlink -f "$(command -v hermes)")" 2>/dev/null || file "$(readlink -f "$(command -v hermes)")"; ls -l /sandbox/.venv/bin/python* /opt/hermes/hermes-agent/.venv/bin/python* 2>/dev/null || true'
+    # The policy authorizes ONLY the tools/venv python interpreters for qwen
+    # egress (curl is deliberately absent from `binaries`, so it is denied at
+    # connect), hence the probe uses the same interpreter hermes itself uses.
     echo "--- model via policy (expect qwen-coder:latest) ---"
-    openshell sandbox exec -n "$NAME" -- curl -s -m 15 http://192.168.4.190:11434/v1/models | grep -o 'qwen-coder:latest'
+    openshell sandbox exec -n "$NAME" -- python3 -c \
+      'import json,urllib.request as u;d=json.load(u.urlopen("http://192.168.4.190:11434/v1/models",timeout=15));print("\n".join(m["id"] for m in d["data"]))' \
+      | grep -o 'qwen-coder:latest'
     echo "--- hermes self-report ---"
     openshell sandbox exec -n "$NAME" -- hermes --version
     echo "PASS smoke ($NAME) — record outputs in docs/hermes-agent.md"

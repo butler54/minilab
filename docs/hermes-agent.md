@@ -1,6 +1,6 @@
 # Hermes Agent on minilab — deployment doc & evidence log
 
-**Status**: S1 + S4 evidence retracted as local-gateway runs (topology correction 2026-11-20); cluster redeploy in progress; S2 (Slack) awaiting workspace provisioning; S3 (Signal) awaiting account decision · **Started**: 2026-11-16
+**Status**: deployed on the minilab cluster (S1c + S4c, 2026-11-23); S2 (Slack) awaiting workspace provisioning; S3 (Signal) awaiting account decision · **Started**: 2026-11-16
 **Plan**: Option A — Hermes in an OpenShell sandbox on the minilab cluster via the
 existing `minilab` gateway, GitOps-configured. NemoClaw dropped: its platform-support
 matrix marks native Kubernetes/OpenShift deployments **Unsupported** (sandboxes are
@@ -44,6 +44,53 @@ Evidence status:
   re-measured below.
 - STANDING (cluster-side, unaffected): GATE0-3 platform evidence; GitOps
   surface (imperative row 4); KC redirect-URI fix (row 5).
+
+### Cluster re-measurement (2026-11-23)
+
+Measured on the **minilab** k8s gateway (`GATEWAY=minilab`), not the
+workstation podman gateway. Corrections to the local-gateway measurements:
+
+- **Sandbox topology is a k8s pod pair + workspace PVC** (not node-level
+  podman containers/named volumes): `os-supervisor-<uuid>` (500m/1Gi request)
+  + `default--<name>` workload pod (agent container 500m/2Gi), plus PVC
+  `workspace-default--<name>` (`lvms-loopback`, RWO, **10Gi** measured Bound)
+  mounted at `/sandbox`. The GATE0-2 dismissal of the reviewer's
+  `workspaceDefaultStorageSize` recommendation is **measurably wrong**: a
+  pristine seeded home is **2.4G / 108,586 files** vs the chart's 2Gi default
+  — the 10Gi workspace PVC is required (now live in `gateway.toml`).
+- **The fail-closed bootstrap reaper has a hardcoded ~301s budget** for
+  create→Ready. Both PVC provisioning (WFFC) and pod scheduling must fit
+  inside it; the gateway kills the sandbox at +301s otherwise. Removing image
+  pull time from that budget requires a node-side pre-pull (14.3GB image,
+  `crictl pull` on the node — 1076s once, then kubelet does not re-pull).
+- **Node CPU headroom gates the deploy**: node `sno` sat at 6316m/7500m (84%)
+  requested. A namespace `LimitRange` (`openshell-defaults`) defaults
+  **cpu 500m / memory 1Gi** onto any container without requests, so the sandbox
+  **pod pair floors at ~1000m** regardless of the create flags. `--cpu`/
+  `--memory` only size the **agent container** (the supervisor keeps its
+  default). This is why dex was scaled to 0 (`69c7afb`, restore at spec 013 R3)
+  → 1184m free, which scheduled immediately; an earlier probe with 684m free
+  never scheduled (`FailedScheduling: Insufficient cpu`).
+- **qwen reachability from the cluster pod**: `qwen-coder:latest` visible via
+  the policy-authorized interpreter from inside the scheduled sandbox —
+  measured in the probe and in `deploy-hermes.sh smoke` (PASS). Note `curl` is
+  deliberately **absent** from the policy `binaries`, so curl-based probes are
+  denied at `connect()` (EPERM); smoke now probes with the same python hermes
+  uses.
+- **Persistence is PVC-backed**: `stop` → `start` keeps `/sandbox` contents
+  (marker + `.seeded` with unchanged inode/mtime → no re-seed) and the gateway
+  restarts. Sandbox **deletion drops the PVC** (workspace recreated empty).
+- **Cluster-specific seeding blocker (image fix required)**: `/opt/hermes-pristine`
+  carries build-owned **0600 files (uid 998)**. The sandbox runtime runs the
+  agent as **uid 1000870000**, so `hermes-seed` (`cp -a`, `set -eu`) hits
+  `Permission denied`, exits non-zero, and `hermes-gateway-start` (`set -euo
+  pipefail`) kills the main process → sandbox phase `Error` ~2 min after Ready
+  (not the reaper). Local podman runs masked this. Workaround applied once to
+  reach the verification below: a root helper pod on the same PVC re-ran the
+  pristine copy, `chown -R 1000870000` and wrote `.seeded`, after which
+  `stop`/`start` booted cleanly. Proper fix belongs in the image build
+  (`chmod -R a+rX`/`chown` the pristine home) or a tolerant `hermes-seed`.
+
 
 ## Gate 0 — preconditions (measured 2026-11-16)
 
@@ -92,6 +139,8 @@ working (feature 014 acceptance, 2026-11-16).
 | 3 | containers PR #64 opened (branch 007-hermes-sandbox-layer) | Image build must follow the containers project process (GH Actions, PR-reviewed) | hermes-validate CI green on both arches after one fix (BASE_IMAGE ARG moved to global scope — stage-scoped ARGs are invisible to later FROM lines) | Awaiting operator merge; merge publishes ghcr.io/butler54/openshell-sandbox-hermes |
 | 4 | minilab GitOps surface: charts/hermes-agent + policy + deploy driver (commits cb2ef8e, 2d56d0b); root-app selective sync of the new child Application (T030 playbook — the rhbk-stall pattern again) | All hermes config in Git per constitution I | hermes-agent app Synced+Healthy; hermes-agent-sandbox ConfigMap + hermes policy key live on cluster; ExternalSecret inert until hermes.slack.enabled | Desired state Git-declared; Argo-converged |
 | 5 | S4 re-verify (2026-11-20): gateway re-login blocked by `invalid_redirect_uri` — KC `openshell-cli` client carried mid-URI port wildcards (`http://127.0.0.1:*/callback`), which RHBK 26.6 does not match; live fix via KC admin API PUT (redirectUris → trailing `:*` form), then Git reconcile (values-keycloak.yaml + test flips: auth-smoke XFAIL→PASS, realm-shape guard added) | Restore the browser login path needed to verify the always-on gateway posture (and unblock all k8s-gateway CLI work) | authorize endpoint 400→200 for loopback redirect_uris; CLI browser login completes; root cause of the "RHBK 26.6 bug" (observed 2026-09-27) recorded | Live PUT reconciled to Git in the same change (CR/Secret-level convergence only — KeycloakRealmImport is one-shot: import Job never recreated, kc.sh --override=false; future realm edits require an admin-API PUT, the established pattern since 2026-09-27) |
+| 6 | Capacity changes in Git for the cluster deploy: `workspaceDefaultStorageSize` 4Gi → **10Gi** (operator stability decision), sandbox create flags `--cpu 500m --memory 2Gi` in deploy-hermes.sh, node image pre-pull (14.3GB, 1076s), dex scale-to-0 (`69c7afb`, restore note at spec 013 R3) | Probe measured `FailedScheduling: Insufficient cpu` at 684m free, a pristine home of 2.4G vs the 2Gi default, and the hardcoded ~301s reaper window — each change removes one failure mode inside that window | 10Gi PVC Bound on every create; pods scheduled at +51s with 1184m free; create→Ready ~53s (probe) and 63.9s end-to-end (gateway stage) — well inside 301s | Argo Synced after each Git change; gateway restarted where needed; measurements recorded in the 2026-11-23 cluster re-measurement above |
+| 7 | Cluster deployment (2026-11-23): probe `hermes-gate0c` → `deploy-hermes.sh gateway` → six-point verification | Replace the retracted local-gateway S1/S4 evidence with cluster-measured evidence (constitution I/II) | Probe: pod pair Running + PVC Bound(10Gi) at +51s, Ready ~53s, qwen OK. Deploy: PASS inject/gateway in 63.9s; main process then exited on the seed permission blocker (above) → one-time root helper seed (95s, 108,586 files/2.4G) → `stop`/`start` Ready in 12s. smoke PASS (binary paths `/usr/local/bin/hermes`, `/usr/bin/java`, `/opt/signal-cli-0.14.10/bin/signal-cli`; `qwen-coder:latest`; Hermes v0.23.1). Catalog fetch: hermes-agent.nousresearch.com 200 (617KB), raw.githubusercontent.com 200 (17.5KB) from the cluster pod; zero DENIED for those hosts (api.github.com DENIED as designed). Persistence: `cluster-S5` marker + `.seeded` (same inode) survive stop→start, fresh agent.log boot at 02:44. | Evidence in this doc; deploy-hermes.sh smoke fixed to probe via the policy-authorized python (commit with this row); image-side seed-permission fix tracked as follow-up |
 
 ## S1 — sandbox deployed + qwen smoke (2026-11-16)
 
