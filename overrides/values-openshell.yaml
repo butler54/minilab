@@ -46,9 +46,10 @@ global:
     hermes:
       enabled: true
       slack:
-        # Flip when the Slack workspace + app exist and the tokens are seeded
-        # in vault at secret/data/hub/openshell-slack (bot-token, app-token).
-        enabled: false
+        # Slack socket-mode tokens live in vault at secret/data/hub/openshell-slack
+        # (seeded 2026-11-23); ExternalSecret hermes-slack-tokens syncs them;
+        # deploy-hermes.sh injects into the sandbox .env.
+        enabled: true
       signal:
         # E.164 number of the linked Signal device (SIGNAL_ACCOUNT; blank =
         # Signal disabled until the QR-linking spike runs).
