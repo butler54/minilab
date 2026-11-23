@@ -43,6 +43,16 @@ if spiffe.get("enabled") and not ztwim_on:
 if ztwim_on and not spiffe.get("enabled"):
     fail.append("openshell.ztwim.enabled=true but gateway override spiffe.enabled is not true")
 
+# Workspace PVC sizing (docs/hermes-agent.md, cluster re-measurement 2026-11-23):
+# the seeded hermes home is 2.4G / 108,586 files vs the chart's 2Gi default —
+# the 10Gi workspace PVC is an operator sizing decision, not a preference.
+wds = (gwv.get("server") or {}).get("workspaceDefaultStorageSize")
+if wds != "10Gi":
+    fail.append(
+        f"gateway server.workspaceDefaultStorageSize must be '10Gi', got {wds!r} "
+        "(docs/hermes-agent.md: 2.4G seeded home vs 2Gi chart default)"
+    )
+
 # The pattern's shared values file must be wired so the overrides actually apply.
 prod = yaml.safe_load(open(os.path.join(root, "values-prod.yaml")))["clusterGroup"]
 shared = prod.get("sharedValueFiles", [])

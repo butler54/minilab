@@ -3,9 +3,11 @@ set -euo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # Keycloak realm values guards (V-AUTH learnings, 2026-09-27):
-#   - device-flow grant is the ONLY working login path (redirect_uri 400 bug,
-#     see tests/test-openshell-auth-smoke.sh) — both realm-level and
-#     client-level flags must stay on.
+#   - device flow is the headless fallback login path (realm-level and
+#     client-level device-grant flags must stay on); the browser flow is live
+#     (redirect_uri wildcard fix 2026-11-20) and guarded by the redirectUri
+#     shape assertions below plus the live authorize-endpoint probe in
+#     tests/test-openshell-auth-smoke.sh.
 #   - Keycloak's hardcoded-role IdP mapper requires config key `role`;
 #     `role.value` is silently ignored (observed on RHBK 26.6).
 #   - openshell-admin must NEVER be granted via IdP mappers (any GitHub
@@ -45,6 +47,8 @@ if client:
         chk(u.count("*") == 1 and u.endswith(":*"),
             f"openshell-cli redirectUri {u!r} must use exactly one trailing ':*' wildcard — "
             "RHBK 26.6 rejects mid-URI port wildcards (invalid_redirect_uri; root-caused 2026-11-20)")
+        chk(u.startswith(("http://127.0.0.1:", "http://localhost:")),
+            f"openshell-cli redirectUri {u!r} must be loopback-only (RFC 8252 native-app redirect)")
     chk(client.get("implicitFlowEnabled") is False, "openshell-cli implicitFlowEnabled must be false")
     chk(client.get("directAccessGrantsEnabled") is False,
         "openshell-cli directAccessGrantsEnabled must be false")

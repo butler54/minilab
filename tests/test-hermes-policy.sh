@@ -51,6 +51,7 @@ assert not missing, f"missing expected endpoints: {sorted(missing)}"
 for e in p["network_policies"]["allow_hermes_catalog"]["endpoints"]:
     assert e["protocol"] == "rest" and "tls" not in e, f"catalog endpoint {e['host']} must be rest without tls:skip"
     assert e.get("enforcement") == "enforce", f"catalog endpoint {e['host']} must be enforced"
+    assert e.get("access") == "read-only", f"catalog endpoint {e['host']} must be read-only"
 # Qwen endpoint must be plain IPv4 (0.1.8: IPv4-mapped IPv6 is evaluated as IPv4)
 assert "192.168.4.190" in str(p), "qwen endpoint must use the direct LAN IP"
 PY
@@ -71,5 +72,12 @@ PY
   ! grep -Eq 'xoxb-|xoxa-|xapp-|sk-[A-Za-z0-9]{8}' "$CFG" \
     || fail "hermes-config.yaml appears to contain secret material"
 fi
+
+# --- deploy-hermes.sh gateway pinning (topology-correction regression guard) ---
+# Every mutation must target the cluster gateway: the preflight-only `-g` pattern
+# silently sent all mutations to the CLI's active (local podman) gateway.
+DRIVER="$ROOT/deploy/openshell/hermes/deploy-hermes.sh"
+grep -qF 'export OPENSHELL_GATEWAY="$GATEWAY"' "$DRIVER" \
+  || fail "deploy-hermes.sh must export OPENSHELL_GATEWAY=\"\$GATEWAY\" (docs/hermes-agent.md topology correction)"
 
 echo "hermes policy validation passed"

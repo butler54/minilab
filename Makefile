@@ -40,8 +40,13 @@ validate-openshell: ## Renders and validates the OpenShell platform charts and t
 validate-openshell-live: check-openshell-cli ## Live-cluster auth smoke test (Keycloak OIDC + gateway); requires oc + DNS access
 	@tests/test-openshell-auth-smoke.sh
 
+# Capacity note: demo sandboxes floor at ~1000m node CPU (namespace LimitRange
+# defaults; supervisor + workload pods). With hermes live the sno node sits at
+# ~97% CPU requested (docs/hermes-agent.md row 6), so creates fail with
+# FailedScheduling until hermes is scaled down:
+#   openshell sandbox stop -g minilab hermes
 .PHONY: validate-openshell-demo
-validate-openshell-demo: ## Scripted V-DEMO smoke (opencode-in-sandbox vs matilda); skips when cluster unreachable
+validate-openshell-demo: ## Scripted V-DEMO smoke (opencode-in-sandbox vs matilda); skips when cluster unreachable; needs ~1000m free CPU (hermes occupies it — see comment above)
 	@if ! oc get --raw /healthz >/dev/null 2>&1; then echo "skip: cluster unreachable (validate-openshell-demo)"; exit 0; fi; \
 	if ! openshell status -g minilab >/dev/null 2>&1; then echo "skip: gateway auth missing (login: OPENSHELL_NO_BROWSER=1 openshell gateway login minilab)"; exit 0; fi; \
 	DEMO_PROMPT="Reply with exactly: OPENSHELL_VDEMO_OK" deploy/openshell/demo/run-demo.sh --smoke

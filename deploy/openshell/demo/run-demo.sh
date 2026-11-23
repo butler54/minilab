@@ -8,6 +8,9 @@
 set -uo pipefail
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 GATEWAY="${GATEWAY:-minilab}"
+# Every mutation must target the cluster gateway, never the CLI's active
+# (local podman) default — the topology-correction root cause (docs/hermes-agent.md).
+export OPENSHELL_GATEWAY="$GATEWAY"
 SANDBOX="${SANDBOX_NAME:-demo-$(date +%s)}"
 IMAGE="${DEMO_SANDBOX_IMAGE:-ghcr.io/butler54/openshell-sandbox:latest}"
 PROMPT="${DEMO_PROMPT:-Reply with exactly: OPENSHELL_VDEMO_OK}"

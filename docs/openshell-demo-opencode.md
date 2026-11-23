@@ -10,6 +10,12 @@ Demonstrates a human-air-gapped AI coding agent inside a governed OpenShell sand
   - `openshell profile describe matilda` or import `deploy/openshell/profiles/matilda.yaml --global`
   - `openshell provider list | grep matilda` or `MATILDA_API_KEY=$(...) openshell provider create --name matilda --type matilda --global-profile --credential MATILDA_API_KEY` (source the key from `secret/data/hub/openshell-matilda`)
   - Note: gateway DB is ephemeral (no PVC, issue #7). Recreate after gateway restarts.
+- **CPU headroom**: a demo sandbox floors at ~1000m of node CPU (namespace
+  `LimitRange` defaults 500m onto the supervisor + workload pods). With hermes
+  live the sno node sits at ~97% CPU requested, so creates fail with
+  `FailedScheduling: Insufficient cpu` even with the correct gateway pinned —
+  scale hermes down first (`openshell sandbox stop -g minilab hermes`) or accept
+  the skip in `make validate-openshell-demo` (see `docs/hermes-agent.md` row 6).
 
 ## One-time setup (per feature demo)
 

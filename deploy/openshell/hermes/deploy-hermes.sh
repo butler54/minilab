@@ -16,6 +16,12 @@
 #      HERMES_CPU  (default: 500m — sandbox workload CPU limit/request)
 #      HERMES_MEM  (default: 2Gi  — sandbox workload memory limit/request)
 #
+# NOTE: a fresh-PVC deploy hits the seed permission blocker (image ships 0600
+# uid-998 pristine files; sandbox runs uid 1000870000; hermes-seed cp -a fails
+# under set -eu and kills the main process). After the `gateway` stage, run the
+# committed workaround deploy/openshell/hermes/seed-fixup-job.yaml until the
+# containers-repo image fix lands (docs/hermes-agent.md, Cluster re-measurement).
+#
 # Resource sizing: the minilab sno node runs ~90% CPU-requested (~684m free),
 # so the chart-default (unset) workload requests fail scheduling with
 # `Insufficient cpu`. hermes idles near-zero CPU at ~200MB RSS, hence the
@@ -44,6 +50,28 @@ HERMES_CPU="${HERMES_CPU:-500m}"
 HERMES_MEM="${HERMES_MEM:-2Gi}"
 
 stage="${1:-create}"
+
+# Wait for the sandbox record to reach Ready. `sandbox list` failing mid-wait
+# (expired auth, gateway restart) must not die silently under set -euo
+# pipefail: track consecutive failures and exit with an actionable message.
+wait_ready() {
+  local phase="" fails=0
+  for _ in $(seq 1 60); do
+    if phase=$(openshell sandbox list | awk -v n="$NAME" '$1==n {print $NF}'); then
+      fails=0
+      [ "$phase" = Ready ] && return 0
+    else
+      fails=$((fails + 1))
+      if [ "$fails" -ge 2 ]; then
+        echo "FAIL: sandbox list failed mid-wait (auth expired? run: openshell gateway login \"$GATEWAY\")" >&2
+        return 1
+      fi
+    fi
+    sleep 5
+  done
+  echo "FAIL: sandbox not Ready (phase=${phase:-unknown})" >&2
+  return 1
+}
 
 inject_config() {
   openshell sandbox exec -n "$NAME" -- mkdir -p /sandbox/.hermes
@@ -84,12 +112,7 @@ case "$stage" in
     # S1: bash main process (measure loop); `gateway` stage recreates always-on.
     openshell sandbox create -g "$GATEWAY" --name "$NAME" --from "$IMAGE" --policy "$POLICY" --detach \
       --cpu "$HERMES_CPU" --memory "$HERMES_MEM" -- bash -c 'sleep infinity'
-    for _ in $(seq 1 60); do
-      phase=$(openshell sandbox list 2>/dev/null | awk -v n="$NAME" '$1==n {print $NF}')
-      [ "$phase" = Ready ] && break
-      sleep 5
-    done
-    [ "$phase" = Ready ] || { echo "FAIL: sandbox not Ready" >&2; exit 1; }
+    wait_ready
     inject_config
     echo "PASS create ($NAME from $IMAGE) — next: deploy-hermes.sh smoke"
     ;;
@@ -118,14 +141,10 @@ case "$stage" in
     sleep 5
     openshell sandbox create -g "$GATEWAY" --name "$NAME" --from "$IMAGE" --policy "$POLICY" --detach \
       --cpu "$HERMES_CPU" --memory "$HERMES_MEM" -- hermes-gateway-start
-    for _ in $(seq 1 60); do
-      phase=$(openshell sandbox list 2>/dev/null | awk -v n="$NAME" '$1==n {print $NF}')
-      [ "$phase" = Ready ] && break
-      sleep 5
-    done
-    [ "$phase" = Ready ] || { echo "FAIL: sandbox not Ready" >&2; exit 1; }
+    wait_ready
     inject_config
     echo "PASS gateway ($NAME, main process hermes-gateway-start)"
+    echo "NOTE: fresh-PVC deploy hits the seed permission blocker — run deploy/openshell/hermes/seed-fixup-job.yaml (see docs/hermes-agent.md, Cluster re-measurement) until the containers-repo image fix lands."
     ;;
   teardown)
     openshell sandbox delete -g "$GATEWAY" "$NAME"
