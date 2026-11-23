@@ -10,19 +10,20 @@ replicaCount: 1
 # appVersion, keep explicit tags == chartVersion (drift-asserted by tests).
 gateway:
   image:
-    tag: "0.1.8"
+    tag: "0.1.9"
   # OCSF deny-evidence channel: TRIED and REVERTED (012 T020, 2026-10-13) —
   # `gateway.ocsfLog.enabled: true` renders nothing into the 0.1.3 chart
   # templates (dead value; no env/args/ConfigMap wiring). RE-TESTED at 0.1.8
   # (014 T013, 2026-11-15): chart 0.1.8 with ocsfLog.enabled=true still
-  # renders zero OCSF wiring — upstream #3264/#3876 remains open. Re-test on
-  # the next values-bump.
+  # renders zero OCSF wiring — upstream #3264/#3876 remains open.
+  # RE-TESTED at 0.1.9 (2026-11-23): still renders zero OCSF wiring (upstream
+  # #3264/#3876 open) — value remains inert.
 sandboxRuntime:
   image:
-    tag: "0.1.8"
+    tag: "0.1.9"
 supervisor:
   image:
-    tag: "0.1.8"
+    tag: "0.1.9"
 
 # Default sandbox workload image. 0.1.x chart default is the minimal
 # nvcr.io/nvidia/base/ubuntu image; keep the digest-pinned community base
