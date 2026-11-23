@@ -22,8 +22,11 @@ secretStore:
 hermes:
   sandboxName: hermes
   # Own registry (containers repo, hermes layer). Digest-pinned from the
-  # seed-layout publish (PR #67, 2026-11-16; recorded in docs/hermes-agent.md).
-  image: ghcr.io/butler54/openshell-sandbox-hermes@sha256:ba3908eb23e128e5b2eaf38390d792ed7c5db4773fea22dc09fc205de5fdde10
+  # seed-permission fix publish (PR #69, merged 460192c, 2026-11-23;
+  # recorded in docs/hermes-agent.md). PR #69 adds chmod -R a+rX
+  # /opt/hermes-pristine at build time so hermes-seed's cp -a works for
+  # arbitrary uids (OpenShift SCC); supersedes the seed-fixup Job workaround.
+  image: ghcr.io/butler54/openshell-sandbox-hermes@sha256:0ee630ffb4e3a7e42cad662ea9047d716f277d3c46be38cce86b0e4863201e9c
   slack:
     remoteKey: secret/data/hub/openshell-slack
     secretName: hermes-slack-tokens
