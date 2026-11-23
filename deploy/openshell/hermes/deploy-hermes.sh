@@ -16,12 +16,6 @@
 #      HERMES_CPU  (default: 500m — sandbox workload CPU limit/request)
 #      HERMES_MEM  (default: 2Gi  — sandbox workload memory limit/request)
 #
-# NOTE: a fresh-PVC deploy hits the seed permission blocker (image ships 0600
-# uid-998 pristine files; sandbox runs uid 1000870000; hermes-seed cp -a fails
-# under set -eu and kills the main process). After the `gateway` stage, run the
-# committed workaround deploy/openshell/hermes/seed-fixup-job.yaml until the
-# containers-repo image fix lands (docs/hermes-agent.md, Cluster re-measurement).
-#
 # Resource sizing: the minilab sno node runs ~90% CPU-requested (~684m free),
 # so the chart-default (unset) workload requests fail scheduling with
 # `Insufficient cpu`. hermes idles near-zero CPU at ~200MB RSS, hence the
@@ -144,7 +138,7 @@ case "$stage" in
     wait_ready
     inject_config
     echo "PASS gateway ($NAME, main process hermes-gateway-start)"
-    echo "NOTE: fresh-PVC deploy hits the seed permission blocker — run deploy/openshell/hermes/seed-fixup-job.yaml (see docs/hermes-agent.md, Cluster re-measurement) until the containers-repo image fix lands."
+    echo "NOTE: fresh-PVC deploys seed the home read-only as the sandbox uid; a full seed takes ~2 min and the sandbox stays Ready (docs/hermes-agent.md row 10)."
     ;;
   teardown)
     openshell sandbox delete -g "$GATEWAY" "$NAME"

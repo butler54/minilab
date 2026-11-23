@@ -50,6 +50,10 @@ network_policies:
   # verified from a probe sandbox 2026-11-16). Direct IP: the cluster has no
   # tailscale route to donnager-linux. Plain IPv4 — OpenShell 0.1.8 evaluates
   # IPv4-mapped IPv6 as plain IPv4 (upstream PR #5101).
+  # seeded-home tools python added 2026-11-23 — `hermes gateway` execs under
+  # /sandbox/.hermes/tools after the seed-layout image; without this glob the
+  # gateway process itself is denied at connect() (discovered verifying the
+  # PR #69 image fix).
   allow_donnager_qwen:
     name: allow_donnager_qwen
     endpoints:
@@ -60,11 +64,16 @@ network_policies:
       enforcement: enforce
     binaries:
     - path: /opt/hermes/tools/python-*/bin/python3*
+    - path: /sandbox/.hermes/tools/python-*/bin/python3*
     - path: /sandbox/.uv/python/*/bin/python3*
   # justification: Slack socket mode — wss-primary/wss-backup are the hosts
   # Slack's apps.connections.open hands back for the long-lived gateway
   # WebSocket; slack.com/api.slack.com carry the Web API; hooks.slack.com
   # covers webhook delivery. Mirrors NemoClaw's maintained preset.
+  # seeded-home tools python added 2026-11-23 — `hermes gateway` execs under
+  # /sandbox/.hermes/tools after the seed-layout image; without this glob the
+  # gateway process itself is denied at connect() (discovered verifying the
+  # PR #69 image fix).
   allow_slack:
     name: allow_slack
     endpoints:
@@ -95,6 +104,7 @@ network_policies:
       enforcement: enforce
     binaries:
     - path: /opt/hermes/tools/python-*/bin/python3*
+    - path: /sandbox/.hermes/tools/python-*/bin/python3*
     - path: /sandbox/.uv/python/*/bin/python3*
   # justification: hermes live model-catalog + plugin-catalog fetch. These
   # hosts were deliberately DENIED through S4 (INFO-level, non-fatal — hermes
@@ -102,6 +112,10 @@ network_policies:
   # allowed per operator decision 2026-11-20. Plain HTTPS from the tools
   # python against the system trust store — no pinned-CA passthrough needed
   # (unlike Signal), so protocol: rest with L7 enforcement; no tls:skip.
+  # seeded-home tools python added 2026-11-23 — `hermes gateway` execs under
+  # /sandbox/.hermes/tools after the seed-layout image; without this glob the
+  # gateway process itself is denied at connect() (discovered verifying the
+  # PR #69 image fix).
   allow_hermes_catalog:
     name: allow_hermes_catalog
     endpoints:
@@ -117,6 +131,7 @@ network_policies:
       enforcement: enforce
     binaries:
     - path: /opt/hermes/tools/python-*/bin/python3*
+    - path: /sandbox/.hermes/tools/python-*/bin/python3*
     - path: /sandbox/.uv/python/*/bin/python3*
   # justification: Signal via signal-cli — service endpoints from signal-cli's
   # LiveConfig (chat/CDN/storage/CDSI/SVR2). Raw TLS passthrough (tls: skip,
