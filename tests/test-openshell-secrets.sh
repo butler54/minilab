@@ -21,7 +21,7 @@ for entry in seed.get("secrets", []):
     prefixes = entry.get("vaultPrefixes", [])
     if prefixes and name.startswith("openshell"):
         expected_key[name] = prefixes[0]
-assert len(expected_key) == 7, f"expected 7 openshell vault entries, got {len(expected_key)}"
+assert len(expected_key) == 8, f"expected 8 openshell vault entries, got {len(expected_key)}"
 
 # (ExternalSecret template -> its openshell-<name> secret)
 expected = {
@@ -149,6 +149,24 @@ for d in dex_docs:
 if not {"github-client-id", "github-client-secret"} <= dex_keys:
     fail.append(f"dex ExternalSecret must sync github-client-id AND github-client-secret "
                 f"from secret/data/hub/openshell-dex, got {sorted(dex_keys)}")
+
+# hermes (S2): the chart must sync BOTH slack keys (bot + app) when enabled —
+# deploy-hermes.sh fails closed if either is missing (inject_config asserts
+# both tokens non-empty before assembling the sandbox .env).
+hermes_docs = render("hermes-agent", ["global.openshell.hermes.slack.enabled=true"])
+hermes_keys = set()
+for d in hermes_docs:
+    if not (d and d.get("kind") == "ExternalSecret"):
+        continue
+    if d.get("spec", {}).get("target", {}).get("name") != "hermes-slack-tokens":
+        continue
+    for entry in d.get("spec", {}).get("data", []):
+        rr = entry.get("remoteRef", {})
+        if rr.get("key") == f"secret/data/{expected_key.get('openshell-slack')}/openshell-slack":
+            hermes_keys.add(entry.get("secretKey"))
+if not {"bot-token", "app-token"} <= hermes_keys:
+    fail.append(f"hermes ExternalSecret must sync bot-token AND app-token "
+                f"from secret/data/hub/openshell-slack, got {sorted(hermes_keys)}")
 
 # No secret material in Git: block stringData and obvious literals outside the
 # seed template (values-secret.yaml.template, which documents vault inputs).
