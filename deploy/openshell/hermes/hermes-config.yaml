@@ -1,7 +1,8 @@
 # Hermes Agent config.yaml — source of truth for the hermes sandbox
-# (docs/hermes-agent.md). Injected at sandbox creation by
-# deploy/openshell/hermes/deploy-hermes.sh (recorded imperative step):
-#   openshell sandbox exec -n hermes -- tee /sandbox/.hermes/config.yaml < this file
+# (docs/hermes-agent.md). Applied at sandbox creation by
+# deploy/openshell/hermes/deploy-hermes.sh via `hermes config set` (hermes'
+# own config system): direct config.yaml writes are reverted by the gateway's
+# home maintenance (2026-11-23 finding).
 #
 # Model: self-hosted qwen on donnager-linux, reached by direct LAN IP
 # (no tailscale route from the cluster). Model id and endpoint verified live

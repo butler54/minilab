@@ -68,9 +68,19 @@ wait_ready() {
 }
 
 inject_config() {
-  openshell sandbox exec -n "$NAME" -- mkdir -p /sandbox/.hermes
-  openshell sandbox exec -n "$NAME" -- tee /sandbox/.hermes/config.yaml < "$CFG" >/dev/null
-  openshell sandbox exec -n "$NAME" -- grep -q 'qwen-coder:latest' /sandbox/.hermes/config.yaml
+  # Model config via hermes' OWN config system (`hermes config set`): direct
+  # config.yaml writes are reverted by the gateway's home maintenance
+  # (observed 2026-11-23: the injected file was restored from the checkout
+  # with preserved mtime, dropping the model section). hermes-config.yaml
+  # stays the Git source of truth; these calls translate it.
+  local hermes_cli="/sandbox/.hermes/hermes-agent/hermes"
+  run_hermes() {
+    openshell sandbox exec -n "$NAME" -- env HOME=/tmp HERMES_HOME=/sandbox/.hermes "$hermes_cli" "$@"
+  }
+  run_hermes config set model.default "$(yq -r '.model.default' "$CFG")"
+  run_hermes config set model.provider "$(yq -r '.model.provider' "$CFG")"
+  run_hermes config set model.base_url "$(yq -r '.model.base_url' "$CFG")"
+  run_hermes config set model.api_key "$(yq -r '.model.api_key' "$CFG")"
   # .env: substitute vault-backed tokens (when slack enabled) + signal values
   local env_src
   env_src=$(mktemp)

@@ -7,8 +7,10 @@
 #   {{SIGNAL_ACCOUNT}}                          from global.openshell.hermes.signal.account
 #     (overrides/values-openshell.yaml)
 # Wide-open Slack posture (fresh private workspace, membership is the control)
-# is intentional for v1 — tighten with SLACK_ALLOWED_USERS/SLACK_ALLOWED_CHANNELS
-# when real users join.
+# is intentional for v1 — the adapter's user gate defaults to DENY-ALL without
+# this. Tighten with SLACK_ALLOWED_USERS=<uid,...>/SLACK_ALLOWED_CHANNELS when
+# real users join.
+SLACK_ALLOW_ALL_USERS=true
 SLACK_BOT_TOKEN={{SLACK_BOT_TOKEN}}
 SLACK_APP_TOKEN={{SLACK_APP_TOKEN}}
 # Signal: allowlist is restrictive by default (hermes-agent.md security posture).
