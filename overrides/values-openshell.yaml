@@ -53,7 +53,7 @@ global:
       signal:
         # E.164 number of the linked Signal device (SIGNAL_ACCOUNT; blank =
         # Signal disabled until the QR-linking spike runs).
-        account: ""
+        account: "+61408390624"
         allowedUsers: "+61408390624"
 
 # NOTE (refactor 007): upstream chart values moved to per-app override files —
